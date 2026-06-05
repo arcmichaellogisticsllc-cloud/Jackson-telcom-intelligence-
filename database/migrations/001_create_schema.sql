@@ -2,7 +2,20 @@ CREATE TABLE IF NOT EXISTS regions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   owner TEXT NOT NULL,
+  owner_name TEXT,
+  owner_email TEXT,
+  hub_city TEXT,
+  hub_state TEXT,
   states TEXT NOT NULL,
+  states_covered TEXT,
+  priority_tier TEXT DEFAULT 'Tier 1',
+  operating_status TEXT DEFAULT 'Active',
+  strategic_notes TEXT,
+  coverage_score INTEGER DEFAULT 0,
+  capacity_score INTEGER DEFAULT 0,
+  relationship_score INTEGER DEFAULT 0,
+  opportunity_score INTEGER DEFAULT 0,
+  traffic_score INTEGER DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1
 );
 
@@ -21,7 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('Admin','Southeast Owner','Great Lakes Owner')),
+  role TEXT NOT NULL CHECK(role IN ('Admin','Southeast Owner','Great Lakes Owner','Southwest Owner')),
   region_id INTEGER NULL,
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
@@ -115,11 +128,12 @@ CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   description TEXT,
-  signal_type TEXT NOT NULL CHECK(signal_type IN ('Capacity','Opportunity','Relationship','Market')),
-  source_type TEXT NOT NULL CHECK(source_type IN ('Facebook Marketplace','LinkedIn','Industry News','Referral','Conference','Website Form','Manual Entry','Government Data','Contractor Intelligence','Equipment Listing','Other')),
+  signal_type TEXT NOT NULL CHECK(signal_type IN ('Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach')),
+  source_type TEXT NOT NULL CHECK(source_type IN ('Google Search','Google Business Profile','Facebook Marketplace','LinkedIn','Industry Forum','YouTube','Broadband Grant','Utility Announcement','Equipment Listing','New Business Filing','Hiring Activity','Manual Entry','Industry News','Referral','Conference','Website Form','Government Data','Contractor Intelligence','Other')),
   source_url TEXT,
   region_id INTEGER NOT NULL,
   state TEXT,
+  city TEXT,
   organization_name TEXT,
   contact_name TEXT,
   confidence_score INTEGER DEFAULT 0,
@@ -127,7 +141,73 @@ CREATE TABLE IF NOT EXISTS signals (
   priority TEXT NOT NULL DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
   owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Mike','Ron','Unassigned')),
   status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Reviewed','Assigned','Converted','Ignored')),
+  recommended_next_action TEXT,
   notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS keywords (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  keyword TEXT NOT NULL,
+  intent_type TEXT NOT NULL,
+  region_id INTEGER,
+  state TEXT,
+  city TEXT,
+  priority TEXT DEFAULT 'Medium',
+  current_rank INTEGER,
+  target_rank INTEGER,
+  search_intent_notes TEXT,
+  status TEXT DEFAULT 'New',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS content_ideas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  region_id INTEGER,
+  target_keyword TEXT,
+  audience TEXT,
+  status TEXT DEFAULT 'Idea',
+  recommended_channel TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS outreach_targets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  organization TEXT,
+  target_type TEXT NOT NULL,
+  region_id INTEGER,
+  state TEXT,
+  source TEXT,
+  status TEXT DEFAULT 'New',
+  recommended_message TEXT,
+  next_action TEXT,
+  owner TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS outreach_sequences (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  region_id INTEGER,
+  purpose TEXT NOT NULL,
+  step_number INTEGER NOT NULL,
+  channel TEXT NOT NULL,
+  message_template TEXT,
+  delay_days INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'Planned',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(region_id) REFERENCES regions(id)

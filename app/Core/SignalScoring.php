@@ -68,9 +68,17 @@ class SignalScoring
     private static function sourceConfidence(string $source): int
     {
         return match ($source) {
+            'Google Search' => 18,
+            'Google Business Profile' => 17,
             'Government Data' => 26,
+            'Broadband Grant' => 26,
+            'Utility Announcement' => 24,
             'Referral' => 24,
             'Contractor Intelligence' => 22,
+            'New Business Filing' => 18,
+            'Hiring Activity' => 18,
+            'Industry Forum' => 14,
+            'YouTube' => 10,
             'Industry News' => 18,
             'LinkedIn' => 16,
             'Conference' => 15,
@@ -88,6 +96,9 @@ class SignalScoring
             'Opportunity' => 25,
             'Relationship' => 18,
             'Market' => 20,
+            'SEO' => 16,
+            'Content' => 16,
+            'Outreach' => 17,
             default => 12,
         };
     }
@@ -136,6 +147,30 @@ class SignalScoring
                 'utility spending' => 16,
                 'rural' => 10,
                 'middle mile' => 12,
+            ],
+            'SEO' => [
+                'search' => 12,
+                'keyword' => 12,
+                'ranking' => 12,
+                'landing page' => 14,
+                'contractor search' => 16,
+                'regional page' => 14,
+            ],
+            'Content' => [
+                'blog' => 10,
+                'landing page' => 14,
+                'case study' => 12,
+                'service page' => 14,
+                'linkedin post' => 10,
+                'video' => 10,
+            ],
+            'Outreach' => [
+                'campaign' => 12,
+                'email' => 10,
+                'call list' => 14,
+                'contractor list' => 16,
+                'intro' => 12,
+                'sequence' => 12,
             ],
             default => [],
         };

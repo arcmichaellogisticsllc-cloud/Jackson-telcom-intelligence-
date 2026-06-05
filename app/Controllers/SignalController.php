@@ -11,11 +11,11 @@ use PDO;
 
 class SignalController extends Controller
 {
-    private array $types = ['Capacity','Opportunity','Relationship','Market'];
-    private array $sources = ['Facebook Marketplace','LinkedIn','Industry News','Referral','Conference','Website Form','Manual Entry','Government Data','Contractor Intelligence','Equipment Listing','Other'];
+    private array $types = ['Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach'];
+    private array $sources = ['Google Search','Google Business Profile','Facebook Marketplace','LinkedIn','Industry Forum','YouTube','Broadband Grant','Utility Announcement','Equipment Listing','New Business Filing','Hiring Activity','Manual Entry','Industry News','Referral','Conference','Website Form','Government Data','Contractor Intelligence','Other'];
     private array $statuses = ['New','Reviewed','Assigned','Converted','Ignored'];
     private array $owners = ['Mike','Ron','Unassigned'];
-    private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL'];
+    private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL','TX','OK','LA','NM'];
 
     public function index(): void
     {
@@ -47,11 +47,11 @@ class SignalController extends Controller
 
         if (!empty($_POST['id'])) {
             $data['id'] = (int)$_POST['id'];
-            $stmt = $db->prepare('UPDATE signals SET title = :title, description = :description, signal_type = :signal_type, source_type = :source_type, source_url = :source_url, region_id = :region_id, state = :state, organization_name = :organization_name, contact_name = :contact_name, confidence_score = :confidence_score, impact_score = :impact_score, priority = :priority, owner = :owner, status = :status, notes = :notes, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+            $stmt = $db->prepare('UPDATE signals SET title = :title, description = :description, signal_type = :signal_type, source_type = :source_type, source_url = :source_url, region_id = :region_id, state = :state, city = :city, organization_name = :organization_name, contact_name = :contact_name, confidence_score = :confidence_score, impact_score = :impact_score, priority = :priority, owner = :owner, status = :status, recommended_next_action = :recommended_next_action, notes = :notes, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
             $stmt->execute($data);
             $this->activity((int)$data['id'], (int)$data['region_id'], 'Status Change', 'Signal updated', 'Signal details or scoring inputs were updated.');
         } else {
-            $stmt = $db->prepare('INSERT INTO signals (title, description, signal_type, source_type, source_url, region_id, state, organization_name, contact_name, confidence_score, impact_score, priority, owner, status, notes) VALUES (:title, :description, :signal_type, :source_type, :source_url, :region_id, :state, :organization_name, :contact_name, :confidence_score, :impact_score, :priority, :owner, :status, :notes)');
+            $stmt = $db->prepare('INSERT INTO signals (title, description, signal_type, source_type, source_url, region_id, state, city, organization_name, contact_name, confidence_score, impact_score, priority, owner, status, recommended_next_action, notes) VALUES (:title, :description, :signal_type, :source_type, :source_url, :region_id, :state, :city, :organization_name, :contact_name, :confidence_score, :impact_score, :priority, :owner, :status, :recommended_next_action, :notes)');
             $stmt->execute($data);
             $id = (int)$db->lastInsertId();
             $this->activity($id, (int)$data['region_id'], 'Status Change', 'Signal created', 'Created from ' . $data['source_type'] . '.');
@@ -115,7 +115,7 @@ class SignalController extends Controller
         $type = match ($signal['signal_type']) {
             'Capacity' => 'Subcontractor',
             'Opportunity' => 'Prime Contractor',
-            'Market' => 'Municipality',
+            'Market', 'SEO', 'Content', 'Outreach' => 'Municipality',
             default => 'Other',
         };
         $stmt = $db->prepare('INSERT INTO organizations (name, type, region_id, state, notes, status) VALUES (?, ?, ?, ?, ?, "Prospect")');
@@ -190,10 +190,12 @@ class SignalController extends Controller
             'source_url' => trim((string)($_POST['source_url'] ?? '')),
             'region_id' => (int)($_POST['region_id'] ?? 0),
             'state' => $_POST['state'] ?? '',
+            'city' => trim((string)($_POST['city'] ?? '')),
             'organization_name' => trim((string)($_POST['organization_name'] ?? '')),
             'contact_name' => trim((string)($_POST['contact_name'] ?? '')),
             'owner' => $_POST['owner'] ?? 'Unassigned',
             'status' => $_POST['status'] ?? 'New',
+            'recommended_next_action' => trim((string)($_POST['recommended_next_action'] ?? '')),
             'notes' => trim((string)($_POST['notes'] ?? '')),
         ];
     }

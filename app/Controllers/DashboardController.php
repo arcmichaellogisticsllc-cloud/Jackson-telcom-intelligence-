@@ -19,6 +19,9 @@ class DashboardController extends Controller
         $totals = $this->executiveTotals();
         $actions = $this->actions();
         $signalWidgets = $this->signalWidgets();
+        $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
+        $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
+        $topOpportunities = $db->query('SELECT op.*, r.name region_name FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.stage NOT IN ("Awarded","Lost") ORDER BY op.estimated_value DESC LIMIT 8')->fetchAll();
         $stageCounts = $db->query('SELECT stage, COUNT(*) count FROM opportunities GROUP BY stage ORDER BY stage')->fetchAll();
         $recentActivities = $db->query('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id ORDER BY a.activity_date DESC LIMIT 8')->fetchAll();
         $this->view('dashboard/index', [
@@ -27,9 +30,19 @@ class DashboardController extends Controller
             'totals' => $totals,
             'actions' => $actions,
             'signalWidgets' => $signalWidgets,
+            'topSignals' => $topSignals,
+            'topCapacityNeeds' => $topCapacityNeeds,
+            'topOpportunities' => $topOpportunities,
             'stageCounts' => $stageCounts,
             'recentActivities' => $recentActivities,
         ]);
+    }
+
+    public function regions(): void
+    {
+        Auth::requireLogin();
+        $regions = $this->regionSummaries();
+        $this->view('dashboard/regions', compact('regions'));
     }
 
     public function southeast(): void
@@ -40,6 +53,59 @@ class DashboardController extends Controller
     public function greatLakes(): void
     {
         $this->regional('Great Lakes');
+    }
+
+    public function southwest(): void
+    {
+        $this->regional('Southwest');
+    }
+
+    public function traffic(): void
+    {
+        Auth::requireLogin();
+        $this->module('Traffic Engine', 'Traffic signals and demand generation inputs.', [
+            'SEO',
+            'Content Strategy',
+            'Landing Pages',
+            'Contractor Searches',
+            'Regional Pages',
+            'Outreach Campaigns',
+        ], 'Traffic Engine is the source layer for search demand, contractor discovery, regional landing-page strategy, and outreach signals.');
+    }
+
+    public function capacity(): void
+    {
+        Auth::requireLogin();
+        $this->module('Capacity Acquisition', 'Acquire capacity before pursuing work.', [
+            'Subcontractors',
+            'Workforce',
+            'Equipment',
+            'Vendors',
+            'Capacity Radar',
+        ], 'Capacity Acquisition focuses on deployable crews, subcontractor readiness, equipment movement, vendors, and regional capacity gaps.');
+    }
+
+    public function relationships(): void
+    {
+        Auth::requireLogin();
+        $this->module('Relationship Intelligence', 'Map who matters and who owns the relationship.', [
+            'Organizations',
+            'Contacts',
+            'Influence Graph',
+            'Regional Ownership',
+        ], 'Relationship Intelligence connects organizations, contacts, influence, and owner accountability across theaters.');
+    }
+
+    public function opportunityIntelligence(): void
+    {
+        Auth::requireLogin();
+        $this->module('Opportunity Intelligence', 'Separate pursuit-worthy opportunities from distractions.', [
+            'Grants',
+            'Utility Expansion',
+            'Prime Awards',
+            'Project Requests',
+            'Bid Opportunities',
+        ], 'Opportunity Intelligence tracks grants, expansion signals, prime awards, project requests, and bid opportunities before execution.');
     }
 
     public function settings(): void
@@ -93,6 +159,11 @@ class DashboardController extends Controller
         $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets'));
     }
 
+    private function module(string $title, string $subtitle, array $items, string $body): void
+    {
+        $this->view('dashboard/module', compact('title', 'subtitle', 'items', 'body'));
+    }
+
     private function regionSummaries(): array
     {
         $regions = Database::connection()->query("SELECT r.*, 
@@ -106,6 +177,7 @@ class DashboardController extends Controller
             GROUP BY r.id")->fetchAll();
 
         foreach ($regions as &$region) {
+            $region['capacity_score_value'] = (int)($region['capacity_score'] ?? 0);
             $region['capacity_score'] = CapacityService::scoreRegion($region);
             $region['gaps'] = CapacityService::gaps((int)$region['id']);
         }

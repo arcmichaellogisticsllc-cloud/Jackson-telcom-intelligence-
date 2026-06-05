@@ -19,7 +19,7 @@
             'Capacity' => ['organization' => 'Organization', 'subcontractor' => 'Subcontractor'],
             'Relationship' => ['contact' => 'Contact', 'organization' => 'Organization'],
             'Opportunity' => ['opportunity' => 'Opportunity', 'organization' => 'Organization'],
-            'Market' => ['opportunity' => 'Opportunity', 'intelligence' => 'Intelligence Record'],
+            'Market', 'SEO', 'Content', 'Outreach' => ['opportunity' => 'Opportunity', 'intelligence' => 'Intelligence Record'],
             default => ['organization' => 'Organization'],
           };
         ?>

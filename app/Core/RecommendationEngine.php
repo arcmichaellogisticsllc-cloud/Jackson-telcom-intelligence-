@@ -21,6 +21,7 @@ class RecommendationEngine
         self::dataQualityWarnings($db);
         self::reviewPursuits($db);
         self::signalActions($db);
+        self::trafficActions($db);
     }
 
     private static function capacityTargets(PDO $db): void
@@ -250,11 +251,98 @@ class RecommendationEngine
         }
     }
 
+    private static function trafficActions(PDO $db): void
+    {
+        foreach ($db->query('SELECT * FROM regions WHERE active = 1')->fetchAll() as $region) {
+            if ((int)($region['traffic_score'] ?? 0) < 60) {
+                self::insert($db, [
+                    'title' => 'Build traffic acquisition plan for ' . $region['name'],
+                    'category' => 'SEO',
+                    'priority' => (int)($region['traffic_score'] ?? 0) < 40 ? 'High' : 'Medium',
+                    'region_id' => $region['id'],
+                    'reason' => 'Traffic score is below operating target.',
+                    'recommended_next_action' => 'Create regional keywords, landing pages, and outreach content tied to subcontractor and utility acquisition.',
+                    'assigned_owner' => $region['owner_name'] ?: $region['owner'],
+                    'source_type' => 'region',
+                    'source_id' => $region['id'],
+                    'recommendation_type' => 'Review Pursuit',
+                    'priority_score' => 72,
+                    'trigger_detail' => 'Region traffic_score below 60.',
+                    'why_it_matters' => 'Search and content traffic feed contractor discovery, inbound service demand, and relationship intelligence.',
+                ]);
+            }
+
+            if ($region['name'] === 'Southwest' && (int)($region['coverage_score'] ?? 0) < 60) {
+                self::insert($db, [
+                    'title' => 'Launch Houston-focused Southwest acquisition pages',
+                    'category' => 'Regional Expansion',
+                    'priority' => 'High',
+                    'region_id' => $region['id'],
+                    'reason' => 'Southwest is a Tier 2 theater with low coverage score.',
+                    'recommended_next_action' => 'Create Houston TX landing pages and subcontractor outreach lists for aerial, underground, splicing, and equipment capacity.',
+                    'assigned_owner' => $region['owner_name'] ?: 'Admin',
+                    'source_type' => 'region',
+                    'source_id' => $region['id'],
+                    'recommendation_type' => 'Recruit Capacity',
+                    'priority_score' => 84,
+                    'trigger_detail' => 'Southwest coverage_score below 60.',
+                    'why_it_matters' => 'Southwest needs traffic and capacity foundation before aggressive pursuit.',
+                ]);
+            }
+        }
+
+        $keywords = $db->query("SELECT k.*, r.owner_name, r.owner, r.name region_name FROM keywords k LEFT JOIN regions r ON r.id = k.region_id WHERE NOT EXISTS (SELECT 1 FROM content_ideas c WHERE c.target_keyword = k.keyword)")->fetchAll();
+        foreach ($keywords as $keyword) {
+            self::insert($db, [
+                'title' => 'Create content for keyword: ' . $keyword['keyword'],
+                'category' => 'Content',
+                'priority' => in_array($keyword['priority'], ['Critical','High'], true) ? 'High' : 'Medium',
+                'region_id' => $keyword['region_id'],
+                'reason' => 'Keyword has no assigned content idea.',
+                'recommended_next_action' => 'Create a landing page, service page, post, or outreach asset for this search intent.',
+                'assigned_owner' => $keyword['owner_name'] ?: $keyword['owner'],
+                'source_type' => 'keyword',
+                'source_id' => $keyword['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => in_array($keyword['priority'], ['Critical','High'], true) ? 78 : 58,
+                'trigger_detail' => 'No content_ideas.target_keyword matches this keyword.',
+                'why_it_matters' => 'Unserved keywords represent missed acquisition traffic and demand-generation leverage.',
+            ]);
+        }
+
+        $signals = $db->query("SELECT s.*, r.owner_name, r.owner FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.signal_type IN ('SEO','Content') AND s.status NOT IN ('Converted','Ignored')")->fetchAll();
+        foreach ($signals as $signal) {
+            self::insert($db, [
+                'title' => 'Turn signal into content asset: ' . $signal['title'],
+                'category' => $signal['signal_type'],
+                'priority' => self::priorityFromScore(max(55, (int)$signal['impact_score'])),
+                'region_id' => $signal['region_id'],
+                'reason' => 'SEO or Content signal is active.',
+                'recommended_next_action' => $signal['recommended_next_action'] ?: 'Create or assign a related content idea and define the target audience/channel.',
+                'assigned_owner' => $signal['owner'] === 'Unassigned' ? ($signal['owner_name'] ?: $signal['owner']) : $signal['owner'],
+                'source_type' => 'signal',
+                'source_id' => $signal['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => max(55, (int)$signal['impact_score']),
+                'trigger_detail' => 'Active SEO/Content signal.',
+                'why_it_matters' => 'Content signals should become visible assets that attract subcontractors, primes, utilities, and workforce.',
+            ]);
+        }
+    }
+
     private static function signalRecommendation(array $signal, int $score, string $title, string $trigger, string $nextAction): array
     {
         return [
             'title' => $title,
-            'category' => $signal['signal_type'] === 'Relationship' ? 'Relationship' : ($signal['signal_type'] === 'Opportunity' ? 'Opportunity' : ($signal['signal_type'] === 'Capacity' ? 'Capacity' : 'Market')),
+            'category' => match ($signal['signal_type']) {
+                'Relationship' => 'Relationship',
+                'Opportunity' => 'Opportunity',
+                'Capacity' => 'Capacity',
+                'SEO' => 'SEO',
+                'Content' => 'Content',
+                'Outreach' => 'Outreach',
+                default => 'Market',
+            },
             'priority' => self::priorityFromScore($score),
             'region_id' => $signal['region_id'],
             'reason' => self::reasonForSignal($signal),
@@ -276,6 +364,9 @@ class RecommendationEngine
             'Opportunity' => 'Potential bid, expansion, grant, or prime-contractor opportunity detected.',
             'Relationship' => 'Potential relationship leverage or decision-maker movement detected.',
             'Market' => 'Market funding, utility spending, or broadband expansion signal detected.',
+            'SEO' => 'Search demand, keyword, landing-page, or regional content signal detected.',
+            'Content' => 'Content asset, service-page, case-study, or demand-generation signal detected.',
+            'Outreach' => 'Campaign, contractor list, or outbound acquisition signal detected.',
             default => 'Acquisition intelligence signal detected.',
         };
     }
@@ -287,6 +378,9 @@ class RecommendationEngine
             'Relationship' => 'Follow Up Relationship',
             'Opportunity' => 'Review Pursuit',
             'Market' => 'Review Pursuit',
+            'SEO' => 'Review Pursuit',
+            'Content' => 'Review Pursuit',
+            'Outreach' => 'Follow Up Relationship',
             default => 'Review Pursuit',
         };
     }
@@ -298,6 +392,9 @@ class RecommendationEngine
             'Opportunity' => 'Validate scope, decision makers, capacity requirement, and convert to opportunity if pursuit-worthy.',
             'Relationship' => 'Confirm the relationship change, identify the outreach angle, and convert to contact or organization.',
             'Market' => 'Research affected markets, funding source, probable owners, and convert to opportunity or intelligence record.',
+            'SEO' => 'Validate search intent, define the regional page or content asset, and convert to opportunity or intelligence record if it supports acquisition.',
+            'Content' => 'Define the audience, target keyword, channel, and conversion path for this content asset.',
+            'Outreach' => 'Validate the audience, owner, message, and next touch, then convert to contact, organization, or intelligence record.',
             default => 'Review and assign the signal.',
         };
     }
@@ -309,6 +406,9 @@ class RecommendationEngine
             'Opportunity' => 'Convert to opportunity and assign pursuit next action.',
             'Relationship' => 'Convert to contact or organization and schedule outreach.',
             'Market' => 'Convert to opportunity or intelligence record for market tracking.',
+            'SEO' => 'Convert to opportunity or intelligence record for content and regional acquisition planning.',
+            'Content' => 'Convert to intelligence record or content idea for demand-generation execution.',
+            'Outreach' => 'Convert to contact, organization, or intelligence record for outbound acquisition follow-up.',
             default => 'Convert to the appropriate acquisition record.',
         };
     }

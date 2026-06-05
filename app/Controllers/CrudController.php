@@ -11,7 +11,7 @@ use App\Core\RecommendationEngine;
 class CrudController extends Controller
 {
     private array $types = ['Utility','Prime Contractor','Subcontractor','Vendor','Engineering Firm','Municipality','Equipment Provider','Other'];
-    private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL'];
+    private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL','TX','OK','LA','NM'];
 
     public function organizations(): void { $this->crud('organizations'); }
     public function contacts(): void { $this->crud('contacts'); }

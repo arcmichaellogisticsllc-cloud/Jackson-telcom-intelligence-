@@ -8,6 +8,7 @@
   <a href="/">Executive Overview</a>
   <a class="<?= $region['name'] === 'Southeast' ? 'active' : '' ?>" href="/command/southeast">Southeast Command Center</a>
   <a class="<?= $region['name'] === 'Great Lakes' ? 'active' : '' ?>" href="/command/great-lakes">Great Lakes Command Center</a>
+  <a class="<?= $region['name'] === 'Southwest' ? 'active' : '' ?>" href="/command/southwest">Southwest Command Center</a>
 </nav>
 
 <section class="metrics">

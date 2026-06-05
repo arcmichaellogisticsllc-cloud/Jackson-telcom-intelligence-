@@ -6,7 +6,7 @@
 
 <section class="metrics signal-metrics">
   <div><span>New Signals Today</span><strong><?= $metrics['new_today'] ?></strong></div>
-  <?php foreach (['Capacity','Opportunity','Relationship','Market'] as $type): ?>
+  <?php foreach (['Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach'] as $type): ?>
     <?php $count = 0; foreach ($metrics['by_type'] as $row) { if ($row['signal_type'] === $type) $count = (int)$row['count']; } ?>
     <div><span><?= htmlspecialchars($type) ?> Signals</span><strong><?= $count ?></strong></div>
   <?php endforeach; ?>
@@ -40,12 +40,14 @@
     <label>Source <select name="source_type"><?php foreach ($options['sources'] as $source): ?><option><?= htmlspecialchars($source) ?></option><?php endforeach; ?></select></label>
     <label>Region <select name="region_id"><?php foreach ($regions as $region): ?><option value="<?= $region['id'] ?>"><?= htmlspecialchars($region['name']) ?></option><?php endforeach; ?></select></label>
     <label>State <select name="state"><option value="">Select</option><?php foreach ($options['states'] as $state): ?><option><?= htmlspecialchars($state) ?></option><?php endforeach; ?></select></label>
+    <label>City <input name="city"></label>
     <label>Owner <select name="owner"><?php foreach ($options['owners'] as $owner): ?><option><?= htmlspecialchars($owner) ?></option><?php endforeach; ?></select></label>
     <label>Status <select name="status"><?php foreach ($options['statuses'] as $status): ?><option><?= htmlspecialchars($status) ?></option><?php endforeach; ?></select></label>
     <label>Source URL <input name="source_url" type="url"></label>
     <label>Organization Name <input name="organization_name"></label>
     <label>Contact Name <input name="contact_name"></label>
     <label class="full">Description <textarea name="description"></textarea></label>
+    <label class="full">Recommended Next Action <textarea name="recommended_next_action"></textarea></label>
     <label class="full">Notes <textarea name="notes"></textarea></label>
     <button class="btn">Add Signal</button>
   </form>
@@ -65,7 +67,7 @@
             </div>
             <h4><a href="/record?type=signal&id=<?= (int)$signal['id'] ?>"><?= htmlspecialchars($signal['title']) ?></a></h4>
             <p><?= htmlspecialchars($signal['signal_type']) ?> · <?= htmlspecialchars($signal['source_type']) ?></p>
-            <small><?= htmlspecialchars($signal['region_name']) ?><?= $signal['state'] ? ' · ' . htmlspecialchars($signal['state']) : '' ?> · <?= htmlspecialchars($signal['owner']) ?></small>
+          <small><?= htmlspecialchars($signal['region_name']) ?><?= $signal['state'] ? ' · ' . htmlspecialchars($signal['state']) : '' ?><?= $signal['city'] ? ' · ' . htmlspecialchars($signal['city']) : '' ?> · <?= htmlspecialchars($signal['owner']) ?></small>
             <form method="post" action="/signals/status" class="inline-form">
               <input type="hidden" name="id" value="<?= (int)$signal['id'] ?>">
               <select name="status"><?php foreach ($options['statuses'] as $next): ?><option <?= $next === $signal['status'] ? 'selected' : '' ?>><?= htmlspecialchars($next) ?></option><?php endforeach; ?></select>
@@ -82,14 +84,14 @@
   <div class="panel-title"><h2>Signal Inventory</h2><span class="status"><?= count($signals) ?> total</span></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Signal</th><th>Type</th><th>Region</th><th>Priority</th><th>Scores</th><th>Status</th><th>Owner</th></tr></thead>
+      <thead><tr><th>ID</th><th>Signal</th><th>Type</th><th>Theater</th><th>Priority</th><th>Scores</th><th>Status</th><th>Owner</th></tr></thead>
       <tbody>
       <?php foreach ($signals as $signal): ?>
         <tr>
           <td><a href="/record?type=signal&id=<?= (int)$signal['id'] ?>"><?= (int)$signal['id'] ?></a></td>
           <td><strong><?= htmlspecialchars($signal['title']) ?></strong><br><small><?= htmlspecialchars($signal['source_type']) ?></small></td>
           <td><?= htmlspecialchars($signal['signal_type']) ?></td>
-          <td><?= htmlspecialchars($signal['region_name']) ?><br><small><?= htmlspecialchars($signal['state']) ?></small></td>
+          <td><?= htmlspecialchars($signal['region_name']) ?><br><small><?= htmlspecialchars(trim(($signal['city'] ?? '') . ' ' . ($signal['state'] ?? ''))) ?></small></td>
           <td><span class="priority <?= strtolower($signal['priority']) ?>"><?= htmlspecialchars($signal['priority']) ?></span></td>
           <td><?= (int)$signal['confidence_score'] ?> / <?= (int)$signal['impact_score'] ?></td>
           <td><?= htmlspecialchars($signal['status']) ?></td>

@@ -1,13 +1,15 @@
 <section class="page-header">
-  <p class="eyebrow">Executive Overview</p>
-  <h1>Capacity acquisition before opportunity execution.</h1>
-  <p>Executive view of approved network strength, available crews, pipeline value, critical recommendations, regional capacity gaps, pursuit pressure, and recent activity.</p>
+  <p class="eyebrow">National Command Center</p>
+  <h1>Focused theaters. National footprint.</h1>
+  <p>Traffic, signals, capacity, relationships, opportunities, and decision support for telecom construction growth. SyncERP remains the final integration layer only.</p>
 </section>
 
 <nav class="dash-tabs">
-  <a class="active" href="/">Executive Overview</a>
+  <a class="active" href="/">National Overview</a>
+  <a href="/regions">Regional Command Centers</a>
   <a href="/command/southeast">Southeast Command Center</a>
   <a href="/command/great-lakes">Great Lakes Command Center</a>
+  <a href="/command/southwest">Southwest Command Center</a>
 </nav>
 
 <section class="metrics">
@@ -35,10 +37,16 @@
       </div>
       <p><?= htmlspecialchars($region['states']) ?></p>
       <div class="mini-metrics">
+        <div><span>Coverage Score</span><strong><?= (int)($region['coverage_score'] ?? 0) ?></strong></div>
+        <div><span>Capacity Score</span><strong><?= (int)($region['capacity_score_value'] ?? 0) ?></strong></div>
+        <div><span>Relationship Score</span><strong><?= (int)($region['relationship_score'] ?? 0) ?></strong></div>
+        <div><span>Traffic Score</span><strong><?= (int)($region['traffic_score'] ?? 0) ?></strong></div>
+      </div>
+      <div class="mini-metrics">
         <div><span>Approved Network</span><strong><?= (int)$region['approved_subcontractors'] ?></strong></div>
         <div><span>Available Crews</span><strong><?= (int)$region['approved_crews'] ?></strong></div>
         <div><span>Open Opps</span><strong><?= (int)$region['open_opportunities'] ?></strong></div>
-        <div><span>Services Covered</span><strong><?= (int)$region['capacity_score']['service_coverage'] ?>/5</strong></div>
+        <div><span>Opportunity Score</span><strong><?= (int)($region['opportunity_score'] ?? 0) ?></strong></div>
       </div>
       <h3>Capacity Gap</h3>
       <div class="gap-list">
@@ -48,6 +56,22 @@
       </div>
     </article>
   <?php endforeach; ?>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Signals</h2><a class="btn secondary" href="/signals">Signal Center</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Signal Source</th><th>Theater</th><th>Recommended Action</th></tr></thead><tbody><?php foreach ($topSignals as $signal): ?><tr><td><span class="priority <?= strtolower($signal['priority']) ?>"><?= htmlspecialchars($signal['priority']) ?></span></td><td><strong><?= htmlspecialchars($signal['title']) ?></strong><br><small><?= htmlspecialchars($signal['signal_type']) ?> · <?= htmlspecialchars($signal['source_type']) ?></small></td><td><?= htmlspecialchars($signal['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($signal['recommended_next_action'] ?: 'Review and assign next acquisition action.') ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Capacity Needs</h2><a class="btn secondary" href="/recommendations">Recommended Actions</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Theater</th><th>Capacity Recruitment</th></tr></thead><tbody><?php foreach ($topCapacityNeeds as $need): ?><tr><td><span class="priority <?= strtolower($need['priority']) ?>"><?= htmlspecialchars($need['priority']) ?></span></td><td><?= htmlspecialchars($need['region_name'] ?? 'National') ?></td><td><strong><?= htmlspecialchars($need['title']) ?></strong><br><small><?= htmlspecialchars($need['recommended_next_action']) ?></small></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-title"><h2>Top Opportunities</h2><a class="btn secondary" href="/opportunities">Opportunity Intelligence</a></div>
+  <div class="table-wrap"><table><thead><tr><th>Theater</th><th>Opportunity</th><th>Stage</th><th>Value</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topOpportunities as $opp): ?><tr><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($opp['name']) ?></td><td><?= htmlspecialchars($opp['stage']) ?></td><td>$<?= number_format((float)$opp['estimated_value']) ?></td><td><?= htmlspecialchars($opp['next_action']) ?></td></tr><?php endforeach; ?><?php if (!$topOpportunities): ?><tr><td colspan="5">No converted opportunities yet. Signal Center and Traffic Engine are feeding the acquisition layer.</td></tr><?php endif; ?></tbody></table></div>
 </section>
 
 <section class="grid two">

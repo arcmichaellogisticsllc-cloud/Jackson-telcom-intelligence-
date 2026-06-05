@@ -2,8 +2,9 @@
 
 Phase 1 acquisition system and decision support layer for Jackson Telcom.
 
-This app does **not** build SyncERP, billing, production, labor, or ERP workflows. Phase 1 focuses on:
+This app does **not** build SyncERP, billing, production, labor, or ERP workflows. Jackson Intelligence Platform presents Jackson Telcom with a national footprint while focusing daily action through three operating theaters. Phase 1 focuses on:
 
+- traffic acquisition
 - subcontractor capacity acquisition
 - regional relationships
 - market intelligence
@@ -12,10 +13,42 @@ This app does **not** build SyncERP, billing, production, labor, or ERP workflow
 - recommended actions
 - activity tracking
 
-## Regions
+## Platform Structure
 
-- Southeast Region: Mike, GA, AL, FL, TN, NC, SC
-- Great Lakes Region: Ron, MI, OH, IN, WI, IL
+Jackson Intelligence Platform is structured as an acquisition intelligence system:
+
+- National Command Center
+- Regions / Theaters
+- Traffic Engine
+- Signal Center
+- Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
+- Capacity Acquisition
+- Relationship Intelligence
+- Opportunity Intelligence
+- Decision Support Layer
+- SyncERP as the last integration layer only
+
+```text
+Jackson Intelligence Platform
+├── National Command Center
+├── Regions / Theaters
+│   ├── Southeast: Mike, GA, AL, FL, TN, NC, SC
+│   ├── Great Lakes: Ron, MI, OH, IN, WI, IL
+│   └── Southwest: Houston hub, TX, OK, LA, NM
+├── Traffic Engine
+├── Signal Center
+├── Capacity Acquisition
+├── Relationship Intelligence
+├── Opportunity Intelligence
+├── Decision Support Layer
+└── SyncERP: last integration layer only
+```
+
+## Regions / Theaters
+
+- Southeast: owner Mike, states GA, AL, FL, TN, NC, SC
+- Great Lakes: owner Ron, states MI, OH, IN, WI, IL
+- Southwest: Houston, TX hub, states TX, OK, LA, NM
 
 ## Requirements
 
@@ -44,10 +77,11 @@ The production seeder does not create converted organizations, contacts, subcont
 - region records
 - login users
 - regional service capacity targets
+- keyword, content, outreach target, and outreach sequence records
 - signal intelligence records for Signal Center workflow validation
-- system-generated recommendations based on the real empty starting state
+- system-generated recommendations based on seeded signals and real empty converted operating records
 
-Signal records are acquisition inputs. They must be reviewed, assigned, converted, or ignored before they become operating records. Real converted acquisition data should be entered through the app or imported from verified Jackson Telcom source files.
+Traffic and signal records are acquisition inputs. They must be reviewed, assigned, converted, published, contacted, or ignored before they become operating records. Real converted acquisition data should be entered through the app or imported from verified Jackson Telcom source files.
 
 ## Seeded Login
 
@@ -64,33 +98,55 @@ Users:
 ## Modules
 
 - Authentication
-- Command Center
+- National Command Center
+- Traffic Engine
 - Signal Center
-- Organizations
-- Contacts
-- Subcontractors
-- Opportunities
-- Recommendations
+- Capacity Acquisition
+- Relationship Intelligence
+- Opportunity Intelligence
+- Decision Support
 - Activities
 - Settings
+- Records: Organizations, Contacts, Subcontractors, Opportunities
 
-## Command Center
+## National Command Center
 
-The Command Center is built for acquisition decisions, not generic CRM review.
+The National Command Center is built for acquisition decisions, not generic CRM review.
 
 - Executive Overview: total approved subcontractors, available crews, open opportunities, pipeline value, critical recommendations, capacity gaps by region, opportunities by stage, and recent activity.
 - Southeast Command Center: Mike's regional view for GA, AL, FL, TN, NC, and SC.
 - Great Lakes Command Center: Ron's regional view for MI, OH, IN, WI, and IL.
+- Southwest Command Center: Houston hub view for TX, OK, LA, and NM.
 
 Regional dashboards show approved network strength, available crews by service type, capacity gaps, open opportunities, relationships needing follow-up, compliance issues, and top recommended daily actions.
 
-Command Center signal widgets show:
+National Command Center signal widgets show:
 
 - New Signals
 - Critical Signals
 - Signals Needing Review
 - Signals Assigned To Me
 - Signals Converted This Month
+
+## Traffic Engine
+
+Traffic Engine is the source layer for demand and contractor discovery:
+
+- SEO
+- Content Strategy
+- Landing Pages
+- Contractor Searches
+- Regional Pages
+- Outreach Campaigns
+
+Traffic Engine tracks:
+
+- Keywords by intent, theater, state, city, rank, and acquisition priority
+- Content Ideas by audience, channel, target keyword, and status
+- Outreach Targets by source, target type, owner, status, recommended message, and next action
+- Outreach Sequences as planned workflows only; no emails, SMS, or messages are sent by Phase 1
+
+SEO, content, and outreach feed the acquisition system by creating signals, target lists, regional pages, contractor searches, and recommended actions.
 
 ## Signal Center
 
@@ -102,19 +158,30 @@ Signal types:
 - Opportunity
 - Relationship
 - Market
+- SEO
+- Content
+- Outreach
 
 Source types:
 
+- Google Search
+- Google Business Profile
 - Facebook Marketplace
 - LinkedIn
+- Industry Forum
+- YouTube
+- Broadband Grant
+- Utility Announcement
+- Equipment Listing
+- New Business Filing
+- Hiring Activity
+- Manual Entry
 - Industry News
 - Referral
 - Conference
 - Website Form
-- Manual Entry
 - Government Data
 - Contractor Intelligence
-- Equipment Listing
 - Other
 
 Signal workflow:
@@ -131,6 +198,9 @@ Signal conversion paths:
 - Relationship signals convert to contacts or organizations.
 - Opportunity signals convert to opportunities or organizations.
 - Market signals convert to opportunities or intelligence records.
+- SEO signals convert to opportunities or intelligence records.
+- Content signals convert to opportunities or intelligence records.
+- Outreach signals convert to opportunities or intelligence records.
 
 Each signal has a record timeline. Workflow moves and conversions create activity entries, and users can add notes from the signal detail page.
 
@@ -185,7 +255,44 @@ Great Lakes:
 - Emergency Restoration: 3 crews
 - Traffic Control: 2 crews
 
+Southwest:
+
+- Aerial: 8 crews
+- Underground: 6 crews
+- Fiber Splicing: 4 crews
+- Emergency Restoration: 3 crews
+- Traffic Control: 3 crews
+
 When approved available capacity is below target, the system generates capacity recommendations such as recruiting additional aerial, underground, splicing, restoration, or traffic control crews.
+
+## Capacity Acquisition
+
+Capacity Acquisition prioritizes deployable capacity before opportunity execution:
+
+- Subcontractors
+- Workforce
+- Equipment
+- Vendors
+- Capacity Radar
+
+## Relationship Intelligence
+
+Relationship Intelligence organizes who matters, who owns the relationship, and where influence exists:
+
+- Organizations
+- Contacts
+- Influence Graph
+- Regional Ownership
+
+## Opportunity Intelligence
+
+Opportunity Intelligence tracks possible work before project execution:
+
+- Grants
+- Utility Expansion
+- Prime Awards
+- Project Requests
+- Bid Opportunities
 
 ## Opportunity Pursuit Score
 
@@ -198,9 +305,9 @@ Each opportunity receives a pursuit score and label:
 
 The score considers estimated margin, probability, relationship strength, capacity availability, estimated value, and risk notes. This helps separate opportunities that should be actively pursued from those that need more capacity, better relationships, or risk review first.
 
-## Recommendation Engine v1
+## Decision Support Layer
 
-The engine regenerates recommendations from operational rules:
+The Decision Support Layer regenerates recommendations from operational rules:
 
 - Regional capacity below target by service type
 - Fewer than 5 approved subcontractors in a region
@@ -211,6 +318,10 @@ The engine regenerates recommendations from operational rules:
 - Missing critical data on organizations, contacts, subcontractors, and opportunities
 - Opportunity pursuit risk requiring review
 - New, critical, stale, or high-confidence signals
+- Region traffic score below target
+- Keyword without assigned content
+- Southwest low coverage score requiring Houston-focused landing pages and subcontractor outreach
+- SEO or Content signals requiring a content asset
 
 Recommendation types include:
 
@@ -220,6 +331,18 @@ Recommendation types include:
 - Assign Opportunity Next Action
 - Avoid Opportunity Risk
 - Review Pursuit
+
+Recommendation categories include:
+
+- Capacity
+- Relationship
+- Opportunity
+- Compliance
+- Market
+- SEO
+- Content
+- Outreach
+- Regional Expansion
 
 Each recommendation includes a category, priority, priority score, trigger detail, business reason, suggested next action, assigned owner, and status. Regional dashboards show the top five open actions for the assigned owner.
 
@@ -231,6 +354,28 @@ Signal recommendations include:
 - act on critical signals
 - convert high-confidence signals
 - clear signals that remain New for more than 7 days
+
+Traffic recommendations include:
+
+- create landing pages for priority contractor searches
+- publish regional broadband funding content
+- build subcontractor SEO pages
+- contact equipment sellers discovered through search or marketplace signals
+- create outreach targets and planned sequence steps
+
+Decision Support answers:
+
+- what to pursue
+- who to contact
+- what market to strengthen
+- what capacity to recruit
+- what content to publish
+- what outreach to send
+- what projects to avoid
+
+## SyncERP Boundary
+
+SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.
 
 ## Activity Timelines
 
