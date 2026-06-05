@@ -1,0 +1,6 @@
+<section class="panel">
+  <div class="panel-title"><h2>Records</h2><span class="status"><?= count($rows) ?> total</span></div>
+  <div class="table-wrap"><table><thead><tr><?php foreach ($columns as $label): ?><th><?= htmlspecialchars($label) ?></th><?php endforeach; ?><th>Actions</th></tr></thead><tbody>
+    <?php foreach ($rows as $row): ?><tr><?php foreach ($columns as $key => $label): ?><td><?php if ($key === 'id'): ?><a href="/record?type=<?= htmlspecialchars($recordType ?? rtrim($resource, 's')) ?>&id=<?= (int)$row['id'] ?>"><?= (int)$row['id'] ?></a><?php else: ?><?= htmlspecialchars((string)($row[$key] ?? '')) ?><?php endif; ?></td><?php endforeach; ?><td><form method="post" action="/delete" onsubmit="return confirm('Delete this record?')"><input type="hidden" name="resource" value="<?= htmlspecialchars($resource) ?>"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><button class="link-button">Delete</button></form></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
