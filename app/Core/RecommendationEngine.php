@@ -121,7 +121,7 @@ class RecommendationEngine
             }
         }
 
-        $providers = $db->query('SELECT cp.*, cts.trust_score, cts.trust_category, r.owner FROM capacity_profiles cp JOIN capacity_trust_scores cts ON cts.capacity_profile_id = cp.id LEFT JOIN regions r ON r.id = cp.region_id')->fetchAll();
+        $providers = $db->query('SELECT cp.*, cp.owner capacity_owner, cts.trust_score, cts.trust_category, r.owner region_owner FROM capacity_profiles cp JOIN capacity_trust_scores cts ON cts.capacity_profile_id = cp.id LEFT JOIN regions r ON r.id = cp.region_id')->fetchAll();
         foreach ($providers as $provider) {
             if ((int)$provider['trust_score'] < 45 && in_array($provider['status'], ['Approved','Preferred','Strategic Partner'], true)) {
                 self::insert($db, [
@@ -131,7 +131,7 @@ class RecommendationEngine
                     'region_id' => $provider['region_id'],
                     'reason' => 'Approved capacity provider has low trust score.',
                     'recommended_next_action' => 'Review safety, quality, communication, documentation, and production history before assigning work.',
-                    'assigned_owner' => $provider['owner'] ?: ($provider['owner'] ?? 'Admin'),
+                    'assigned_owner' => $provider['capacity_owner'] ?: ($provider['region_owner'] ?? 'Admin'),
                     'source_type' => 'capacity_profile',
                     'source_id' => $provider['id'],
                     'recommendation_type' => 'Avoid Opportunity Risk',
@@ -148,7 +148,7 @@ class RecommendationEngine
                     'region_id' => $provider['region_id'],
                     'reason' => 'Approved provider has strong trust score.',
                     'recommended_next_action' => 'Review recent performance and decide whether this provider should become Preferred.',
-                    'assigned_owner' => $provider['owner'] ?: 'Admin',
+                    'assigned_owner' => $provider['capacity_owner'] ?: ($provider['region_owner'] ?? 'Admin'),
                     'source_type' => 'capacity_profile',
                     'source_id' => $provider['id'],
                     'recommendation_type' => 'Review Pursuit',
@@ -165,7 +165,7 @@ class RecommendationEngine
                     'region_id' => $provider['region_id'],
                     'reason' => 'Preferred provider has strategic-partner-level trust score.',
                     'recommended_next_action' => 'Review relationship history, capacity breadth, and multi-market readiness.',
-                    'assigned_owner' => $provider['owner'] ?: 'Admin',
+                    'assigned_owner' => $provider['capacity_owner'] ?: ($provider['region_owner'] ?? 'Admin'),
                     'source_type' => 'capacity_profile',
                     'source_id' => $provider['id'],
                     'recommendation_type' => 'Review Pursuit',
