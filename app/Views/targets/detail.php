@@ -75,7 +75,7 @@
   <div class="panel">
     <h2>What Can This Target Become?</h2>
     <div class="convert-grid">
-      <?php foreach (['organization' => 'Organization','contact' => 'Contact','subcontractor' => 'Subcontractor Profile','opportunity' => 'Opportunity','outreach' => 'Outreach Target'] as $key => $label): ?>
+      <?php foreach (['organization' => 'Organization','contact' => 'Contact','subcontractor_candidate' => 'Subcontractor Candidate','subcontractor' => 'Subcontractor Profile','opportunity' => 'Opportunity','outreach' => 'Outreach Target'] as $key => $label): ?>
         <form method="post" action="/targets/convert">
           <input type="hidden" name="id" value="<?= (int)$target['id'] ?>">
           <input type="hidden" name="convert_to" value="<?= htmlspecialchars($key) ?>">

@@ -46,6 +46,7 @@ class CapacityGapService
             'relatedSignals' => $this->relatedSignals($regionId),
             'relatedTargets' => $this->relatedTargets($regionId),
             'relatedHunts' => $this->relatedHunts($regionId),
+            'networkSummary' => $this->networkSummary($regionId),
         ];
     }
 
@@ -148,6 +149,16 @@ class CapacityGapService
     {
         $where = $regionId ? ' AND h.region_id = ' . (int)$regionId : '';
         return Database::connection()->query("SELECT h.*, r.name region_name, COUNT(ht.id) target_count FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id WHERE h.hunt_type = 'Capacity Hunt' {$where} GROUP BY h.id ORDER BY h.status, h.target_count_goal DESC LIMIT 8")->fetchAll();
+    }
+
+    public function networkSummary(?int $regionId = null): array
+    {
+        if (!Database::connection()->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'subcontractor_network_scores'")->fetchColumn()) {
+            return [];
+        }
+        $where = $regionId ? 'WHERE s.region_id = ' . (int)$regionId : '';
+        $rows = Database::connection()->query("SELECT r.name region_name, cdc.discipline, sns.network_level, COALESCE(SUM(cdc.available_now),0) available_crews, COUNT(DISTINCT s.id) subcontractors FROM subcontractors s JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id JOIN capacity_profiles cp ON cp.subcontractor_id = s.id JOIN capacity_discipline_counts cdc ON cdc.capacity_profile_id = cp.id LEFT JOIN regions r ON r.id = s.region_id {$where} GROUP BY r.name, cdc.discipline, sns.network_level ORDER BY r.name, cdc.discipline")->fetchAll();
+        return $rows;
     }
 
     private function availabilityMap(?int $regionId = null): array

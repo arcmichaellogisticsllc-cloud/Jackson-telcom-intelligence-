@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Services\AcquisitionTargetService;
+use App\Services\SubcontractorAcquisitionService;
 
 class AcquisitionTargetController extends Controller
 {
@@ -102,6 +103,7 @@ class AcquisitionTargetController extends Controller
             'organization' => $this->organization($db, $target),
             'contact' => $this->contact($db, $target),
             'subcontractor' => $this->subcontractor($db, $target),
+            'subcontractor_candidate' => $this->subcontractorCandidate($db, $target),
             'opportunity' => $this->opportunity($db, $target),
             'outreach' => $this->outreach($db, $target),
             default => null,
@@ -161,6 +163,17 @@ class AcquisitionTargetController extends Controller
         return 'subcontractor #' . $db->lastInsertId();
     }
 
+    private function subcontractorCandidate($db, array $t): string
+    {
+        $orgId = $this->ensureOrg($db, $t);
+        $name = $t['organization_name'] ?: $t['target_name'];
+        $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, legal_name, website, phone, email, owner_name, primary_contact, states_served, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Researching", "Limited", ?)');
+        $stmt->execute([$orgId, $t['region_id'], $name, $name, $t['website'], $t['phone'], $t['email'], $t['contact_name'], $t['contact_name'], $t['state'], trim($t['city'] . ' ' . $t['state']), $this->servicesFromTarget($t), 'Converted from acquisition target #' . $t['id'] . '. Source: ' . $t['source_type'] . '. ' . $t['reason_to_pursue'] . ' Notes: ' . $t['notes']]);
+        $subId = (int)$db->lastInsertId();
+        (new SubcontractorAcquisitionService())->recalculateAll();
+        return 'subcontractor candidate #' . $subId;
+    }
+
     private function opportunity($db, array $t): string
     {
         $orgId = $this->ensureOrg($db, $t);
@@ -191,6 +204,18 @@ class AcquisitionTargetController extends Controller
     {
         $parts = preg_split('/\s+/', trim($name)) ?: [];
         return [$parts[0] ?? 'Unknown', count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'Contact'];
+    }
+
+    private function servicesFromTarget(array $t): string
+    {
+        $text = strtolower($t['target_name'] . ' ' . $t['reason_to_pursue'] . ' ' . $t['notes']);
+        $services = [];
+        foreach (['Aerial' => 'aerial', 'Underground' => 'underground', 'Fiber Splicing' => 'splic', 'Directional Boring' => 'boring', 'Emergency Restoration' => 'restoration', 'Traffic Control' => 'traffic'] as $label => $needle) {
+            if (str_contains($text, $needle)) {
+                $services[] = $label;
+            }
+        }
+        return $services ? implode(', ', $services) : 'Telecom Construction';
     }
 
     private function statuses(): array { return ['New','Researching','Qualified','Ready for Outreach','Contacted','Engaged','Converted','Not Fit','Archived']; }

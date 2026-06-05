@@ -32,6 +32,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Escalation Center
 - Daily Intelligence Briefing
 - Capacity Radar
+- Subcontractor Acquisition Engine
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
 - Capacity Acquisition
 - Relationship Intelligence
@@ -54,6 +55,7 @@ Jackson Intelligence Platform
 ├── Signal Center
 ├── Signal Quality / Watchlists / Escalations
 ├── Capacity Radar
+├── Subcontractor Acquisition Engine
 ├── Capacity Acquisition
 ├── Relationship Intelligence
 ├── Opportunity Intelligence
@@ -87,9 +89,9 @@ Open:
 
 `http://localhost:8088`
 
-## Production Seed Policy
+## Seed Policy
 
-The production seeder does not create converted organizations, contacts, subcontractors, opportunities, intelligence records, or activities. It only creates:
+The seeder creates acquisition operating data for local validation and development. It includes:
 
 - region records
 - login users
@@ -98,9 +100,12 @@ The production seeder does not create converted organizations, contacts, subcont
 - signal source registry records
 - harvester runs and raw signal items
 - signal intelligence records for Signal Center workflow validation
-- system-generated recommendations based on seeded signals and real empty converted operating records
+- acquisition targets, hunts, playbooks, and hunt tasks
+- capacity profiles, trust scores, and capacity radar targets
+- subcontractor candidates, scorecards, compliance profiles, document metadata, and preferred network scoring
+- system-generated recommendations based on the seeded acquisition records
 
-Traffic and signal records are acquisition inputs. They must be reviewed, assigned, converted, published, contacted, or ignored before they become operating records. Real converted acquisition data should be entered through the app or imported from verified Jackson Telcom source files.
+Seeded records are realistic sample operating data for exercising the workflow. Before production use, replace seeded sample records with verified Jackson Telcom source files, imports, or app-entered records.
 
 ## Seeded Login
 
@@ -128,6 +133,7 @@ Users:
 - Escalations
 - Daily Intelligence Briefing
 - Capacity Radar
+- Subcontractor Acquisition Engine
 - Capacity Acquisition
 - Relationship Intelligence
 - Opportunity Intelligence
@@ -335,6 +341,65 @@ Capacity Radar connects with the existing acquisition system:
 - Recommendations convert gaps into owner action.
 
 Capacity Radar comes after Signal Quality because radar should work from higher-value intelligence, not raw noise. SyncERP remains last because this phase is still acquisition and decision support, not production execution, billing, or ERP workflow.
+
+## Subcontractor Acquisition Engine
+
+The Subcontractor Acquisition Engine turns intelligence into deployable subcontractor capacity.
+
+```text
+Signals
+↓
+Targets
+↓
+Hunts
+↓
+Subcontractor Acquisition
+↓
+Qualification
+↓
+Compliance
+↓
+Approved Capacity
+↓
+Preferred Network
+↓
+Strategic Partner Network
+```
+
+Pipeline stages:
+
+- Prospect
+- Researching
+- Qualified
+- Documents Requested
+- Compliance Review
+- Approved
+- Preferred
+- Strategic Partner
+- Inactive
+- Rejected
+
+Subcontractor profiles track company information, ownership/contact information, theater coverage, states and markets served, service disciplines, deployable crew counts, and equipment summaries. Disciplines include aerial, underground, fiber splicing, directional boring, emergency restoration, traffic control, mowing / ROW, inspection, QC, engineering, make ready, and drop crews.
+
+Qualification scorecards score each candidate from 0-10 across service fit, geographic fit, crew capacity, mobilization speed, equipment availability, insurance readiness, W9 readiness, communication, experience, and safety. The total creates a 0-100 qualification score with these results:
+
+- Not Fit
+- Weak
+- Qualified
+- Preferred Candidate
+- Strategic Candidate
+
+Compliance profiles track W9, COI, business license, safety program, MSA, and NDA status as Missing, Requested, Submitted, Approved, or Expired. Document records store the document category, file name, upload date, expiration date, status, and storage path. Phase 1 records document metadata only; it does not integrate external document storage.
+
+The Preferred Network engine ranks subcontractors as Prospect, Qualified, Approved, Preferred, or Strategic Partner. Promotion logic considers qualification score, required document approval, trust score, responsiveness, capacity contribution, regional importance, and strategic value.
+
+Capacity contribution scoring answers how much a subcontractor can help close current gaps. It considers crew count, available crews, mobilization readiness, disciplines covered, equipment count, and trust score. Categories are Low, Medium, High, and Critical.
+
+Acquisition Targets can convert directly into Subcontractor Candidates while preserving source signal, hunt history, qualification notes, outreach notes, source URL, region, owner, and contact information. Capacity Hunts show discovered, qualified, approved, and added crew capacity so Jackson can measure hunting performance.
+
+Capacity Radar uses subcontractor network levels to show how much capacity exists at each maturity level by region and discipline. Command Centers surface new subcontractor candidates, compliance issues, capacity added this month, strategic partner candidates, and preferred network growth.
+
+SyncERP remains last. This phase establishes qualified, compliant, deployable subcontractor capacity before production execution, billing, or ERP workflows exist.
 
 ## Acquisition Hunt Engine
 

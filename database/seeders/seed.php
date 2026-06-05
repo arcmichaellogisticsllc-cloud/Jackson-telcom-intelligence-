@@ -9,11 +9,12 @@ use App\Services\SignalProcessingService;
 use App\Services\SignalQualityService;
 use App\Services\AcquisitionTargetService;
 use App\Services\CapacityGapService;
+use App\Services\SubcontractorAcquisitionService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -504,6 +505,105 @@ foreach ($capacityProfiles as $index => [$regionName, $name, $profileType, $owne
     $trustStmt->execute([$profileId, $trust[0], $trust[1], $trust[2], $trust[3], $trust[4], $trust[5], $trust[6], $trustScore, (new CapacityGapService())->trustCategory($trustScore)]);
 }
 
+$subOrgStmt = $db->prepare('INSERT INTO organizations (name, type, region_id, state, city, website, phone, notes, status) VALUES (?, "Subcontractor", ?, ?, ?, ?, ?, ?, "Prospect")');
+$subStmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, legal_name, years_in_business, website, phone, email, owner_name, primary_contact, contact_title, states_served, markets_served, services_offered, crew_count, available_crew_count, aerial_crew_count, underground_crew_count, fiber_splicing_crew_count, directional_boring_crew_count, emergency_restoration_crew_count, traffic_control_crew_count, mowing_row_crew_count, inspection_crew_count, qc_crew_count, engineering_crew_count, make_ready_crew_count, drop_crew_count, bucket_trucks, digger_derricks, directional_drills, splicing_trailers, fusion_splicers, reel_trailers, vac_trucks, insurance_status, w9_status, approval_stage, availability, performance_score, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$scoreStmt = $db->prepare('INSERT INTO subcontractor_qualification_scorecards (subcontractor_id, service_fit, geographic_fit, crew_capacity, mobilization_speed, equipment_availability, insurance_readiness, w9_readiness, communication, experience, safety, qualification_score, qualification_result, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$complianceStmt = $db->prepare('INSERT INTO subcontractor_compliance_profiles (subcontractor_id, document_type, status, expiration_date, review_date, reviewed_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+$documentStmt = $db->prepare('INSERT INTO subcontractor_documents (subcontractor_id, file_name, document_type, uploaded_date, expiration_date, status, storage_path, notes) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?)');
+
+$candidateNames = [
+    'Southeast' => ['Georgia Aerial Fiber', 'Peachtree Underground', 'Carolina Splicing', 'Florida Directional Boring', 'Volunteer Traffic Control', 'Blue Ridge Drop Crews', 'Atlanta Make Ready', 'Gulf Restoration', 'Savannah Fiber Services', 'Birmingham OSP Crews', 'Raleigh QC Inspection', 'Tampa Fiber Build', 'Charleston ROW Services', 'Knoxville Pole Transfer', 'Orlando Splice Partners', 'Macon Bucket Crews', 'Jacksonville Underground'],
+    'Great Lakes' => ['Michigan Splice Pros', 'Ohio Aerial Network', 'Indiana Underground Fiber', 'Wisconsin QC Group', 'Illinois Traffic Control', 'Detroit Restoration Crews', 'Toledo Directional Boring', 'Madison Inspection Partners', 'Lansing Make Ready', 'Cleveland Drop Crews', 'Fort Wayne Fiber Services', 'Grand Rapids OSP', 'Milwaukee Splicing', 'Columbus Bucket Crews', 'Chicago ROW Services', 'South Bend Underground'],
+    'Southwest' => ['Houston Underground Telecom', 'Texas Directional Drill', 'Bayou Fiber Splicing', 'Oklahoma Aerial Fiber', 'New Mexico Make Ready', 'Dallas Traffic Control', 'Austin Drop Crews', 'Baton Rouge Restoration', 'San Antonio Bucket Crews', 'Tulsa Underground Utility', 'El Paso Fiber Services', 'Fort Worth QC Group', 'Lafayette ROW Services', 'Houston Splice Bench', 'Corpus Aerial Network', 'Albuquerque Inspection', 'Waco Boring Crews'],
+];
+$docTypes = ['W9','COI','Business License','Safety Program','MSA','NDA'];
+$candidateIndex = 0;
+foreach ($candidateNames as $regionName => $names) {
+    foreach ($names as $name) {
+        $candidateIndex++;
+        if ($candidateIndex > 50) {
+            break 2;
+        }
+        $regionId = $regions[$regionName];
+        $state = $regionData[$regionName]['state'];
+        $city = $regionData[$regionName]['city'];
+        $owner = $regionData[$regionName]['owner'] === 'Unassigned' ? 'Mike/Ron Shared' : $regionData[$regionName]['owner'];
+        $stage = ['Prospect','Researching','Qualified','Documents Requested','Compliance Review','Approved','Preferred','Strategic Partner','Rejected','Inactive'][$candidateIndex % 10];
+        $availability = ['Available Now','Available Soon','Limited','Not Available'][$candidateIndex % 4];
+        $serviceSet = $disciplineRotations[$candidateIndex % count($disciplineRotations)];
+        $crewCounts = array_fill_keys(['Aerial','Underground','Fiber Splicing','Directional Boring','Emergency Restoration','Traffic Control','Mowing / ROW','Inspection','QC','Engineering','Make Ready','Drop Crews'], 0);
+        foreach ($serviceSet as $discipline) {
+            $crewCounts[$discipline] = 1 + (($candidateIndex + strlen($discipline)) % 4);
+        }
+        $crewTotal = array_sum($crewCounts);
+        $available = in_array($availability, ['Available Now','Available Soon'], true) ? max(1, $crewTotal - ($candidateIndex % 3)) : max(0, (int)floor($crewTotal / 2));
+        $bucket = $crewCounts['Aerial'] ? 1 + ($candidateIndex % 3) : 0;
+        $drills = $crewCounts['Directional Boring'] || $crewCounts['Underground'] ? ($candidateIndex % 3) : 0;
+        $splicingTrailers = $crewCounts['Fiber Splicing'] ? 1 + ($candidateIndex % 2) : 0;
+        $fusion = $crewCounts['Fiber Splicing'] ? 1 + ($candidateIndex % 3) : 0;
+        $reel = ($crewCounts['Aerial'] || $crewCounts['Underground']) ? 1 : 0;
+        $vac = $crewCounts['Directional Boring'] ? 1 : 0;
+        $performance = 45 + (($candidateIndex * 7) % 52);
+        $subOrgStmt->execute([$name, $regionId, $state, $city, 'https://example.local/' . strtolower(str_replace(' ', '-', $name)), '555-01' . str_pad((string)$candidateIndex, 2, '0', STR_PAD_LEFT), 'Seeded subcontractor candidate organization.']);
+        $orgId = (int)$db->lastInsertId();
+        $subStmt->execute([$orgId, $regionId, $name, $name . ' LLC', 2 + ($candidateIndex % 18), 'https://example.local/' . strtolower(str_replace(' ', '-', $name)), '555-01' . str_pad((string)$candidateIndex, 2, '0', STR_PAD_LEFT), 'ops' . $candidateIndex . '@example.local', $name . ' Owner', $name . ' Ops', 'Operations Manager', $regionRows[$regionName][6], 'Broadband, OSP, fiber construction', implode(', ', $serviceSet), $crewTotal, $available, $crewCounts['Aerial'], $crewCounts['Underground'], $crewCounts['Fiber Splicing'], $crewCounts['Directional Boring'], $crewCounts['Emergency Restoration'], $crewCounts['Traffic Control'], $crewCounts['Mowing / ROW'], $crewCounts['Inspection'], $crewCounts['QC'], $crewCounts['Engineering'], $crewCounts['Make Ready'], $crewCounts['Drop Crews'], $bucket, $candidateIndex % 2, $drills, $splicingTrailers, $fusion, $reel, $vac, in_array($stage, ['Approved','Preferred','Strategic Partner'], true) ? 'Approved' : ($candidateIndex % 3 === 0 ? 'Submitted' : 'Missing'), in_array($stage, ['Approved','Preferred','Strategic Partner'], true) ? 'Approved' : ($candidateIndex % 2 === 0 ? 'Submitted' : 'Missing'), $stage, $availability, $performance, 'Seeded subcontractor acquisition candidate.']);
+        $subId = (int)$db->lastInsertId();
+
+        $scores = [
+            min(10, 5 + count($serviceSet)),
+            min(10, 5 + ($candidateIndex % 5)),
+            min(10, $crewTotal),
+            $availability === 'Available Now' ? 10 : ($availability === 'Available Soon' ? 8 : 5),
+            min(10, $bucket + $drills + $splicingTrailers + $fusion + 4),
+            in_array($stage, ['Approved','Preferred','Strategic Partner'], true) ? 10 : 5 + ($candidateIndex % 4),
+            in_array($stage, ['Approved','Preferred','Strategic Partner'], true) ? 10 : 5 + ($candidateIndex % 4),
+            min(10, 5 + ($performance % 6)),
+            min(10, 4 + ($candidateIndex % 7)),
+            min(10, 5 + ($performance % 5)),
+        ];
+        $qScore = array_sum($scores);
+        $qResult = match (true) {
+            $qScore >= 90 => 'Strategic Candidate',
+            $qScore >= 78 => 'Preferred Candidate',
+            $qScore >= 65 => 'Qualified',
+            $qScore >= 45 => 'Weak',
+            default => 'Not Fit',
+        };
+        $scoreStmt->execute([$subId, ...$scores, $qScore, $qResult, 'Seeded qualification scorecard.']);
+        foreach ($docTypes as $docIndex => $docType) {
+            $status = in_array($stage, ['Approved','Preferred','Strategic Partner'], true) || $docIndex < ($candidateIndex % 6) ? 'Approved' : (['Missing','Requested','Submitted'][$docIndex % 3]);
+            $expires = $status === 'Approved' ? date('Y-m-d', strtotime('+' . (45 + $docIndex * 30) . ' days')) : null;
+            if ($candidateIndex % 17 === 0 && $docType === 'COI') {
+                $status = 'Expired';
+                $expires = date('Y-m-d', strtotime('-5 days'));
+            }
+            $complianceStmt->execute([$subId, $docType, $status, $expires, $status === 'Approved' ? date('Y-m-d') : null, $status === 'Approved' ? 'Seeder' : '', 'Seeded compliance status.']);
+            if (in_array($status, ['Submitted','Approved','Expired'], true)) {
+                $file = strtolower(str_replace(' ', '-', $name)) . '-' . strtolower(str_replace(' ', '-', $docType)) . '.pdf';
+                $documentStmt->execute([$subId, $file, $docType, $expires, $status, 'storage/subcontractor_documents/' . $subId . '/' . $file, 'Seeded document storage record.']);
+            }
+        }
+
+        $capacityProfileStmt->execute([$name . ' Capacity Profile', 'Subcontractor', $regionId, 'Broadband Infrastructure', $state, $city, $owner, in_array($stage, ['Approved','Preferred','Strategic Partner'], true) ? $stage : 'Qualified', $availability === 'Available Now' ? '72 Hours' : '2 Weeks', 200 + ($candidateIndex * 8), $regionRows[$regionName][6], implode(', ', $serviceSet), 'Linked to subcontractor candidate #' . $subId . '.']);
+        $profileId = (int)$db->lastInsertId();
+        $db->prepare('UPDATE capacity_profiles SET subcontractor_id = ?, organization_id = ? WHERE id = ?')->execute([$subId, $orgId, $profileId]);
+        foreach ($serviceSet as $discipline) {
+            $total = $crewCounts[$discipline];
+            $now = min($total, $available);
+            $disciplineStmt->execute([$profileId, $discipline, $total, $now, min($total, $now), min($total, $now + 1), min($total, $now + 1), min($total, $now + 2), $total, $total, max(0, $total - $now), 0]);
+        }
+        foreach (['Bucket Trucks' => $bucket, 'Digger Derricks' => ($candidateIndex % 2), 'Directional Drills' => $drills, 'Splicing Trailers' => $splicingTrailers, 'Fusion Splicers' => $fusion, 'Reel Trailers' => $reel, 'Vac Trucks' => $vac] as $equipmentType => $count) {
+            if ($count > 0) {
+                $equipmentStmt->execute([$profileId, $equipmentType, $count, ['Fair','Good','Excellent'][$candidateIndex % 3], 'Seeded subcontractor equipment.']);
+            }
+        }
+        $trust = [$performance, max(40, $performance - 4), max(40, $performance - 2), max(40, $performance - 3), max(40, $performance - 1), max(40, $performance - 5), max(40, $performance - 2)];
+        $trustScore = (int)round(array_sum($trust) / count($trust));
+        $trustStmt->execute([$profileId, $trust[0], $trust[1], $trust[2], $trust[3], $trust[4], $trust[5], $trust[6], $trustScore, (new CapacityGapService())->trustCategory($trustScore)]);
+    }
+}
+
+(new SubcontractorAcquisitionService())->recalculateAll();
 (new CapacityGapService())->recalculateTrustScores();
 RecommendationEngine::regenerate();
 

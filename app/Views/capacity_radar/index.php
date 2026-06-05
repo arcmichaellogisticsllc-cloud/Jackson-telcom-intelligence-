@@ -60,6 +60,14 @@
   </tbody></table></div>
 </section>
 
+<section class="panel">
+  <div class="panel-title"><h2>Preferred Network by Discipline</h2><span class="status">Prospect to Strategic Partner</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Theater</th><th>Discipline</th><th>Network Level</th><th>Subcontractors</th><th>Available Crews</th></tr></thead><tbody>
+    <?php foreach ($networkSummary as $row): ?><tr><td><?= htmlspecialchars($row['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($row['discipline']) ?></td><td><?= htmlspecialchars($row['network_level']) ?></td><td><?= (int)$row['subcontractors'] ?></td><td><?= (int)$row['available_crews'] ?></td></tr><?php endforeach; ?>
+    <?php if (!$networkSummary): ?><tr><td colspan="5">No subcontractor network capacity linked to Capacity Radar yet.</td></tr><?php endif; ?>
+  </tbody></table></div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Top Trusted Capacity Providers</h2><span class="status">Trust Score</span></div>

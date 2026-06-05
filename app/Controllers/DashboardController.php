@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $signalWidgets = $this->signalWidgets();
         $qualityWidgets = $this->qualityWidgets();
         $topSources = $this->topSources();
+        $subcontractorWidgets = $this->subcontractorWidgets();
         $targetWidgets = $this->targetWidgets();
         $topTargets = $this->topTargets();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
@@ -36,6 +37,7 @@ class DashboardController extends Controller
             'signalWidgets' => $signalWidgets,
             'qualityWidgets' => $qualityWidgets,
             'topSources' => $topSources,
+            'subcontractorWidgets' => $subcontractorWidgets,
             'targetWidgets' => $targetWidgets,
             'topTargets' => $topTargets,
             'topSignals' => $topSignals,
@@ -155,6 +157,7 @@ class DashboardController extends Controller
         $signalWidgets = $this->signalWidgets($regionId, $region['owner']);
         $qualityWidgets = $this->qualityWidgets($regionId);
         $topSources = $this->topSources($regionId);
+        $subcontractorWidgets = $this->subcontractorWidgets($regionId);
         $targetWidgets = $this->targetWidgets($regionId);
         $topTargets = $this->topTargets($regionId, 6);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
@@ -168,7 +171,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'targetWidgets', 'topTargets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'targetWidgets', 'topTargets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void
@@ -289,6 +292,21 @@ class DashboardController extends Controller
             'ready' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}status = 'Ready for Outreach'")->fetchColumn(),
             'no_next' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}(recommended_next_action IS NULL OR recommended_next_action = '') AND status NOT IN ('Converted','Not Fit','Archived')")->fetchColumn(),
             'converted_month' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}status = 'Converted' AND strftime('%Y-%m', updated_at) = strftime('%Y-%m', 'now')")->fetchColumn(),
+        ];
+    }
+
+    private function subcontractorWidgets(?int $regionId = null): array
+    {
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $complianceJoin = $regionId ? 'JOIN subcontractors s ON s.id = scp.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $networkJoin = $regionId ? 'JOIN subcontractors s ON s.id = sns.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $db = Database::connection();
+        return [
+            'new_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractors {$where}created_at >= datetime('now','-7 days')")->fetchColumn(),
+            'compliance_issues' => (int)$db->query("SELECT COUNT(*) FROM subcontractor_compliance_profiles scp {$complianceJoin}scp.status IN ('Missing','Requested','Expired')")->fetchColumn(),
+            'capacity_added' => (int)$db->query("SELECT COALESCE(SUM(available_crew_count),0) FROM subcontractors {$where}approval_stage IN ('Approved','Preferred','Strategic Partner')")->fetchColumn(),
+            'strategic_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractor_network_scores sns {$networkJoin}sns.promotion_recommendation LIKE '%Strategic Partner%'")->fetchColumn(),
+            'preferred_growth' => (int)$db->query("SELECT COUNT(*) FROM subcontractors {$where}approval_stage IN ('Preferred','Strategic Partner')")->fetchColumn(),
         ];
     }
 

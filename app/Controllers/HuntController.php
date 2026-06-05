@@ -14,7 +14,12 @@ class HuntController extends Controller
         Auth::requireLogin();
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
-        $hunts = $db->query('SELECT h.*, r.name region_name, COUNT(ht.id) assigned_targets, SUM(CASE WHEN ht.hunt_status = "Converted" THEN 1 ELSE 0 END) converted_targets, SUM(CASE WHEN ht.hunt_status = "Not Fit" THEN 1 ELSE 0 END) not_fit_targets FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id GROUP BY h.id ORDER BY h.status, h.start_date DESC')->fetchAll();
+        $hunts = $db->query('SELECT h.*, r.name region_name, COUNT(ht.id) assigned_targets, SUM(CASE WHEN ht.hunt_status = "Converted" THEN 1 ELSE 0 END) converted_targets, SUM(CASE WHEN ht.hunt_status = "Not Fit" THEN 1 ELSE 0 END) not_fit_targets,
+            (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage NOT IN ("Inactive","Rejected")) subcontractors_discovered,
+            (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Qualified","Documents Requested","Compliance Review","Approved","Preferred","Strategic Partner")) subcontractors_qualified,
+            (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Approved","Preferred","Strategic Partner")) subcontractors_approved,
+            (SELECT COALESCE(SUM(s.available_crew_count),0) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Approved","Preferred","Strategic Partner")) capacity_added
+            FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id GROUP BY h.id ORDER BY h.status, h.start_date DESC')->fetchAll();
         $metrics = $this->metrics();
         $this->view('hunts/index', ['hunts' => $hunts, 'regions' => $regions, 'metrics' => $metrics, 'options' => $this->options()]);
     }

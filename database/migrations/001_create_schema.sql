@@ -166,17 +166,39 @@ CREATE TABLE IF NOT EXISTS subcontractors (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   organization_id INTEGER NOT NULL,
   region_id INTEGER NOT NULL,
+  company_name TEXT,
+  legal_name TEXT,
+  years_in_business INTEGER DEFAULT 0,
+  website TEXT,
+  phone TEXT,
+  email TEXT,
+  owner_name TEXT,
+  primary_contact TEXT,
+  contact_title TEXT,
+  states_served TEXT,
   markets_served TEXT,
   services_offered TEXT,
   crew_count INTEGER DEFAULT 0,
+  available_crew_count INTEGER DEFAULT 0,
   aerial_crew_count INTEGER DEFAULT 0,
   underground_crew_count INTEGER DEFAULT 0,
   fiber_splicing_crew_count INTEGER DEFAULT 0,
+  directional_boring_crew_count INTEGER DEFAULT 0,
   emergency_restoration_crew_count INTEGER DEFAULT 0,
   traffic_control_crew_count INTEGER DEFAULT 0,
+  mowing_row_crew_count INTEGER DEFAULT 0,
+  inspection_crew_count INTEGER DEFAULT 0,
+  qc_crew_count INTEGER DEFAULT 0,
+  engineering_crew_count INTEGER DEFAULT 0,
+  make_ready_crew_count INTEGER DEFAULT 0,
+  drop_crew_count INTEGER DEFAULT 0,
   bucket_trucks INTEGER DEFAULT 0,
+  digger_derricks INTEGER DEFAULT 0,
   directional_drills INTEGER DEFAULT 0,
   splicing_trailers INTEGER DEFAULT 0,
+  fusion_splicers INTEGER DEFAULT 0,
+  reel_trailers INTEGER DEFAULT 0,
+  vac_trucks INTEGER DEFAULT 0,
   insurance_status TEXT,
   w9_status TEXT,
   approval_stage TEXT,
@@ -187,6 +209,67 @@ CREATE TABLE IF NOT EXISTS subcontractors (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(organization_id) REFERENCES organizations(id),
   FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_qualification_scorecards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcontractor_id INTEGER NOT NULL UNIQUE,
+  service_fit INTEGER DEFAULT 0,
+  geographic_fit INTEGER DEFAULT 0,
+  crew_capacity INTEGER DEFAULT 0,
+  mobilization_speed INTEGER DEFAULT 0,
+  equipment_availability INTEGER DEFAULT 0,
+  insurance_readiness INTEGER DEFAULT 0,
+  w9_readiness INTEGER DEFAULT 0,
+  communication INTEGER DEFAULT 0,
+  experience INTEGER DEFAULT 0,
+  safety INTEGER DEFAULT 0,
+  qualification_score INTEGER DEFAULT 0,
+  qualification_result TEXT DEFAULT 'Not Fit',
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_compliance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcontractor_id INTEGER NOT NULL,
+  document_type TEXT NOT NULL,
+  status TEXT DEFAULT 'Missing' CHECK(status IN ('Missing','Requested','Submitted','Approved','Expired')),
+  expiration_date TEXT,
+  review_date TEXT,
+  reviewed_by TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_documents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcontractor_id INTEGER NOT NULL,
+  file_name TEXT NOT NULL,
+  document_type TEXT NOT NULL,
+  uploaded_date TEXT DEFAULT CURRENT_TIMESTAMP,
+  expiration_date TEXT,
+  status TEXT DEFAULT 'Submitted',
+  storage_path TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_network_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcontractor_id INTEGER NOT NULL UNIQUE,
+  network_level TEXT DEFAULT 'Prospect',
+  capacity_contribution_score INTEGER DEFAULT 0,
+  capacity_contribution_category TEXT DEFAULT 'Low',
+  promotion_recommendation TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
 );
 
 CREATE TABLE IF NOT EXISTS opportunities (

@@ -19,6 +19,7 @@ class RecommendationEngine
         self::opportunityNextActions($db);
         self::opportunityCapacityRisk($db);
         self::subcontractorCompliance($db);
+        self::subcontractorAcquisitionActions($db);
         self::dataQualityWarnings($db);
         self::reviewPursuits($db);
         self::signalActions($db);
@@ -288,6 +289,90 @@ class RecommendationEngine
                 'priority_score' => $score,
                 'trigger_detail' => 'Subcontractor compliance status is incomplete.',
                 'why_it_matters' => 'Non-compliant subcontractors cannot be relied on for production-ready capacity.',
+            ]);
+        }
+    }
+
+    private static function subcontractorAcquisitionActions(PDO $db): void
+    {
+        if (!$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'subcontractor_network_scores'")->fetchColumn()) {
+            return;
+        }
+        (new \App\Services\SubcontractorAcquisitionService())->recalculateAll();
+
+        $missingDocs = $db->query("SELECT scp.*, s.company_name, o.name organization_name, s.region_id, r.owner FROM subcontractor_compliance_profiles scp JOIN subcontractors s ON s.id = scp.subcontractor_id JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id WHERE scp.status IN ('Missing','Requested','Expired')")->fetchAll();
+        foreach ($missingDocs as $doc) {
+            self::insert($db, [
+                'title' => 'Request ' . $doc['document_type'] . ' from ' . ($doc['company_name'] ?: $doc['organization_name']),
+                'category' => 'Compliance',
+                'priority' => $doc['status'] === 'Expired' ? 'High' : 'Medium',
+                'region_id' => $doc['region_id'],
+                'reason' => $doc['document_type'] . ' status is ' . $doc['status'] . '.',
+                'recommended_next_action' => 'Request, review, or refresh this compliance document before approving deployable capacity.',
+                'assigned_owner' => $doc['owner'] ?: 'Admin',
+                'source_type' => 'subcontractor_compliance',
+                'source_id' => $doc['id'],
+                'recommendation_type' => 'Resolve Compliance',
+                'priority_score' => $doc['status'] === 'Expired' ? 82 : 58,
+                'trigger_detail' => 'Compliance document incomplete or expired.',
+                'why_it_matters' => 'Subcontractors are not deployable until required compliance is current.',
+            ]);
+        }
+
+        $incomplete = $db->query("SELECT s.*, o.name organization_name, r.owner, sq.qualification_score FROM subcontractors s JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id LEFT JOIN subcontractor_qualification_scorecards sq ON sq.subcontractor_id = s.id WHERE s.approval_stage NOT IN ('Rejected','Inactive','Approved','Preferred','Strategic Partner') AND COALESCE(sq.qualification_score,0) < 65")->fetchAll();
+        foreach ($incomplete as $sub) {
+            self::insert($db, [
+                'title' => 'Complete qualification for ' . ($sub['company_name'] ?: $sub['organization_name']),
+                'category' => 'Capacity',
+                'priority' => 'Medium',
+                'region_id' => $sub['region_id'],
+                'reason' => 'Qualification scorecard is incomplete or below qualified threshold.',
+                'recommended_next_action' => 'Score service fit, geography, crews, equipment, insurance, W9, communication, experience, and safety.',
+                'assigned_owner' => $sub['owner'] ?: 'Admin',
+                'source_type' => 'subcontractor',
+                'source_id' => $sub['id'],
+                'recommendation_type' => 'Recruit Capacity',
+                'priority_score' => 60,
+                'trigger_detail' => 'Qualification score ' . (int)$sub['qualification_score'] . '.',
+                'why_it_matters' => 'Qualification separates deployable subcontractors from raw acquisition targets.',
+            ]);
+        }
+
+        $promotions = $db->query("SELECT s.*, s.id subcontractor_id, o.name organization_name, r.owner, sns.network_level, sns.capacity_contribution_score, sns.capacity_contribution_category, sns.promotion_recommendation FROM subcontractors s JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id WHERE sns.promotion_recommendation NOT LIKE 'Continue%'")->fetchAll();
+        foreach ($promotions as $sub) {
+            self::insert($db, [
+                'title' => ($sub['promotion_recommendation'] ?: 'Review subcontractor promotion') . ': ' . ($sub['company_name'] ?: $sub['organization_name']),
+                'category' => 'Capacity',
+                'priority' => str_contains($sub['promotion_recommendation'], 'Strategic') ? 'High' : 'Medium',
+                'region_id' => $sub['region_id'],
+                'reason' => 'Candidate meets promotion indicators based on qualification, trust, and capacity contribution.',
+                'recommended_next_action' => 'Review scorecard, compliance, trust history, and capacity contribution before promotion.',
+                'assigned_owner' => $sub['owner'] ?: 'Admin',
+                'source_type' => 'subcontractor_network',
+                'source_id' => $sub['subcontractor_id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => str_contains($sub['promotion_recommendation'], 'Strategic') ? 84 : 68,
+                'trigger_detail' => 'Capacity contribution ' . $sub['capacity_contribution_score'] . ' (' . $sub['capacity_contribution_category'] . ').',
+                'why_it_matters' => 'Preferred and Strategic Partner networks create reliable deployable capacity.',
+            ]);
+        }
+
+        $gapCandidates = $db->query("SELECT s.*, o.name organization_name, r.owner, sns.capacity_contribution_score FROM subcontractors s JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id WHERE sns.capacity_contribution_score >= 60 AND s.approval_stage IN ('Qualified','Documents Requested','Compliance Review','Approved','Preferred')")->fetchAll();
+        foreach ($gapCandidates as $sub) {
+            self::insert($db, [
+                'title' => ($sub['company_name'] ?: $sub['organization_name']) . ' may close current capacity gaps',
+                'category' => 'Capacity',
+                'priority' => 'High',
+                'region_id' => $sub['region_id'],
+                'reason' => 'Candidate has strong capacity contribution score.',
+                'recommended_next_action' => 'Match candidate services and available crews against Capacity Radar gaps.',
+                'assigned_owner' => $sub['owner'] ?: 'Admin',
+                'source_type' => 'subcontractor',
+                'source_id' => $sub['id'],
+                'recommendation_type' => 'Recruit Capacity',
+                'priority_score' => 76,
+                'trigger_detail' => 'Capacity contribution score ' . $sub['capacity_contribution_score'] . '.',
+                'why_it_matters' => 'Qualified subcontractors should be routed toward gaps that block pursuit decisions.',
             ]);
         }
     }

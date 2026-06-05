@@ -36,6 +36,14 @@
   <div><span>Converted This Month</span><strong><?= $targetWidgets['converted_month'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>New Subcontractor Candidates</span><strong><?= $subcontractorWidgets['new_candidates'] ?></strong></div>
+  <div><span>Compliance Issues</span><strong><?= $subcontractorWidgets['compliance_issues'] ?></strong></div>
+  <div><span>Capacity Added</span><strong><?= $subcontractorWidgets['capacity_added'] ?></strong></div>
+  <div><span>Strategic Partner Candidates</span><strong><?= $subcontractorWidgets['strategic_candidates'] ?></strong></div>
+  <div><span>Preferred Network Growth</span><strong><?= $subcontractorWidgets['preferred_growth'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">

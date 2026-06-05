@@ -32,7 +32,7 @@
 
 <section class="panel">
   <div class="panel-title"><h2>Hunts</h2><a class="btn secondary" href="/hunt-actions">Today's Hunt Actions</a></div>
-  <div class="table-wrap"><table><thead><tr><th>Hunt</th><th>Type</th><th>Theater</th><th>Owner</th><th>Status</th><th>Targets</th><th>Converted</th><th>Not Fit</th><th>Objective</th></tr></thead><tbody>
-    <?php foreach ($hunts as $hunt): ?><tr><td><strong><?= htmlspecialchars($hunt['hunt_name']) ?></strong></td><td><?= htmlspecialchars($hunt['hunt_type']) ?></td><td><?= htmlspecialchars($hunt['region_name']) ?></td><td><?= htmlspecialchars($hunt['owner']) ?></td><td><?= htmlspecialchars($hunt['status']) ?></td><td><?= (int)$hunt['assigned_targets'] ?></td><td><?= (int)$hunt['converted_targets'] ?></td><td><?= (int)$hunt['not_fit_targets'] ?></td><td><?= htmlspecialchars($hunt['objective']) ?></td></tr><?php endforeach; ?>
+  <div class="table-wrap"><table><thead><tr><th>Hunt</th><th>Type</th><th>Theater</th><th>Owner</th><th>Status</th><th>Targets</th><th>Discovered</th><th>Qualified</th><th>Approved</th><th>Capacity Added</th><th>Objective</th></tr></thead><tbody>
+    <?php foreach ($hunts as $hunt): ?><tr><td><strong><?= htmlspecialchars($hunt['hunt_name']) ?></strong></td><td><?= htmlspecialchars($hunt['hunt_type']) ?></td><td><?= htmlspecialchars($hunt['region_name']) ?></td><td><?= htmlspecialchars($hunt['owner']) ?></td><td><?= htmlspecialchars($hunt['status']) ?></td><td><?= (int)$hunt['assigned_targets'] ?></td><td><?= (int)$hunt['subcontractors_discovered'] ?></td><td><?= (int)$hunt['subcontractors_qualified'] ?></td><td><?= (int)$hunt['subcontractors_approved'] ?></td><td><?= (int)$hunt['capacity_added'] ?> crews</td><td><?= htmlspecialchars($hunt['objective']) ?></td></tr><?php endforeach; ?>
   </tbody></table></div>
 </section>
