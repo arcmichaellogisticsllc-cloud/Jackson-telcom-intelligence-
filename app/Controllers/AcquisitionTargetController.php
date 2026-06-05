@@ -42,8 +42,12 @@ class AcquisitionTargetController extends Controller
         }
         $activities = $db->prepare('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id WHERE a.entity_type = "acquisition_target" AND a.entity_id = ? ORDER BY a.activity_date DESC');
         $activities->execute([$id]);
+        $assignments = $db->prepare('SELECT ht.*, h.hunt_name, p.playbook_name, ps.step_name current_step FROM hunt_targets ht JOIN hunts h ON h.id = ht.hunt_id LEFT JOIN acquisition_playbooks p ON p.id = ht.playbook_id LEFT JOIN playbook_steps ps ON ps.id = ht.current_step_id WHERE ht.acquisition_target_id = ? ORDER BY ht.updated_at DESC');
+        $assignments->execute([$id]);
+        $hunts = $db->query('SELECT * FROM hunts WHERE status IN ("Draft","Active","Paused") ORDER BY hunt_name')->fetchAll();
+        $playbooks = $db->query('SELECT * FROM acquisition_playbooks ORDER BY playbook_name')->fetchAll();
         $prep = (new AcquisitionTargetService())->outreachPrep($target);
-        $this->view('targets/detail', ['target' => $target, 'activities' => $activities->fetchAll(), 'prep' => $prep, 'statuses' => $this->statuses()]);
+        $this->view('targets/detail', ['target' => $target, 'activities' => $activities->fetchAll(), 'prep' => $prep, 'statuses' => $this->statuses(), 'assignments' => $assignments->fetchAll(), 'hunts' => $hunts, 'playbooks' => $playbooks]);
     }
 
     public function save(): void

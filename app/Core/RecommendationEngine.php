@@ -23,6 +23,7 @@ class RecommendationEngine
         self::signalActions($db);
         self::trafficActions($db);
         self::targetActions($db);
+        self::huntActions($db);
     }
 
     private static function capacityTargets(PDO $db): void
@@ -373,6 +374,124 @@ class RecommendationEngine
             'trigger_detail' => $trigger,
             'why_it_matters' => 'Targets are the bridge from harvested intelligence to daily hunting activity.',
         ];
+    }
+
+    private static function huntActions(PDO $db): void
+    {
+        $unassigned = $db->query("SELECT at.*, r.owner region_owner FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id WHERE at.status NOT IN ('Converted','Not Fit','Archived') AND at.acquisition_score >= 80 AND NOT EXISTS (SELECT 1 FROM hunt_targets ht WHERE ht.acquisition_target_id = at.id)")->fetchAll();
+        foreach ($unassigned as $target) {
+            self::insert($db, [
+                'title' => 'Add ' . $target['target_name'] . ' to an active hunt',
+                'category' => 'Acquisition Target',
+                'priority' => self::priorityFromScore(max(76, (int)$target['acquisition_score'])),
+                'region_id' => $target['region_id'],
+                'reason' => 'High-score acquisition target is not assigned to a hunt.',
+                'recommended_next_action' => 'Assign the target to the right hunt and playbook so it becomes a tracked hunting action.',
+                'assigned_owner' => $target['owner'] ?: ($target['region_owner'] ?? 'Admin'),
+                'source_type' => 'acquisition_target',
+                'source_id' => $target['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => max(76, (int)$target['acquisition_score']),
+                'trigger_detail' => 'Acquisition score >= 80 and no hunt_targets assignment exists.',
+                'why_it_matters' => 'Good targets do not convert until they are placed into an owner-led hunt.',
+            ]);
+        }
+
+        $missingPlaybooks = $db->query("SELECT ht.*, at.target_name, at.region_id, at.owner, r.owner region_owner FROM hunt_targets ht JOIN acquisition_targets at ON at.id = ht.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE ht.playbook_id IS NULL AND ht.hunt_status NOT IN ('Converted','Not Fit')")->fetchAll();
+        foreach ($missingPlaybooks as $row) {
+            self::insert($db, [
+                'title' => 'Assign playbook to ' . $row['target_name'],
+                'category' => 'Acquisition Target',
+                'priority' => 'High',
+                'region_id' => $row['region_id'],
+                'reason' => 'Target is in a hunt but does not have a playbook.',
+                'recommended_next_action' => 'Attach a playbook so the next task, script, questions, and qualification path are clear.',
+                'assigned_owner' => $row['assigned_owner'] ?: ($row['owner'] ?: ($row['region_owner'] ?? 'Admin')),
+                'source_type' => 'hunt_target',
+                'source_id' => $row['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => 82,
+                'trigger_detail' => 'hunt_targets.playbook_id is null.',
+                'why_it_matters' => 'Playbooks make acquisition repeatable instead of relying on one-off follow-up.',
+            ]);
+        }
+
+        $overdueTasks = $db->query("SELECT t.*, t.owner task_owner, at.target_name, at.region_id, at.owner target_owner, r.owner region_owner FROM hunt_tasks t JOIN acquisition_targets at ON at.id = t.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE t.status IN ('Open','In Progress') AND t.due_date < date('now')")->fetchAll();
+        foreach ($overdueTasks as $task) {
+            self::insert($db, [
+                'title' => 'Complete overdue hunt task for ' . $task['target_name'],
+                'category' => 'Acquisition Target',
+                'priority' => 'High',
+                'region_id' => $task['region_id'],
+                'reason' => 'Hunt task is past due.',
+                'recommended_next_action' => $task['task_title'] . ': ' . ($task['instructions'] ?: 'Complete the next hunting action and record outcome notes.'),
+                'assigned_owner' => $task['task_owner'] ?: ($task['target_owner'] ?: ($task['region_owner'] ?? 'Admin')),
+                'source_type' => 'hunt_task',
+                'source_id' => $task['id'],
+                'recommendation_type' => 'Follow Up Relationship',
+                'priority_score' => 84,
+                'trigger_detail' => 'Open hunt task due_date is earlier than today.',
+                'why_it_matters' => 'Hunt discipline depends on completing owner actions while the signal is still fresh.',
+            ]);
+        }
+
+        $stale = $db->query("SELECT ht.*, at.target_name, at.region_id, at.owner, r.owner region_owner FROM hunt_targets ht JOIN acquisition_targets at ON at.id = ht.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE ht.hunt_status NOT IN ('Converted','Not Fit','Future Follow-Up') AND ht.updated_at < datetime('now','-7 days')")->fetchAll();
+        foreach ($stale as $row) {
+            self::insert($db, [
+                'title' => 'Review stale hunt target: ' . $row['target_name'],
+                'category' => 'Acquisition Target',
+                'priority' => 'Medium',
+                'region_id' => $row['region_id'],
+                'reason' => 'Hunt target has not moved in more than 7 days.',
+                'recommended_next_action' => 'Advance the current step, record an outcome, or move it to future follow-up/not fit.',
+                'assigned_owner' => $row['assigned_owner'] ?: ($row['owner'] ?: ($row['region_owner'] ?? 'Admin')),
+                'source_type' => 'hunt_target',
+                'source_id' => $row['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => 64,
+                'trigger_detail' => 'hunt_targets.updated_at older than 7 days.',
+                'why_it_matters' => 'Stale hunt targets create false pipeline confidence.',
+            ]);
+        }
+
+        $hunts = $db->query("SELECT h.*, r.owner region_owner, COUNT(ht.id) assigned_targets, SUM(CASE WHEN ht.hunt_status = 'Converted' THEN 1 ELSE 0 END) converted_targets FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id WHERE h.status = 'Active' GROUP BY h.id")->fetchAll();
+        foreach ($hunts as $hunt) {
+            if (str_contains($hunt['hunt_type'], 'Capacity') && (int)$hunt['assigned_targets'] < max(5, (int)$hunt['target_count_goal'] / 2)) {
+                self::insert($db, [
+                    'title' => 'Add more targets to ' . $hunt['hunt_name'],
+                    'category' => 'Capacity',
+                    'priority' => 'High',
+                    'region_id' => $hunt['region_id'],
+                    'reason' => 'Capacity hunt has too few assigned targets against its goal.',
+                    'recommended_next_action' => 'Move more qualified subcontractor, workforce, or equipment-seller targets into this hunt.',
+                    'assigned_owner' => $hunt['owner'] ?: ($hunt['region_owner'] ?? 'Admin'),
+                    'source_type' => 'hunt',
+                    'source_id' => $hunt['id'],
+                    'recommendation_type' => 'Recruit Capacity',
+                    'priority_score' => 78,
+                    'trigger_detail' => 'Active capacity hunt assigned target count is below operating threshold.',
+                    'why_it_matters' => 'Capacity hunts need enough target volume to produce qualified, available crews.',
+                ]);
+            }
+
+            if ((int)$hunt['assigned_targets'] >= 10 && ((int)$hunt['converted_targets'] / max(1, (int)$hunt['assigned_targets'])) < 0.1) {
+                self::insert($db, [
+                    'title' => 'Review playbook performance for ' . $hunt['hunt_name'],
+                    'category' => 'Acquisition Target',
+                    'priority' => 'Medium',
+                    'region_id' => $hunt['region_id'],
+                    'reason' => 'Hunt conversion rate is low.',
+                    'recommended_next_action' => 'Review target fit, scripts, qualification criteria, and owner follow-up cadence.',
+                    'assigned_owner' => $hunt['owner'] ?: ($hunt['region_owner'] ?? 'Admin'),
+                    'source_type' => 'hunt',
+                    'source_id' => $hunt['id'],
+                    'recommendation_type' => 'Review Pursuit',
+                    'priority_score' => 60,
+                    'trigger_detail' => 'Converted hunt targets below 10% after at least 10 assigned targets.',
+                    'why_it_matters' => 'Low conversion can mean the hunt, playbook, or target source needs adjustment.',
+                ]);
+            }
+        }
     }
 
     private static function signalRecommendation(array $signal, int $score, string $title, string $trigger, string $nextAction): array

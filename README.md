@@ -22,6 +22,9 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Acquisition Harvesters
 - Acquisition Targets
 - Hunting Lists
+- Hunts
+- Playbooks
+- Today's Hunt Actions
 - Traffic Engine
 - Signal Center
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
@@ -41,6 +44,7 @@ Jackson Intelligence Platform
 ├── Acquisition Harvesters
 ├── Acquisition Targets
 ├── Hunting Lists
+├── Hunts / Playbooks
 ├── Traffic Engine
 ├── Signal Center
 ├── Capacity Acquisition
@@ -217,6 +221,40 @@ CLI command:
 ```bash
 php scripts/build_acquisition_targets.php
 ```
+
+## Acquisition Hunt Engine
+
+The Hunt Engine defines how Jackson pursues acquisition targets. A target is a scored lead created from harvested intelligence. A hunt is an owner-led operating campaign with an objective, target goal, dates, success metric, and assigned targets.
+
+```text
+Signals
+↓
+Acquisition Targets
+↓
+Hunts
+↓
+Playbooks
+↓
+Tasks
+↓
+Qualification
+↓
+Outcome
+↓
+Conversion
+```
+
+Hunts support capacity, opportunity, relationship, workforce, equipment seller, vendor, utility, and prime contractor acquisition. Example hunts include Southeast aerial capacity expansion, Great Lakes fiber splicing capacity, Houston underground contractor acquisition, and national prime contractor relationships.
+
+Playbooks are repeatable operating procedures for working a target. They define the opening script, qualification questions, disqualification rules, required documents, conversion goal, and ordered steps. Outreach Sequences are planned campaign templates. Playbooks are the human execution workflow used during hunting. Neither sends email, SMS, LinkedIn, or Facebook messages.
+
+Playbook steps generate Hunt Tasks. The Today's Hunt Actions screen is the working queue for Mike, Ron, Admin, and future regional owners. Each task shows target, hunt, current step, recommended channel, instructions, questions, due date, owner, and completion notes.
+
+Qualification scorecards are tied to the playbook and target type. They score fit for subcontractor capacity, equipment seller relevance, prime contractor value, utility influence, workforce readiness, or vendor usefulness. Results are stored as Strong Fit, Possible Fit, Weak Fit, or Not Fit.
+
+Outcomes include converted records, not fit, no response, future follow-up, bad data, and duplicate. Conversion still happens through the target detail page, preserving source signal, region, owner, notes, source URL, and contact details.
+
+This phase comes before Capacity Radar because hunting execution creates the verified capacity, relationship, and opportunity outcomes that Capacity Radar will later measure. SyncERP remains last because acquisition intelligence must first identify what to pursue, who to contact, and what capacity to recruit.
 
 ## National Command Center
 

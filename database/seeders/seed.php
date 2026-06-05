@@ -11,7 +11,7 @@ use App\Services\AcquisitionTargetService;
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -228,6 +228,151 @@ foreach ($manualTargets as [$name, $type, $source, $regionName, $state, $city, $
     $duplicate = sha1(strtolower($name . '||||' . $regions[$regionName] . '|' . $type));
     $targetStmt->execute([$name, $type, $source, '', $name, '', '', '', '', $regions[$regionName], $state, $city, $owner, $score, 72, 78, 74, in_array($type, ['Subcontractor','Equipment Seller'], true) ? 88 : 45, in_array($type, ['Utility','Prime Contractor','Municipality'], true) ? 70 : 36, in_array($type, ['Utility','Prime Contractor','Municipality'], true) ? 84 : 42, 'New', $score >= 85 ? 'High' : 'Medium', $reason, $next, 'Seeded supplemental acquisition hunting target.', $duplicate, date('Y-m-d', strtotime('+2 days'))]);
 }
+
+$huntStmt = $db->prepare('INSERT INTO hunts (hunt_name, hunt_type, region_id, owner, objective, target_count_goal, start_date, end_date, status, success_metric, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$huntRows = [
+    ['Southeast Aerial Capacity Expansion', 'Capacity Hunt', 'Southeast', 'Mike', 'Build deployable aerial subcontractor and bucket truck capacity across GA, AL, FL, TN, NC, and SC.', 25, 'Qualified aerial subcontractors with verified crew and equipment capacity.', 'Active'],
+    ['Southeast Underground Contractor Hunt', 'Capacity Hunt', 'Southeast', 'Mike', 'Recruit underground telecom construction and directional boring capacity for Southeast work.', 20, 'Qualified underground contractors ready for document review.', 'Active'],
+    ['Great Lakes Fiber Splicing Capacity Hunt', 'Capacity Hunt', 'Great Lakes', 'Ron', 'Develop fiber splicing subcontractor capacity across MI, OH, IN, WI, and IL.', 20, 'Fiber splicing crews qualified with trailer, OTDR, and availability notes.', 'Active'],
+    ['Great Lakes Utility Influence Hunt', 'Influence Hunt', 'Great Lakes', 'Ron', 'Identify utility construction, OSP, procurement, and broadband influence paths.', 15, 'Decision-maker relationships mapped and next action assigned.', 'Active'],
+    ['Southwest Houston Underground Contractor Hunt', 'Capacity Hunt', 'Southwest', 'Future Southwest Owner', 'Create the Houston underground contractor foundation for Southwest expansion.', 20, 'Houston-area underground targets qualified for future owner follow-up.', 'Active'],
+    ['National Prime Contractor Relationship Hunt', 'Prime Contractor Hunt', 'National', 'Admin', 'Build national prime contractor relationship paths for capacity introductions.', 15, 'Prime contractor relationship targets researched and routed.', 'Active'],
+];
+$huntIds = [];
+foreach ($huntRows as [$name, $type, $regionName, $owner, $objective, $goal, $metric, $status]) {
+    $huntStmt->execute([$name, $type, $regions[$regionName], $owner, $objective, $goal, date('Y-m-d', strtotime('-5 days')), date('Y-m-d', strtotime('+30 days')), $status, $metric, 'Seeded hunt for acquisition execution workflow validation.']);
+    $huntIds[$name] = (int)$db->lastInsertId();
+}
+
+$playbookStmt = $db->prepare('INSERT INTO acquisition_playbooks (playbook_name, playbook_type, target_type, region_id, objective, opening_script, qualification_questions, disqualification_rules, required_documents, conversion_goal, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$playbookRows = [
+    'Subcontractor Recruitment' => ['Subcontractor Recruitment', 'Subcontractor', 'Subcontractor', 'Qualify subcontractor capacity, service fit, documents, and readiness.', 'Are you currently taking on additional telecom construction work in this region?', "What services do you self-perform?\nHow many crews can you deploy?\nWhat equipment do you own?\nHow fast can you mobilize?\nDo you carry active COI and W9?", 'Reject if no telecom experience, no insurance path, poor communication, or unavailable capacity.', 'W9, COI, service list, equipment list, references', 'Subcontractor Profile'],
+    'Equipment Seller Outreach' => ['Equipment Seller Outreach', 'Equipment Seller', 'Equipment Seller', 'Determine whether equipment seller represents usable capacity, contractor relationship, or acquisition lead.', 'Are you selling because you are upgrading, downsizing, or exiting a market?', "What equipment is available?\nAre you a telecom or utility contractor?\nDo you still have crews?\nAre you open to subcontract work?", 'Reject if equipment is unrelated, seller is broker-only with no contractor insight, or listing is bad data.', 'Equipment photos, VIN/unit details, seller contact verification', 'Outreach Target'],
+    'Prime Contractor Introduction' => ['Prime Contractor Introduction', 'Prime Contractor', 'Prime Contractor', 'Open prime contractor capacity conversations and identify subcontracting paths.', 'Jackson Telcom is building deployable telecom construction capacity across your region.', "Who manages subcontractor onboarding?\nWhat capacity is hardest to source?\nWhere are upcoming builds concentrated?\nWhat documentation is required?", 'Disqualify if no active regional work or no path to subcontractor onboarding.', 'Vendor packet requirements, insurance requirements, procurement contact', 'Organization'],
+    'Utility Relationship Development' => ['Utility Relationship Development', 'Utility', 'Utility', 'Map utility construction influence and upcoming broadband or fiber needs.', 'We support telecom construction capacity and would like to understand upcoming build needs.', "Who owns OSP construction decisions?\nWhat build programs are active?\nWhich primes are involved?\nWhere are capacity gaps showing up?", 'Disqualify if no regional construction activity and no relationship path.', 'Decision-maker map, procurement process, project notes', 'Contact'],
+    'Workforce Recruiting' => ['Workforce Recruiting', 'Workforce Candidate', 'Workforce Candidate', 'Screen field talent for current and future crew formation.', 'Are you open to field telecom construction opportunities with Jackson Telcom?', "What roles have you performed?\nCan you travel?\nDo you have CDL, OSHA, or rescue certifications?\nWhen are you available?", 'Reject if unsafe history, no role fit, or no availability.', 'Application, certifications, driver license details', 'Workforce Candidate'],
+    'Vendor Qualification' => ['Vendor Qualification', 'Vendor', 'Vendor', 'Qualify vendors who support telecom construction, safety, equipment, material, or compliance needs.', 'We are building vendor support for telecom construction operations.', "What services or products do you provide?\nWhat regions do you support?\nWhat lead times should we expect?\nCan you support multiple theaters?", 'Reject if no construction relevance, poor coverage, or unreliable response.', 'Vendor profile, insurance if required, pricing or catalog notes', 'Organization'],
+];
+$playbookIds = [];
+foreach ($playbookRows as $key => $row) {
+    [$name, $type, $targetType, $objective, $script, $questions, $rules, $docs, $goal] = $row;
+    $playbookStmt->execute([$name, $type, $targetType, $regions['National'], $objective, $script, $questions, $rules, $docs, $goal, 'Seeded acquisition playbook. Outreach is prepared only; no messages are sent.']);
+    $playbookIds[$key] = (int)$db->lastInsertId();
+}
+
+$stepStmt = $db->prepare('INSERT INTO playbook_steps (playbook_id, step_number, step_name, channel, instructions, expected_outcome, delay_days, required_before_next_step, creates_task) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$stepRows = [
+    'Subcontractor Recruitment' => [
+        ['Research company', 'Research', 'Verify services, markets, website/listing quality, and telecom construction fit.', 'Company profile and fit notes completed.', 0, 'Target has credible telecom construction relevance.'],
+        ['Call owner', 'Phone', 'Call owner or operations lead and confirm interest in subcontract work.', 'First contact attempted or completed.', 1, 'Phone or direct contact path identified.'],
+        ['Verify services and crew count', 'Phone', 'Confirm aerial, underground, splicing, restoration, traffic control, crew count, and equipment.', 'Service and capacity profile captured.', 2, 'Owner confirms self-performed capacity.'],
+        ['Request W9 and COI', 'Document Request', 'Request W9, certificate of insurance, and basic subcontractor onboarding documents.', 'Documents requested with due date.', 3, 'Target is possible fit.'],
+        ['Schedule qualification meeting', 'Meeting', 'Schedule qualification call or meeting to approve, reject, or park target.', 'Qualification meeting scheduled.', 5, 'Core documents or capacity notes available.'],
+    ],
+    'Equipment Seller Outreach' => [
+        ['Research listing', 'Research', 'Verify equipment type, location, seller identity, and signs of contractor ownership.', 'Listing research complete.', 0, 'Listing appears telecom/utility relevant.'],
+        ['Message seller', 'Facebook Message', 'Ask why equipment is being sold and whether the seller performs telecom or utility work.', 'Seller contacted.', 1, 'Direct seller contact available.'],
+        ['Call seller', 'Phone', 'Call to qualify whether this is equipment-only, subcontractor capacity, or acquisition lead.', 'Seller fit determined.', 2, 'Seller responds or phone is available.'],
+        ['Capture equipment details', 'Email', 'Collect model, condition, photos, location, price, and any crew relationship.', 'Equipment details captured.', 3, 'Seller is credible.'],
+        ['Route to target outcome', 'Research', 'Convert to subcontractor, outreach target, vendor, or mark not fit.', 'Outcome recorded.', 4, 'Fit decision is clear.'],
+    ],
+    'Prime Contractor Introduction' => [
+        ['Research active work', 'Research', 'Identify current awards, regional builds, procurement contacts, and subcontractor needs.', 'Prime profile completed.', 0, 'Prime has regional telecom activity.'],
+        ['Identify decision path', 'LinkedIn', 'Find construction, procurement, or subcontractor onboarding contacts.', 'Decision path identified.', 1, 'Contact path exists.'],
+        ['Send capacity introduction prep', 'Email', 'Prepare capacity introduction and request onboarding conversation. Do not automate send.', 'Introduction prepared.', 2, 'Message reviewed by owner.'],
+        ['Call regional contact', 'Phone', 'Call and ask about subcontracting needs, vendor requirements, and upcoming work.', 'Prime conversation attempted.', 3, 'Phone path available.'],
+        ['Document onboarding requirements', 'Document Request', 'Capture insurance, safety, compliance, and vendor packet requirements.', 'Requirements documented.', 5, 'Prime confirms onboarding path.'],
+    ],
+    'Utility Relationship Development' => [
+        ['Map utility contacts', 'Research', 'Identify OSP, construction, broadband, procurement, and field operations contacts.', 'Influence map drafted.', 0, 'Utility has regional build activity.'],
+        ['Validate build activity', 'Research', 'Confirm active or planned broadband/fiber programs, grants, or utility expansions.', 'Build activity verified.', 1, 'Project or funding signal exists.'],
+        ['Relationship introduction prep', 'Email', 'Prepare relationship introduction for the owner. No automated sending.', 'Introduction prepared.', 2, 'Decision contact known.'],
+        ['Call construction contact', 'Phone', 'Call to understand current construction needs, primes, and capacity gaps.', 'Relationship conversation attempted.', 4, 'Contact path available.'],
+        ['Record influence notes', 'Research', 'Update relationship strength, next action, and possible opportunity path.', 'Influence notes recorded.', 5, 'Conversation or research produced useful intelligence.'],
+    ],
+    'Workforce Recruiting' => [
+        ['Research candidate fit', 'Research', 'Review role history, location, certifications, and travel fit.', 'Candidate fit notes completed.', 0, 'Candidate appears field-relevant.'],
+        ['Make first contact', 'Phone', 'Ask about role interest, travel, availability, and safety expectations.', 'First contact attempted.', 1, 'Phone or direct channel exists.'],
+        ['Screen experience', 'Phone', 'Screen aerial, underground, splicing, equipment, CDL, OSHA, and restoration experience.', 'Experience captured.', 2, 'Candidate is responsive.'],
+        ['Request application', 'Document Request', 'Ask candidate to complete application and provide certifications if applicable.', 'Application requested.', 3, 'Candidate is possible fit.'],
+        ['Set hiring outcome', 'Meeting', 'Move candidate to application, future follow-up, or not fit.', 'Recruiting outcome recorded.', 5, 'Application or decision needed.'],
+    ],
+    'Vendor Qualification' => [
+        ['Research vendor capability', 'Research', 'Verify products, services, service area, telecom relevance, and response quality.', 'Vendor profile completed.', 0, 'Vendor appears relevant.'],
+        ['Contact vendor', 'Phone', 'Call to verify coverage, lead times, account setup, and support model.', 'Vendor contacted.', 1, 'Contact path available.'],
+        ['Request capabilities', 'Email', 'Request capability summary, pricing/catalog, terms, and support area.', 'Capabilities requested.', 3, 'Vendor is possible fit.'],
+        ['Review requirements', 'Document Request', 'Collect any insurance, account, or compliance requirements.', 'Requirements captured.', 4, 'Vendor may support operations.'],
+        ['Approve or park vendor', 'Research', 'Convert to organization, mark future follow-up, or mark not fit.', 'Vendor outcome recorded.', 5, 'Fit decision is clear.'],
+    ],
+];
+foreach ($stepRows as $playbookName => $steps) {
+    foreach ($steps as $index => [$stepName, $channel, $instructions, $expected, $delay, $required]) {
+        $stepStmt->execute([$playbookIds[$playbookName], $index + 1, $stepName, $channel, $instructions, $expected, $delay, $required, 1]);
+    }
+}
+
+$allTargets = $db->query('SELECT at.*, r.name region_name FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id ORDER BY CASE at.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, at.acquisition_score DESC, at.id ASC LIMIT 50')->fetchAll();
+$assignmentStmt = $db->prepare('INSERT INTO hunt_targets (hunt_id, acquisition_target_id, playbook_id, assigned_owner, hunt_status, current_step_id, qualification_score, qualification_result, outcome, outcome_date, outcome_notes, notes, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$taskSeedStmt = $db->prepare('INSERT INTO hunt_tasks (hunt_target_id, acquisition_target_id, task_title, task_type, owner, due_date, status, instructions, outcome_notes, playbook_step_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$activityStmt = $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)');
+$huntTargetIds = [];
+foreach ($allTargets as $index => $target) {
+    $regionName = $target['region_name'] ?: 'National';
+    $playbookName = match ($target['target_type']) {
+        'Equipment Seller' => 'Equipment Seller Outreach',
+        'Prime Contractor' => 'Prime Contractor Introduction',
+        'Utility', 'Municipality' => 'Utility Relationship Development',
+        'Workforce Candidate' => 'Workforce Recruiting',
+        'Vendor' => 'Vendor Qualification',
+        default => 'Subcontractor Recruitment',
+    };
+    $huntName = match (true) {
+        $regionName === 'Southeast' && str_contains(strtolower($target['reason_to_pursue'] ?? ''), 'underground') => 'Southeast Underground Contractor Hunt',
+        $regionName === 'Southeast' => 'Southeast Aerial Capacity Expansion',
+        $regionName === 'Great Lakes' && in_array($target['target_type'], ['Utility','Municipality'], true) => 'Great Lakes Utility Influence Hunt',
+        $regionName === 'Great Lakes' => 'Great Lakes Fiber Splicing Capacity Hunt',
+        $regionName === 'Southwest' => 'Southwest Houston Underground Contractor Hunt',
+        default => 'National Prime Contractor Relationship Hunt',
+    };
+    $firstStep = $db->query('SELECT * FROM playbook_steps WHERE playbook_id = ' . (int)$playbookIds[$playbookName] . ' ORDER BY step_number LIMIT 1')->fetch();
+    $score = min(100, max(25, (int)round(((int)$target['acquisition_score'] * 0.55) + ((int)$target['capacity_value_score'] * 0.15) + ((int)$target['relationship_value_score'] * 0.15) + ((int)$target['opportunity_value_score'] * 0.15))));
+    $result = $score >= 80 ? 'Strong Fit' : ($score >= 55 ? 'Possible Fit' : ($score >= 30 ? 'Weak Fit' : 'Not Fit'));
+    $status = ['Added','Researching','First Contact','Qualifying','Documents Requested','Meeting Scheduled'][$index % 6];
+    $updated = date('Y-m-d H:i:s', strtotime('-' . ($index % 10) . ' days'));
+    $assignmentStmt->execute([$huntIds[$huntName], $target['id'], $playbookIds[$playbookName], $target['owner'], $status, $firstStep['id'] ?? null, $score, $result, null, null, null, 'Seeded hunt assignment and scorecard result.', $updated]);
+    $huntTargetId = (int)$db->lastInsertId();
+    $huntTargetIds[] = [$huntTargetId, $target, $playbookIds[$playbookName]];
+    $taskType = match ($firstStep['channel'] ?? 'Research') {
+        'Phone' => 'Call',
+        'Email' => 'Email',
+        'LinkedIn' => 'LinkedIn',
+        'Facebook Message' => 'Facebook Message',
+        'In Person' => 'Meeting',
+        'Document Request' => 'Document Request',
+        default => 'Research',
+    };
+    $taskStatus = $index % 9 === 0 ? 'In Progress' : 'Open';
+    $due = date('Y-m-d', strtotime(($index % 7 < 2 ? '-' : '+') . (($index % 5) + 1) . ' days'));
+    $taskSeedStmt->execute([$huntTargetId, $target['id'], $firstStep['step_name'] ?? 'Research target', $taskType, $target['owner'], $due, $taskStatus, $firstStep['instructions'] ?? 'Research and qualify target.', '', $firstStep['id'] ?? null]);
+    $activityStmt->execute(['hunt_target', $huntTargetId, $target['region_id'], 'Task', 'Target added to hunt', 'Seeded assignment to ' . $huntName . ' using ' . $playbookName . '.', $target['owner']]);
+}
+
+foreach (array_slice($huntTargetIds, 0, 25) as [$huntTargetId, $target, $playbookId]) {
+    $secondStep = $db->query('SELECT * FROM playbook_steps WHERE playbook_id = ' . (int)$playbookId . ' AND step_number = 2 LIMIT 1')->fetch();
+    if (!$secondStep) {
+        continue;
+    }
+    $taskType = match ($secondStep['channel']) {
+        'Phone' => 'Call',
+        'Email' => 'Email',
+        'LinkedIn' => 'LinkedIn',
+        'Facebook Message' => 'Facebook Message',
+        'In Person' => 'Meeting',
+        'Document Request' => 'Document Request',
+        default => 'Research',
+    };
+    $taskSeedStmt->execute([$huntTargetId, $target['id'], $secondStep['step_name'], $taskType, $target['owner'], date('Y-m-d', strtotime('+' . (int)$secondStep['delay_days'] . ' days')), 'Open', $secondStep['instructions'], '', $secondStep['id']]);
+}
 RecommendationEngine::regenerate();
 
-echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, outreach workflows, and recommendations.\n";
+echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, hunt tasks, and recommendations.\n";

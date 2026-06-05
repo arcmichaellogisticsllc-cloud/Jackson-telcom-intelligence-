@@ -316,6 +316,101 @@ CREATE TABLE IF NOT EXISTS acquisition_targets (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS hunts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hunt_name TEXT NOT NULL,
+  hunt_type TEXT NOT NULL,
+  region_id INTEGER,
+  owner TEXT,
+  objective TEXT,
+  target_count_goal INTEGER DEFAULT 0,
+  start_date TEXT,
+  end_date TEXT,
+  status TEXT DEFAULT 'Draft',
+  success_metric TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS acquisition_playbooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  playbook_name TEXT NOT NULL,
+  playbook_type TEXT NOT NULL,
+  target_type TEXT,
+  region_id INTEGER,
+  objective TEXT,
+  opening_script TEXT,
+  qualification_questions TEXT,
+  disqualification_rules TEXT,
+  required_documents TEXT,
+  conversion_goal TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS playbook_steps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  playbook_id INTEGER NOT NULL,
+  step_number INTEGER NOT NULL,
+  step_name TEXT NOT NULL,
+  channel TEXT,
+  instructions TEXT,
+  expected_outcome TEXT,
+  delay_days INTEGER DEFAULT 0,
+  required_before_next_step TEXT,
+  creates_task INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(playbook_id) REFERENCES acquisition_playbooks(id)
+);
+
+CREATE TABLE IF NOT EXISTS hunt_targets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hunt_id INTEGER NOT NULL,
+  acquisition_target_id INTEGER NOT NULL,
+  playbook_id INTEGER,
+  assigned_owner TEXT,
+  hunt_status TEXT DEFAULT 'Added',
+  current_step_id INTEGER,
+  qualification_score INTEGER DEFAULT 0,
+  qualification_result TEXT,
+  outcome TEXT,
+  outcome_date TEXT,
+  outcome_notes TEXT,
+  converted_record_type TEXT,
+  converted_record_id INTEGER,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(hunt_id) REFERENCES hunts(id),
+  FOREIGN KEY(acquisition_target_id) REFERENCES acquisition_targets(id),
+  FOREIGN KEY(playbook_id) REFERENCES acquisition_playbooks(id),
+  FOREIGN KEY(current_step_id) REFERENCES playbook_steps(id)
+);
+
+CREATE TABLE IF NOT EXISTS hunt_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hunt_target_id INTEGER NOT NULL,
+  acquisition_target_id INTEGER NOT NULL,
+  task_title TEXT NOT NULL,
+  task_type TEXT NOT NULL,
+  owner TEXT,
+  due_date TEXT,
+  status TEXT DEFAULT 'Open',
+  instructions TEXT,
+  outcome_notes TEXT,
+  playbook_step_id INTEGER,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(hunt_target_id) REFERENCES hunt_targets(id),
+  FOREIGN KEY(acquisition_target_id) REFERENCES acquisition_targets(id),
+  FOREIGN KEY(playbook_step_id) REFERENCES playbook_steps(id)
+);
+
 CREATE TABLE IF NOT EXISTS intelligence_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   signal_id INTEGER,

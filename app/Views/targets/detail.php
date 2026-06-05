@@ -44,6 +44,35 @@
 
 <section class="grid two">
   <div class="panel">
+    <h2>Active Hunt Assignments</h2>
+    <div class="table-wrap"><table><thead><tr><th>Hunt</th><th>Playbook</th><th>Status</th><th>Current Step</th><th>Qualification</th><th>Outcome</th></tr></thead><tbody>
+      <?php foreach ($assignments as $assignment): ?><tr><td><?= htmlspecialchars($assignment['hunt_name']) ?></td><td><?= htmlspecialchars($assignment['playbook_name'] ?? '') ?></td><td><?= htmlspecialchars($assignment['hunt_status']) ?></td><td><?= htmlspecialchars($assignment['current_step'] ?? '') ?></td><td><?= (int)$assignment['qualification_score'] ?> · <?= htmlspecialchars($assignment['qualification_result'] ?? '') ?></td><td><?= htmlspecialchars($assignment['outcome'] ?? '') ?><br><small><?= htmlspecialchars($assignment['outcome_notes'] ?? '') ?></small></td></tr><?php endforeach; ?>
+      <?php if (!$assignments): ?><tr><td colspan="6">Not assigned to a hunt yet.</td></tr><?php endif; ?>
+    </tbody></table></div>
+    <?php if ($assignments): ?>
+      <hr>
+      <h2>Record Outcome</h2>
+      <form method="post" action="/hunt-targets/outcome" class="form-grid compact">
+        <input type="hidden" name="return_to" value="/targets/detail?id=<?= (int)$target['id'] ?>">
+        <label>Assignment <select name="hunt_target_id"><?php foreach ($assignments as $assignment): ?><option value="<?= (int)$assignment['id'] ?>"><?= htmlspecialchars($assignment['hunt_name']) ?> - <?= htmlspecialchars($assignment['target_name'] ?? $target['target_name']) ?></option><?php endforeach; ?></select></label>
+        <label>Outcome <select name="outcome">
+          <?php foreach (['Converted to Subcontractor','Converted to Organization','Converted to Contact','Converted to Opportunity','Converted to Outreach Target','Not Fit','No Response','Future Follow-Up','Bad Data','Duplicate'] as $outcome): ?><option><?= htmlspecialchars($outcome) ?></option><?php endforeach; ?>
+        </select></label>
+        <label class="full">Outcome Notes <textarea name="outcome_notes"></textarea></label>
+        <button class="btn secondary">Save Outcome</button>
+      </form>
+    <?php endif; ?>
+    <hr>
+    <h2>Add to Hunt</h2>
+    <form method="post" action="/hunt-targets" class="form-grid compact">
+      <input type="hidden" name="acquisition_target_id" value="<?= (int)$target['id'] ?>">
+      <label>Hunt <select name="hunt_id"><?php foreach ($hunts as $hunt): ?><option value="<?= $hunt['id'] ?>"><?= htmlspecialchars($hunt['hunt_name']) ?></option><?php endforeach; ?></select></label>
+      <label>Playbook <select name="playbook_id"><?php foreach ($playbooks as $playbook): ?><option value="<?= $playbook['id'] ?>"><?= htmlspecialchars($playbook['playbook_name']) ?></option><?php endforeach; ?></select></label>
+      <label>Owner <input name="assigned_owner" value="<?= htmlspecialchars($target['owner']) ?>"></label>
+      <button class="btn">Assign Target</button>
+    </form>
+  </div>
+  <div class="panel">
     <h2>What Can This Target Become?</h2>
     <div class="convert-grid">
       <?php foreach (['organization' => 'Organization','contact' => 'Contact','subcontractor' => 'Subcontractor Profile','opportunity' => 'Opportunity','outreach' => 'Outreach Target'] as $key => $label): ?>
@@ -55,11 +84,12 @@
       <?php endforeach; ?>
     </div>
   </div>
-  <div class="panel">
+</section>
+
+<section class="panel">
     <h2>Activity Timeline</h2>
     <div class="activity-list timeline">
       <?php foreach ($activities as $activity): ?><div><strong><?= htmlspecialchars($activity['title']) ?></strong><span><?= htmlspecialchars(substr($activity['activity_date'],0,10)) ?> · <?= htmlspecialchars($activity['activity_type']) ?> · <?= htmlspecialchars($activity['owner']) ?></span><p><?= htmlspecialchars($activity['notes']) ?></p></div><?php endforeach; ?>
       <?php if (!$activities): ?><p>No activity yet.</p><?php endif; ?>
     </div>
-  </div>
 </section>
