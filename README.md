@@ -19,6 +19,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 
 - National Command Center
 - Regions / Theaters
+- Acquisition Harvesters
 - Traffic Engine
 - Signal Center
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
@@ -78,6 +79,8 @@ The production seeder does not create converted organizations, contacts, subcont
 - login users
 - regional service capacity targets
 - keyword, content, outreach target, and outreach sequence records
+- signal source registry records
+- harvester runs and raw signal items
 - signal intelligence records for Signal Center workflow validation
 - system-generated recommendations based on seeded signals and real empty converted operating records
 
@@ -99,6 +102,7 @@ Users:
 
 - Authentication
 - National Command Center
+- Acquisition Harvesters
 - Traffic Engine
 - Signal Center
 - Capacity Acquisition
@@ -108,6 +112,57 @@ Users:
 - Activities
 - Settings
 - Records: Organizations, Contacts, Subcontractors, Opportunities
+
+## Acquisition Harvesting Framework
+
+Acquisition Harvesters are the automated fuel layer for JAS. Manual entry is reserved for physical traffic only:
+
+- referrals
+- conferences
+- jobsite conversations
+- phone calls
+- face-to-face networking
+
+All other acquisition inputs should be represented as sources that can be harvested, imported, or semi-automated.
+
+The harvesting pipeline is:
+
+1. Signal Source defines where intelligence should come from.
+2. Harvester Run records when the source was checked and what happened.
+3. Raw Signal Item stores unprocessed harvested data.
+4. Signal Processing classifies, routes, scores, and converts raw items into clean Signals.
+5. Recommendation Engine turns Signals into owner actions.
+
+Signal sources track source type, target category, collection method, URL/search query, cadence, status, last run, next run, and run counts.
+
+Harvester adapters live in `app/Services/Harvesters/`. Phase 1 uses mock/sample adapters only:
+
+- GoogleSearchHarvester
+- SecretaryOfStateHarvester
+- JobBoardHarvester
+- EquipmentListingHarvester
+- BroadbandGrantHarvester
+- PrimeAwardHarvester
+- ManualPhysicalTrafficHarvester
+- CsvImportHarvester
+
+Real connectors can replace these adapters later without changing the controller or processing pipeline.
+
+CLI commands:
+
+```bash
+php scripts/run_harvesters.php
+php scripts/process_raw_signals.php
+php scripts/import_csv_signals.php /path/to/file.csv <signal_source_id>
+```
+
+CSV imports must include these headers when available:
+
+`title,description,source_type,source_url,company_name,contact_name,phone,email,city,state,notes`
+
+CSV rows become Raw Signal Items first, then flow through the same processor as harvested records.
+
+This framework exists before Capacity Radar because Capacity Radar needs fuel: source coverage, raw market activity, contractor movement, equipment signals, funding signals, relationship movement, SEO demand, and outreach targets.
 
 ## National Command Center
 

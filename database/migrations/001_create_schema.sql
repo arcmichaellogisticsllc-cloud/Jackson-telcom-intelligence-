@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS signals (
   confidence_score INTEGER DEFAULT 0,
   impact_score INTEGER DEFAULT 0,
   priority TEXT NOT NULL DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
-  owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Mike','Ron','Unassigned')),
+  owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Admin','Mike','Ron','Unassigned')),
   status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Reviewed','Assigned','Converted','Ignored')),
   recommended_next_action TEXT,
   notes TEXT,
@@ -211,6 +211,72 @@ CREATE TABLE IF NOT EXISTS outreach_sequences (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS signal_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  region_id INTEGER,
+  state TEXT,
+  city TEXT,
+  target_category TEXT NOT NULL,
+  collection_method TEXT NOT NULL,
+  source_url TEXT,
+  search_query TEXT,
+  frequency TEXT DEFAULT 'Weekly',
+  status TEXT DEFAULT 'Active',
+  last_run_at TEXT,
+  next_run_at TEXT,
+  records_found_last_run INTEGER DEFAULT 0,
+  records_created_last_run INTEGER DEFAULT 0,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS harvester_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_source_id INTEGER,
+  started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  finished_at TEXT,
+  status TEXT DEFAULT 'Pending',
+  records_found INTEGER DEFAULT 0,
+  records_created INTEGER DEFAULT 0,
+  records_updated INTEGER DEFAULT 0,
+  errors_count INTEGER DEFAULT 0,
+  summary TEXT,
+  raw_payload_path TEXT,
+  raw_payload_text TEXT,
+  created_by TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(signal_source_id) REFERENCES signal_sources(id)
+);
+
+CREATE TABLE IF NOT EXISTS raw_signal_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  harvester_run_id INTEGER,
+  signal_source_id INTEGER,
+  raw_title TEXT,
+  raw_description TEXT,
+  raw_url TEXT,
+  raw_company_name TEXT,
+  raw_contact_name TEXT,
+  raw_phone TEXT,
+  raw_email TEXT,
+  raw_location TEXT,
+  raw_state TEXT,
+  raw_city TEXT,
+  raw_source_date TEXT,
+  raw_payload_json TEXT,
+  processing_status TEXT DEFAULT 'New',
+  duplicate_key TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(harvester_run_id) REFERENCES harvester_runs(id),
+  FOREIGN KEY(signal_source_id) REFERENCES signal_sources(id)
 );
 
 CREATE TABLE IF NOT EXISTS intelligence_records (

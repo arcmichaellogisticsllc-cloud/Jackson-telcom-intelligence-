@@ -14,7 +14,7 @@ class SignalController extends Controller
     private array $types = ['Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach'];
     private array $sources = ['Google Search','Google Business Profile','Facebook Marketplace','LinkedIn','Industry Forum','YouTube','Broadband Grant','Utility Announcement','Equipment Listing','New Business Filing','Hiring Activity','Manual Entry','Industry News','Referral','Conference','Website Form','Government Data','Contractor Intelligence','Other'];
     private array $statuses = ['New','Reviewed','Assigned','Converted','Ignored'];
-    private array $owners = ['Mike','Ron','Unassigned'];
+    private array $owners = ['Admin','Mike','Ron','Unassigned'];
     private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL','TX','OK','LA','NM'];
 
     public function index(): void

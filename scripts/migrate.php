@@ -61,7 +61,7 @@ foreach ($columns as $table => $defs) {
 }
 
 $signalSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'signals'")->fetchColumn();
-if ($signalSchema && (!str_contains($signalSchema, "'Content'") || !str_contains($signalSchema, "'Google Search'"))) {
+if ($signalSchema && (!str_contains($signalSchema, "'Content'") || !str_contains($signalSchema, "'Google Search'") || !str_contains($signalSchema, "'Admin'"))) {
     $db->exec('PRAGMA foreign_keys = OFF');
     $db->beginTransaction();
     $db->exec('ALTER TABLE signals RENAME TO signals_old');
@@ -80,7 +80,7 @@ if ($signalSchema && (!str_contains($signalSchema, "'Content'") || !str_contains
       confidence_score INTEGER DEFAULT 0,
       impact_score INTEGER DEFAULT 0,
       priority TEXT NOT NULL DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
-      owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Mike','Ron','Unassigned')),
+      owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Admin','Mike','Ron','Unassigned')),
       status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Reviewed','Assigned','Converted','Ignored')),
       recommended_next_action TEXT,
       notes TEXT,

@@ -5,11 +5,12 @@ require __DIR__ . '/../../vendor_autoload.php';
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Core\SignalScoring;
+use App\Services\SignalProcessingService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -138,8 +139,75 @@ foreach ($sequenceTemplates as [$name, $targetType, $purpose, $channels]) {
     }
 }
 
+$sourceStmt = $db->prepare('INSERT INTO signal_sources (name, source_type, region_id, state, city, target_category, collection_method, source_url, search_query, frequency, status, last_run_at, next_run_at, records_found_last_run, records_created_last_run, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$sourceRows = [
+    ['Southeast Google - fiber construction contractor Georgia','Google Search','Southeast','GA','Atlanta','SEO','Search Query','','fiber construction contractor Georgia','Weekly','Active'],
+    ['Southeast Google - directional boring contractor Florida','Google Search','Southeast','FL','Orlando','Capacity','Search Query','','directional boring contractor Florida','Weekly','Active'],
+    ['Southeast Job Board - fiber splicer jobs Atlanta','Job Board','Southeast','GA','Atlanta','Capacity','Automated','','fiber splicer jobs Atlanta','Daily','Active'],
+    ['Southeast Equipment - bucket truck Georgia','Equipment Listing','Southeast','GA','Atlanta','Capacity','Semi-Automated','','bucket truck Georgia','Daily','Active'],
+    ['Southeast Utility Announcements','Utility Announcement','Southeast','NC','Charlotte','Opportunity','RSS','','municipal fiber North Carolina','Weekly','Active'],
+    ['Great Lakes Google - fiber splicing contractor Michigan','Google Search','Great Lakes','MI','Detroit','SEO','Search Query','','fiber splicing contractor Michigan','Weekly','Active'],
+    ['Great Lakes Job Board - OSP manager Michigan','Job Board','Great Lakes','MI','Detroit','Relationship','Automated','','OSP manager Michigan','Daily','Active'],
+    ['Great Lakes Broadband Grants','Broadband Grant','Great Lakes','MI','Lansing','Opportunity','RSS','','Michigan broadband funding','Weekly','Active'],
+    ['Great Lakes Equipment - splicing trailer Michigan','Equipment Listing','Great Lakes','MI','Detroit','Capacity','Semi-Automated','','splicing trailer Michigan','Daily','Active'],
+    ['Great Lakes Industry News','Industry News','Great Lakes','OH','Columbus','Market','RSS','','Ohio broadband construction awards','Weekly','Active'],
+    ['Southwest Google - telecom subcontractor Houston','Google Search','Southwest','TX','Houston','SEO','Search Query','','telecom subcontractor Houston','Weekly','Active'],
+    ['Southwest Equipment - bucket truck Texas','Equipment Listing','Southwest','TX','Houston','Capacity','Semi-Automated','','bucket truck Texas','Daily','Active'],
+    ['Southwest Job Board - aerial lineman Houston','Job Board','Southwest','TX','Houston','Capacity','Automated','','aerial lineman Houston','Daily','Active'],
+    ['Southwest Broadband Grants','Broadband Grant','Southwest','TX','Austin','Opportunity','RSS','','Texas broadband funding','Weekly','Active'],
+    ['Southwest Secretary of State - new utility contractors','Secretary of State','Southwest','TX','Houston','Outreach','Semi-Automated','','new telecom contractor filing Texas','Weekly','Active'],
+    ['National Prime Contractor Awards','Prime Contractor Award','National','','','Opportunity','RSS','','telecom prime contractor award','Weekly','Active'],
+    ['National Industry News','Industry News','National','','','Market','RSS','','broadband infrastructure construction news','Daily','Active'],
+    ['National Broadband Funding','Broadband Grant','National','','','Market','RSS','','BEAD broadband funding awards','Weekly','Active'],
+    ['National LinkedIn Leadership Changes','LinkedIn','National','','','Relationship','Semi-Automated','','telecom construction manager promoted','Weekly','Active'],
+    ['National Google - telecom subcontractor search','Google Search','National','','','SEO','Search Query','','telecom construction subcontractors nationwide','Monthly','Active'],
+    ['Manual Physical - referrals','Referral','National','','','Relationship','Manual Physical','','referrals from field conversations','On Demand','Active'],
+    ['Manual Physical - conferences','Conference','National','','','Relationship','Manual Physical','','conference contacts telecom construction','On Demand','Active'],
+    ['Industry Forum - OSP contractor mentions','Industry Forum','National','','','Outreach','Semi-Automated','','OSP contractor subcontractor discussion','Weekly','Active'],
+    ['Facebook Marketplace - telecom equipment national','Facebook Marketplace','National','','','Capacity','Semi-Automated','','bucket truck splicing trailer telecom','Daily','Active'],
+    ['Google Business Profile - local contractor reviews','Google Business Profile','National','','','Outreach','Semi-Automated','','fiber contractor Google Business Profile','Monthly','Active'],
+];
+$sourceIds = [];
+foreach ($sourceRows as $row) {
+    [$name, $type, $regionName, $state, $city, $category, $method, $url, $query, $frequency, $status] = $row;
+    $sourceStmt->execute([$name, $type, $regions[$regionName], $state, $city, $category, $method, $url, $query, $frequency, $status, null, null, 0, 0, 'Seeded acquisition harvesting source.']);
+    $sourceIds[] = (int)$db->lastInsertId();
+}
+
+$runStmt = $db->prepare('INSERT INTO harvester_runs (signal_source_id, started_at, finished_at, status, records_found, records_created, records_updated, errors_count, summary, raw_payload_text, created_by) VALUES (?, ?, ?, "Completed", 10, 10, 0, 0, ?, ?, "Seeder")');
+$rawStmt = $db->prepare('INSERT INTO raw_signal_items (harvester_run_id, signal_source_id, raw_title, raw_description, raw_url, raw_company_name, raw_contact_name, raw_phone, raw_email, raw_location, raw_state, raw_city, raw_source_date, raw_payload_json, processing_status, duplicate_key, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "New", ?, ?)');
+$rawTemplates = [
+    ['Bucket truck fleet for sale', 'Company selling multiple bucket trucks and reel trailer in target market.', 'Capacity'],
+    ['Fiber splicer hiring activity', 'Contractor hiring fiber splicer and aerial lineman crews.', 'Capacity'],
+    ['Municipal fiber RFP watch', 'Municipal fiber bid opportunity and RFP discussion detected.', 'Opportunity'],
+    ['Broadband grant award notice', 'BEAD broadband grant funding in target region.', 'Opportunity'],
+    ['Construction manager promoted', 'OSP construction manager promoted at utility or prime.', 'Relationship'],
+    ['Prime contractor award posted', 'Prime contractor award creates subcontracting path.', 'Opportunity'],
+    ['Landing page keyword gap', 'SEO keyword search ranking gap for regional landing page.', 'SEO'],
+    ['Industry forum contractor mention', 'Subcontractor mentioned in industry forum discussion.', 'Outreach'],
+    ['Directional drill crew listing', 'Directional drill and underground utility contractor capacity found.', 'Capacity'],
+    ['Utility expansion announcement', 'Utility expansion and municipal fiber market signal.', 'Market'],
+];
+for ($runIndex = 0; $runIndex < 5; $runIndex++) {
+    $sourceId = $sourceIds[$runIndex];
+    $sourceMeta = $sourceRows[$runIndex];
+    $started = date('Y-m-d H:i:s', strtotime('-' . (5 - $runIndex) . ' days'));
+    $runStmt->execute([$sourceId, $started, date('Y-m-d H:i:s', strtotime($started . ' +15 minutes')), 'Seeded completed run with realistic raw acquisition items.', json_encode(['seeded' => true, 'source' => $sourceMeta[0]])]);
+    $runId = (int)$db->lastInsertId();
+    foreach ($rawTemplates as $itemIndex => [$title, $description, $category]) {
+        $state = $sourceMeta[3];
+        $city = $sourceMeta[4];
+        $rawTitle = $title . ' - ' . $sourceMeta[0] . ' #' . ($itemIndex + 1);
+        $rawUrl = 'https://example.local/harvest/' . sha1($rawTitle);
+        $duplicateKey = sha1($sourceId . '|' . $rawUrl . '|' . $rawTitle);
+        $rawStmt->execute([$runId, $sourceId, $rawTitle, $description, $rawUrl, $sourceMeta[2] . ' ' . $category . ' Source', $category === 'Relationship' ? 'OSP Manager' : '', '', '', trim($city . ' ' . $state), $state, $city, date('Y-m-d'), json_encode(['category' => $category, 'seeded' => true]), $duplicateKey, 'Seeded raw harvested acquisition item.']);
+    }
+    $db->prepare('UPDATE signal_sources SET last_run_at = ?, next_run_at = ?, records_found_last_run = 10, records_created_last_run = 10 WHERE id = ?')->execute([$started, date('Y-m-d H:i:s', strtotime('+1 week')), $sourceId]);
+}
+
 $db->commit();
 
+(new SignalProcessingService())->processNew();
 RecommendationEngine::regenerate();
 
-echo "Seeded national footprint, three theaters, traffic engine records, signals, outreach workflows, and recommendations.\n";
+echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, outreach workflows, and recommendations.\n";
