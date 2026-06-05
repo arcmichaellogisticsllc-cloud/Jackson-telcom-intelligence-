@@ -21,11 +21,11 @@
 </section>
 
 <section class="metrics">
-  <div><span>New Signals</span><strong><?= $signalWidgets['new'] ?></strong></div>
-  <div><span>Critical Signals</span><strong><?= $signalWidgets['critical'] ?></strong></div>
-  <div><span>Signals Needing Review</span><strong><?= $signalWidgets['needing_review'] ?></strong></div>
-  <div><span>Signals Assigned</span><strong><?= $signalWidgets['assigned_to_me'] ?></strong></div>
-  <div><span>Converted This Month</span><strong><?= $signalWidgets['converted_month'] ?></strong></div>
+  <div><span>Escalations</span><strong><?= $qualityWidgets['escalations'] ?></strong></div>
+  <div><span>Hunts</span><strong><?= $qualityWidgets['active_hunts'] ?></strong></div>
+  <div><span>Watchlist Activity</span><strong><?= $qualityWidgets['watchlist_activity'] ?></strong></div>
+  <div><span>Signal Quality</span><strong><?= $qualityWidgets['signal_quality'] ?></strong></div>
+  <div><span>Hunt Signals</span><strong><?= $qualityWidgets['hunt_signals'] ?></strong></div>
 </section>
 
 <section class="metrics">
@@ -72,8 +72,8 @@
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Target</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars($target['target_type']) ?></small></td><td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
-    <div class="panel-title"><h2>Top Signals</h2><a class="btn secondary" href="/signals">Signal Center</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Signal Source</th><th>Theater</th><th>Recommended Action</th></tr></thead><tbody><?php foreach ($topSignals as $signal): ?><tr><td><span class="priority <?= strtolower($signal['priority']) ?>"><?= htmlspecialchars($signal['priority']) ?></span></td><td><strong><?= htmlspecialchars($signal['title']) ?></strong><br><small><?= htmlspecialchars($signal['signal_type']) ?> · <?= htmlspecialchars($signal['source_type']) ?></small></td><td><?= htmlspecialchars($signal['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($signal['recommended_next_action'] ?: 'Review and assign next acquisition action.') ?></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/escalations">Escalations</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Source</th><th>Theater</th><th>Quality</th><th>Output</th></tr></thead><tbody><?php foreach ($topSources as $source): ?><tr><td><strong><?= htmlspecialchars($source['source_name']) ?></strong><br><small><?= htmlspecialchars($source['source_type']) ?></small></td><td><?= htmlspecialchars($source['region_name'] ?? 'National') ?></td><td><?= (int)$source['source_quality_score'] ?></td><td><?= (int)$source['escalated_signals'] ?> escalate · <?= (int)$source['hunt_signals'] ?> hunt</td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Capacity Needs</h2><a class="btn secondary" href="/recommendations">Recommended Actions</a></div>

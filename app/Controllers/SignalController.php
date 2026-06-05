@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Core\SignalScoring;
+use App\Services\SignalQualityService;
 use PDO;
 
 class SignalController extends Controller
@@ -20,9 +21,10 @@ class SignalController extends Controller
     public function index(): void
     {
         Auth::requireLogin();
+        (new SignalQualityService())->rebuild();
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
-        $signals = $db->query('SELECT s.*, r.name region_name FROM signals s JOIN regions r ON r.id = s.region_id ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.created_at DESC')->fetchAll();
+        $signals = $db->query('SELECT s.*, r.name region_name, sqp.classification, sqp.signal_value_score, sqp.reason_for_classification FROM signals s JOIN regions r ON r.id = s.region_id LEFT JOIN signal_quality_profiles sqp ON sqp.signal_id = s.id ORDER BY CASE sqp.classification WHEN "Escalate" THEN 1 WHEN "Hunt" THEN 2 WHEN "Watch" THEN 3 ELSE 4 END, CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.created_at DESC')->fetchAll();
         $metrics = $this->metrics();
         $kanban = [];
         foreach ($this->statuses as $status) {
@@ -174,6 +176,7 @@ class SignalController extends Controller
         $db = Database::connection();
         return [
             'new_today' => (int)$db->query("SELECT COUNT(*) FROM signals WHERE status = 'New' AND date(created_at) = date('now')")->fetchColumn(),
+            'by_classification' => $db->query('SELECT classification, COUNT(*) count FROM signal_quality_profiles GROUP BY classification')->fetchAll(),
             'by_type' => $db->query('SELECT signal_type, COUNT(*) count FROM signals GROUP BY signal_type')->fetchAll(),
             'by_region' => $db->query('SELECT r.name region_name, COUNT(s.id) count FROM regions r LEFT JOIN signals s ON s.region_id = r.id GROUP BY r.id')->fetchAll(),
             'by_priority' => $db->query('SELECT priority, COUNT(*) count FROM signals GROUP BY priority')->fetchAll(),

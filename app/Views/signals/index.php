@@ -1,14 +1,13 @@
 <section class="page-header">
   <p class="eyebrow">Signal Center</p>
-  <h1>Signals become acquisition actions.</h1>
-  <p>JAS is not a CRM. This layer captures capacity, opportunity, relationship, and market signals, scores them, routes them, and converts them into acquisition records.</p>
+  <h1>Separate signal from noise.</h1>
+  <p>JAS classifies harvested intelligence into Escalate, Hunt, Watch, or Archive before creating more targets.</p>
 </section>
 
 <section class="metrics signal-metrics">
-  <div><span>New Signals Today</span><strong><?= $metrics['new_today'] ?></strong></div>
-  <?php foreach (['Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach'] as $type): ?>
-    <?php $count = 0; foreach ($metrics['by_type'] as $row) { if ($row['signal_type'] === $type) $count = (int)$row['count']; } ?>
-    <div><span><?= htmlspecialchars($type) ?> Signals</span><strong><?= $count ?></strong></div>
+  <?php foreach (['Escalate','Hunt','Watch','Archive'] as $classification): ?>
+    <?php $count = 0; foreach ($metrics['by_classification'] as $row) { if ($row['classification'] === $classification) $count = (int)$row['count']; } ?>
+    <div><span><?= htmlspecialchars($classification) ?></span><strong><?= $count ?></strong></div>
   <?php endforeach; ?>
 </section>
 
@@ -84,16 +83,17 @@
   <div class="panel-title"><h2>Signal Inventory</h2><span class="status"><?= count($signals) ?> total</span></div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Signal</th><th>Type</th><th>Theater</th><th>Priority</th><th>Scores</th><th>Status</th><th>Owner</th></tr></thead>
+      <thead><tr><th>ID</th><th>Signal</th><th>Quality</th><th>Type</th><th>Theater</th><th>Scores</th><th>Status</th><th>Owner</th></tr></thead>
       <tbody>
       <?php foreach ($signals as $signal): ?>
         <tr>
           <td><a href="/record?type=signal&id=<?= (int)$signal['id'] ?>"><?= (int)$signal['id'] ?></a></td>
           <td><strong><?= htmlspecialchars($signal['title']) ?></strong><br><small><?= htmlspecialchars($signal['source_type']) ?></small></td>
+          <td><span class="priority <?= strtolower($signal['classification'] ?? 'watch') ?>"><?= htmlspecialchars($signal['classification'] ?? 'Watch') ?></span><br><small><?= htmlspecialchars($signal['reason_for_classification'] ?? '') ?></small></td>
           <td><?= htmlspecialchars($signal['signal_type']) ?></td>
           <td><?= htmlspecialchars($signal['region_name']) ?><br><small><?= htmlspecialchars(trim(($signal['city'] ?? '') . ' ' . ($signal['state'] ?? ''))) ?></small></td>
           <td><span class="priority <?= strtolower($signal['priority']) ?>"><?= htmlspecialchars($signal['priority']) ?></span></td>
-          <td><?= (int)$signal['confidence_score'] ?> / <?= (int)$signal['impact_score'] ?></td>
+          <td><?= (int)($signal['signal_value_score'] ?? 0) ?> value<br><small><?= (int)$signal['confidence_score'] ?> conf / <?= (int)$signal['impact_score'] ?> impact</small></td>
           <td><?= htmlspecialchars($signal['status']) ?></td>
           <td><?= htmlspecialchars($signal['owner']) ?></td>
         </tr>

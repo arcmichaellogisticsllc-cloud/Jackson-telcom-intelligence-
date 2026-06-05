@@ -27,6 +27,10 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Today's Hunt Actions
 - Traffic Engine
 - Signal Center
+- Signal Quality Engine
+- Watchlists
+- Escalation Center
+- Daily Intelligence Briefing
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
 - Capacity Acquisition
 - Relationship Intelligence
@@ -47,6 +51,7 @@ Jackson Intelligence Platform
 ├── Hunts / Playbooks
 ├── Traffic Engine
 ├── Signal Center
+├── Signal Quality / Watchlists / Escalations
 ├── Capacity Acquisition
 ├── Relationship Intelligence
 ├── Opportunity Intelligence
@@ -116,6 +121,10 @@ Users:
 - Hunting Lists
 - Traffic Engine
 - Signal Center
+- Signal Quality Engine
+- Watchlists
+- Escalations
+- Daily Intelligence Briefing
 - Capacity Acquisition
 - Relationship Intelligence
 - Opportunity Intelligence
@@ -221,6 +230,49 @@ CLI command:
 ```bash
 php scripts/build_acquisition_targets.php
 ```
+
+## Signal Quality Engine
+
+The Signal Quality Engine exists to prevent acquisition overload.
+
+```text
+100,000 Signals
+↓
+5,000 Relevant Signals
+↓
+500 Acquisition Targets
+↓
+50 Hunts
+↓
+5 Critical Actions Today
+```
+
+JAS separates signal from noise before creating more targets. Every signal receives a Signal Quality Profile with source quality, signal value, strategic value, capacity value, opportunity value, relationship value, revenue value, confidence, impact, accumulation score, and classification.
+
+Classifications:
+
+- Escalate: high-value intelligence that should receive same-day owner attention.
+- Hunt: relevant intelligence that should become a target or active pursuit input.
+- Watch: useful future intelligence that should be monitored without creating more noise.
+- Archive: low-value, duplicate, unrelated, or stale intelligence.
+
+Signal accumulation connects multiple signals around the same organization or contact. One weak signal may stay Watch. Several related signals can become Hunt. Many strong signals can become Escalate. Example: a contractor hiring splicers, selling bucket trucks, opening an office, and winning a project crosses an escalation threshold.
+
+Source Quality Profiles score each source by what it produces. Sources improve when they produce escalations, hunt signals, converted targets, opportunities, or subcontractors. Sources lose value when they create archive/noise or never convert.
+
+Watchlists preserve "meat on the bone" intelligence. This keeps potentially valuable organizations, contacts, and signals visible without forcing them into active hunts too early.
+
+The Escalation Center shows why something escalated, the supporting signals behind it, the owner, and the recommended next action.
+
+The Daily Intelligence Briefing is the owner-facing operating screen:
+
+- Mike sees Southeast escalations, hunts, watchlist changes, and top recommendations.
+- Ron sees Great Lakes escalations, hunts, watchlist changes, and top recommendations.
+- Admin sees national escalations, hunts, watchlists, and regional comparison.
+
+Signal decay reduces influence as signals age. At 30 days, influence starts dropping. At 60 days, it drops further. At 90 days, a signal moves toward archive unless reinforced by newer related signals.
+
+Signal Quality comes before Capacity Radar because Radar should measure verified, high-value capacity intelligence instead of raw harvested noise.
 
 ## Acquisition Hunt Engine
 

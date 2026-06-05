@@ -11,7 +11,8 @@ class AcquisitionTargetService
     public function buildFromSignals(?int $limit = null): array
     {
         $db = Database::connection();
-        $sql = "SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ('Converted','Ignored') ORDER BY s.created_at DESC";
+        (new SignalQualityService())->rebuild();
+        $sql = "SELECT s.*, r.name region_name, sqp.classification FROM signals s LEFT JOIN regions r ON r.id = s.region_id LEFT JOIN signal_quality_profiles sqp ON sqp.signal_id = s.id WHERE s.status NOT IN ('Converted','Ignored') AND COALESCE(sqp.classification, 'Watch') IN ('Escalate','Hunt') ORDER BY CASE sqp.classification WHEN 'Escalate' THEN 1 WHEN 'Hunt' THEN 2 ELSE 3 END, s.created_at DESC";
         if ($limit) {
             $sql .= ' LIMIT ' . (int)$limit;
         }

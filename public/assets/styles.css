@@ -52,6 +52,10 @@ small { color: var(--muted); }
 .priority.high { background: #d45b07; }
 .priority.medium { background: #1268d8; }
 .priority.low { background: #536174; }
+.priority.escalate { background: #b42318; }
+.priority.hunt { background: #0f5fb8; }
+.priority.watch { background: #536174; }
+.priority.archive { background: #303844; }
 .score { display: inline-block; padding: 7px 10px; color: #fff; font-size: 12px; font-weight: 900; }
 .score.critical { background: #b42318; }
 .score.weak { background: #d45b07; }

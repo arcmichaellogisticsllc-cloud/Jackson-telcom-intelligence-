@@ -11,7 +11,7 @@
   <aside class="sidebar">
     <div class="brand">Jackson<br><span>Intelligence Platform</span></div>
     <nav>
-      <?php foreach (['/' => 'National Command Center','/regions' => 'Regional Command Centers','/harvesters' => 'Acquisition Harvesters','/targets' => 'Acquisition Targets','/targets/hunting' => 'Hunting Lists','/hunts' => 'Hunts','/playbooks' => 'Playbooks','/hunt-actions' => 'Today Hunt Actions','/traffic' => 'Traffic Engine','/signals' => 'Signal Center','/organizations' => 'Organizations','/contacts' => 'Contacts','/subcontractors' => 'Subcontractors','/opportunities' => 'Opportunities','/recommendations' => 'Recommendations','/activities' => 'Activities','/settings' => 'Settings'] as $href => $label): ?>
+      <?php foreach (['/' => 'National Command Center','/regions' => 'Regional Command Centers','/briefing' => 'Daily Briefing','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/harvesters' => 'Acquisition Harvesters','/targets' => 'Acquisition Targets','/targets/hunting' => 'Hunting Lists','/hunts' => 'Hunts','/playbooks' => 'Playbooks','/hunt-actions' => 'Today Hunt Actions','/traffic' => 'Traffic Engine','/signals' => 'Signal Center','/organizations' => 'Organizations','/contacts' => 'Contacts','/subcontractors' => 'Subcontractors','/opportunities' => 'Opportunities','/recommendations' => 'Recommendations','/activities' => 'Activities','/settings' => 'Settings'] as $href => $label): ?>
         <a href="<?= $href ?>" class="<?= parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) === $href ? 'active' : '' ?>"><?= $label ?></a>
       <?php endforeach; ?>
     </nav>

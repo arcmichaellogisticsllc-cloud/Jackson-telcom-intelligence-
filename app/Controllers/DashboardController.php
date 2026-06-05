@@ -19,6 +19,8 @@ class DashboardController extends Controller
         $totals = $this->executiveTotals();
         $actions = $this->actions();
         $signalWidgets = $this->signalWidgets();
+        $qualityWidgets = $this->qualityWidgets();
+        $topSources = $this->topSources();
         $targetWidgets = $this->targetWidgets();
         $topTargets = $this->topTargets();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
@@ -32,6 +34,8 @@ class DashboardController extends Controller
             'totals' => $totals,
             'actions' => $actions,
             'signalWidgets' => $signalWidgets,
+            'qualityWidgets' => $qualityWidgets,
+            'topSources' => $topSources,
             'targetWidgets' => $targetWidgets,
             'topTargets' => $topTargets,
             'topSignals' => $topSignals,
@@ -149,6 +153,8 @@ class DashboardController extends Controller
         $score = CapacityService::scoreRegion($region);
         $actions = $this->actions($regionId, 5);
         $signalWidgets = $this->signalWidgets($regionId, $region['owner']);
+        $qualityWidgets = $this->qualityWidgets($regionId);
+        $topSources = $this->topSources($regionId);
         $targetWidgets = $this->targetWidgets($regionId);
         $topTargets = $this->topTargets($regionId, 6);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
@@ -162,7 +168,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'targetWidgets', 'topTargets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'targetWidgets', 'topTargets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void
@@ -232,6 +238,31 @@ class DashboardController extends Controller
             'assigned_to_me' => $owner ? $count("owner = ? AND status NOT IN ('Converted','Ignored')", [$owner]) : $count("owner != 'Unassigned' AND status NOT IN ('Converted','Ignored')"),
             'converted_month' => $count("status = 'Converted' AND strftime('%Y-%m', updated_at) = strftime('%Y-%m', 'now')"),
         ];
+    }
+
+    private function qualityWidgets(?int $regionId = null): array
+    {
+        $db = Database::connection();
+        $regionFilter = $regionId ? ' AND s.region_id = ' . (int)$regionId : '';
+        $watchFilter = $regionId ? ' AND region_id = ' . (int)$regionId : '';
+        $huntFilter = $regionId ? ' AND h.region_id = ' . (int)$regionId : '';
+        return [
+            'escalations' => (int)$db->query("SELECT COUNT(*) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id WHERE sqp.classification = 'Escalate' {$regionFilter}")->fetchColumn(),
+            'hunt_signals' => (int)$db->query("SELECT COUNT(*) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id WHERE sqp.classification = 'Hunt' {$regionFilter}")->fetchColumn(),
+            'watchlist_activity' => (int)$db->query("SELECT COUNT(*) FROM watchlist_items WHERE status IN ('Monitoring','Escalated') {$watchFilter}")->fetchColumn(),
+            'signal_quality' => (int)$db->query("SELECT COALESCE(AVG(signal_value_score),0) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id WHERE sqp.classification != 'Archive' {$regionFilter}")->fetchColumn(),
+            'active_hunts' => (int)$db->query("SELECT COUNT(*) FROM hunts h WHERE h.status = 'Active' {$huntFilter}")->fetchColumn(),
+        ];
+    }
+
+    private function topSources(?int $regionId = null): array
+    {
+        $sql = 'SELECT sqp.*, ss.name source_name, ss.source_type, r.name region_name FROM source_quality_profiles sqp JOIN signal_sources ss ON ss.id = sqp.signal_source_id LEFT JOIN regions r ON r.id = ss.region_id';
+        if ($regionId) {
+            $sql .= ' WHERE ss.region_id = ' . (int)$regionId;
+        }
+        $sql .= ' ORDER BY sqp.source_quality_score DESC, sqp.escalated_signals DESC LIMIT 6';
+        return Database::connection()->query($sql)->fetchAll();
     }
 
     private function actions(?int $regionId = null, int $limit = 8): array

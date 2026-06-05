@@ -6,12 +6,13 @@ use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Core\SignalScoring;
 use App\Services\SignalProcessingService;
+use App\Services\SignalQualityService;
 use App\Services\AcquisitionTargetService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -126,6 +127,42 @@ foreach ($regionData as $regionName => $data) {
     }
 }
 
+$qualityExamples = [
+    ['Southeast', 'ABC Fiber Services', '', 'Capacity', 'Hiring Activity', 'ABC Fiber hiring fiber splicers', 'Hiring activity for fiber splicers in Georgia.', 'Watch', '-20 days'],
+    ['Southeast', 'ABC Fiber Services', '', 'Capacity', 'Equipment Listing', 'ABC Fiber bucket truck listing', 'Equipment listing shows bucket truck and reel trailer movement.', 'Hunt', '-12 days'],
+    ['Southeast', 'ABC Fiber Services', '', 'Relationship', 'LinkedIn', 'ABC Fiber new office expansion', 'Office expansion and operations manager activity in Atlanta.', 'Hunt', '-6 days'],
+    ['Southeast', 'ABC Fiber Services', '', 'Opportunity', 'Industry News', 'ABC Fiber project award', 'Project award and multiple bucket trucks indicate escalation-worthy subcontractor capacity.', 'Escalate', '-1 days'],
+    ['Great Lakes', 'Michigan Municipal Fiber Authority', 'Dana Collins', 'Opportunity', 'Broadband Grant', 'Michigan broadband grant awarded', 'Broadband grant awarded for municipal fiber expansion with procurement path.', 'Escalate', '-2 days'],
+    ['Great Lakes', 'Michigan Municipal Fiber Authority', 'Dana Collins', 'Relationship', 'LinkedIn', 'Construction manager promoted Michigan utility', 'Construction manager promoted into OSP leadership role.', 'Hunt', '-14 days'],
+    ['Southwest', 'Houston Underground Pros', '', 'Capacity', 'Google Search', 'New telecom contractor Houston underground', 'New telecom contractor discovered in Houston underground utility searches.', 'Hunt', '-8 days'],
+    ['Southwest', 'Houston Underground Pros', '', 'Capacity', 'Equipment Listing', 'Directional drill crew listing Houston', 'Directional drill, vacuum trailer, and underground crew capacity listing.', 'Escalate', '-3 days'],
+    ['National', 'NorthStar Prime Broadband', 'Marcus Reid', 'Opportunity', 'Industry News', 'Prime contractor award national broadband', 'Prime contractor award creates subcontracting path across multiple regions.', 'Escalate', '-4 days'],
+    ['Southeast', 'Southeast Workforce Candidate Pool', 'Field Candidate', 'Outreach', 'LinkedIn', 'Workforce candidate aerial lineman', 'Workforce candidate with aerial lineman and bucket truck experience.', 'Watch', '-5 days'],
+    ['National', 'Telecom Marketing Digest', '', 'Market', 'Industry News', 'General telecom news roundup', 'General telecom news and irrelevant marketing content with no acquisition path.', 'Archive', '-1 days'],
+    ['Great Lakes', 'Consumer Wireless Blog', '', 'Market', 'Industry News', 'Unrelated announcement about retail phones', 'Unrelated announcement and duplicate content not tied to construction acquisition.', 'Archive', '-1 days'],
+];
+foreach ($qualityExamples as [$regionName, $org, $contact, $type, $source, $title, $description, $expected, $age]) {
+    $payload = [
+        'title' => $title,
+        'description' => $description,
+        'signal_type' => $type,
+        'source_type' => $source,
+        'source_url' => 'https://example.local/quality/' . sha1($title),
+        'region_id' => $regions[$regionName],
+        'state' => $regionData[$regionName]['state'] ?? '',
+        'city' => $regionData[$regionName]['city'] ?? '',
+        'organization_name' => $org,
+        'contact_name' => $contact,
+        'owner' => $regionData[$regionName]['owner'] ?? 'Admin',
+        'status' => 'New',
+        'recommended_next_action' => $expected === 'Archive' ? 'Archive as noise unless reinforced by a more specific acquisition signal.' : 'Review quality classification and decide whether to watch, hunt, or escalate.',
+        'notes' => 'Seeded Signal Quality example expected to classify near ' . $expected . '.',
+    ];
+    $score = SignalScoring::score($payload);
+    $created = date('Y-m-d H:i:s', strtotime($age));
+    $signalStmt->execute([$payload['title'], $payload['description'], $payload['signal_type'], $payload['source_type'], $payload['source_url'], $payload['region_id'], $payload['state'], $payload['city'], $payload['organization_name'], $payload['contact_name'], $score['confidence_score'], $score['impact_score'], $score['priority'], $payload['owner'], $payload['status'], $payload['recommended_next_action'], $payload['notes'], $created, $created]);
+}
+
 $sequenceStmt = $db->prepare('INSERT INTO outreach_sequences (name, target_type, region_id, purpose, step_number, channel, message_template, delay_days, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
 $sequenceTemplates = [
     ['Subcontractor Recruitment', 'Subcontractor', 'Recruit Subcontractor', ['Email','Phone','LinkedIn']],
@@ -209,6 +246,7 @@ for ($runIndex = 0; $runIndex < 5; $runIndex++) {
 $db->commit();
 
 (new SignalProcessingService())->processNew();
+(new SignalQualityService())->rebuild();
 (new AcquisitionTargetService())->buildFromSignals();
 
 $targetStmt = $db->prepare('INSERT INTO acquisition_targets (target_name, target_type, source_type, source_url, organization_name, contact_name, email, phone, website, region_id, state, city, owner, acquisition_score, confidence_score, strategic_value_score, urgency_score, capacity_value_score, relationship_value_score, opportunity_value_score, status, priority, reason_to_pursue, recommended_next_action, notes, duplicate_key, next_action_due_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');

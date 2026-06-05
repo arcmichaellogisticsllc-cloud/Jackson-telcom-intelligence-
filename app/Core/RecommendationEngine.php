@@ -21,6 +21,7 @@ class RecommendationEngine
         self::dataQualityWarnings($db);
         self::reviewPursuits($db);
         self::signalActions($db);
+        self::signalQualityActions($db);
         self::trafficActions($db);
         self::targetActions($db);
         self::huntActions($db);
@@ -249,6 +250,69 @@ class RecommendationEngine
 
             if ($signal['status'] === 'New' && $signal['created_at'] < (new DateTimeImmutable('-7 days'))->format('Y-m-d H:i:s')) {
                 self::insert($db, self::signalRecommendation($signal, 78, 'Signal aging without review: ' . $signal['title'], 'Signal has remained New for more than 7 days.', 'Review, assign, convert, or ignore this signal so acquisition attention stays current.'));
+            }
+        }
+    }
+
+    private static function signalQualityActions(PDO $db): void
+    {
+        $escalations = $db->query("SELECT sqp.*, s.title, s.region_id, s.owner, s.recommended_next_action, r.owner region_owner FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id LEFT JOIN regions r ON r.id = s.region_id WHERE sqp.classification = 'Escalate' AND s.status NOT IN ('Converted','Ignored')")->fetchAll();
+        foreach ($escalations as $row) {
+            self::insert($db, [
+                'title' => 'Escalation created: ' . $row['title'],
+                'category' => 'Market',
+                'priority' => 'Critical',
+                'region_id' => $row['region_id'],
+                'reason' => $row['reason_for_classification'],
+                'recommended_next_action' => $row['recommended_next_action'] ?: 'Review supporting signals, assign owner action, and decide whether to create or update a hunt.',
+                'assigned_owner' => $row['owner'] ?: ($row['region_owner'] ?? 'Admin'),
+                'source_type' => 'signal_quality',
+                'source_id' => $row['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => max(88, (int)$row['signal_value_score']),
+                'trigger_detail' => 'Signal Quality Engine classified this signal as Escalate.',
+                'why_it_matters' => 'Escalations are the few signals that should break through noise and get same-day attention.',
+            ]);
+        }
+
+        $thresholds = $db->query("SELECT sap.*, r.owner FROM signal_accumulation_profiles sap LEFT JOIN regions r ON r.id = sap.region_id WHERE sap.current_status IN ('Escalate','Hunt')")->fetchAll();
+        foreach ($thresholds as $profile) {
+            $isEscalate = $profile['current_status'] === 'Escalate';
+            self::insert($db, [
+                'title' => ($isEscalate ? 'Accumulation threshold reached: ' : 'Watchlist upgraded to hunt: ') . ($profile['organization_name'] ?: $profile['contact_name']),
+                'category' => $isEscalate ? 'Market' : 'Acquisition Target',
+                'priority' => $isEscalate ? 'Critical' : 'High',
+                'region_id' => $profile['region_id'],
+                'reason' => 'Multiple related signals accumulated around the same entity.',
+                'recommended_next_action' => $isEscalate ? 'Review supporting signals and decide whether to create an acquisition target or assign to a hunt today.' : 'Move this entity from monitoring into active hunting if owner capacity is available.',
+                'assigned_owner' => $profile['owner'] ?: 'Admin',
+                'source_type' => 'signal_accumulation',
+                'source_id' => $profile['id'],
+                'recommendation_type' => $isEscalate ? 'Review Pursuit' : 'Follow Up Relationship',
+                'priority_score' => $isEscalate ? 90 : 76,
+                'trigger_detail' => 'Accumulated signal count ' . $profile['accumulated_signal_count'] . ', confidence ' . $profile['accumulated_confidence_score'] . '.',
+                'why_it_matters' => 'Repeated weak signals can become strong acquisition intelligence when they point to the same entity.',
+            ]);
+        }
+
+        $sources = $db->query("SELECT sq.*, ss.name source_name, ss.region_id, r.owner FROM source_quality_profiles sq JOIN signal_sources ss ON ss.id = sq.signal_source_id LEFT JOIN regions r ON r.id = ss.region_id ORDER BY sq.source_quality_score DESC LIMIT 5")->fetchAll();
+        foreach ($sources as $source) {
+            if ((int)$source['source_quality_score'] >= 80) {
+                self::insert($db, [
+                    'title' => 'Double down on source: ' . $source['source_name'],
+                    'category' => 'Market',
+                    'priority' => 'Medium',
+                    'region_id' => $source['region_id'],
+                    'reason' => 'Signal source is producing high-quality intelligence.',
+                    'recommended_next_action' => 'Keep this source active and consider expanding adjacent source queries or cadence.',
+                    'assigned_owner' => $source['owner'] ?: 'Admin',
+                    'source_type' => 'signal_source',
+                    'source_id' => $source['signal_source_id'],
+                    'recommendation_type' => 'Review Pursuit',
+                    'priority_score' => (int)$source['source_quality_score'],
+                    'trigger_detail' => 'Source quality score is ' . $source['source_quality_score'] . '.',
+                    'why_it_matters' => 'Better sources reduce signal overload and improve acquisition focus.',
+                ]);
             }
         }
     }

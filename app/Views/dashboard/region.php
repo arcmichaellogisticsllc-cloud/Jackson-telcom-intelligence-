@@ -20,11 +20,11 @@
 </section>
 
 <section class="metrics">
-  <div><span>New Signals</span><strong><?= $signalWidgets['new'] ?></strong></div>
-  <div><span>Critical Signals</span><strong><?= $signalWidgets['critical'] ?></strong></div>
-  <div><span>Signals Needing Review</span><strong><?= $signalWidgets['needing_review'] ?></strong></div>
-  <div><span>Signals Assigned To Me</span><strong><?= $signalWidgets['assigned_to_me'] ?></strong></div>
-  <div><span>Converted This Month</span><strong><?= $signalWidgets['converted_month'] ?></strong></div>
+  <div><span>Escalations</span><strong><?= $qualityWidgets['escalations'] ?></strong></div>
+  <div><span>Active Hunts</span><strong><?= $qualityWidgets['active_hunts'] ?></strong></div>
+  <div><span>Watchlist Activity</span><strong><?= $qualityWidgets['watchlist_activity'] ?></strong></div>
+  <div><span>Signal Quality</span><strong><?= $qualityWidgets['signal_quality'] ?></strong></div>
+  <div><span>Hunt Signals</span><strong><?= $qualityWidgets['hunt_signals'] ?></strong></div>
 </section>
 
 <section class="metrics">
@@ -54,6 +54,10 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting?region=<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Hunting List</a></div>
     <div class="table-wrap"><table><thead><tr><th>Target</th><th>Type</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><?= htmlspecialchars($target['target_name']) ?></a><br><small><?= htmlspecialchars($target['priority']) ?></small></td><td><?= htmlspecialchars($target['target_type']) ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/watchlists">Watchlists</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Source</th><th>Quality</th><th>Output</th></tr></thead><tbody><?php foreach ($topSources as $source): ?><tr><td><?= htmlspecialchars($source['source_name']) ?><br><small><?= htmlspecialchars($source['source_type']) ?></small></td><td><?= (int)$source['source_quality_score'] ?></td><td><?= (int)$source['escalated_signals'] ?> escalate · <?= (int)$source['hunt_signals'] ?> hunt</td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
     <h2>Open Opportunities</h2>

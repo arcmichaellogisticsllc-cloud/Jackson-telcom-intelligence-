@@ -148,6 +148,79 @@ CREATE TABLE IF NOT EXISTS signals (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS signal_quality_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_id INTEGER NOT NULL UNIQUE,
+  source_quality_score INTEGER DEFAULT 0,
+  signal_value_score INTEGER DEFAULT 0,
+  strategic_value_score INTEGER DEFAULT 0,
+  capacity_value_score INTEGER DEFAULT 0,
+  opportunity_value_score INTEGER DEFAULT 0,
+  relationship_value_score INTEGER DEFAULT 0,
+  revenue_value_score INTEGER DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  impact_score INTEGER DEFAULT 0,
+  accumulation_score INTEGER DEFAULT 0,
+  classification TEXT NOT NULL DEFAULT 'Watch' CHECK(classification IN ('Escalate','Hunt','Watch','Archive')),
+  reason_for_classification TEXT,
+  reviewed_by TEXT,
+  reviewed_at TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(signal_id) REFERENCES signals(id)
+);
+
+CREATE TABLE IF NOT EXISTS source_quality_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  signal_source_id INTEGER NOT NULL UNIQUE,
+  total_signals INTEGER DEFAULT 0,
+  escalated_signals INTEGER DEFAULT 0,
+  hunt_signals INTEGER DEFAULT 0,
+  watch_signals INTEGER DEFAULT 0,
+  archived_signals INTEGER DEFAULT 0,
+  converted_targets INTEGER DEFAULT 0,
+  converted_opportunities INTEGER DEFAULT 0,
+  converted_subcontractors INTEGER DEFAULT 0,
+  source_quality_score INTEGER DEFAULT 0,
+  last_updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(signal_source_id) REFERENCES signal_sources(id)
+);
+
+CREATE TABLE IF NOT EXISTS signal_accumulation_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  organization_name TEXT,
+  contact_name TEXT,
+  region_id INTEGER,
+  accumulated_signal_count INTEGER DEFAULT 0,
+  accumulated_capacity_score INTEGER DEFAULT 0,
+  accumulated_opportunity_score INTEGER DEFAULT 0,
+  accumulated_relationship_score INTEGER DEFAULT 0,
+  accumulated_confidence_score INTEGER DEFAULT 0,
+  escalation_threshold INTEGER DEFAULT 80,
+  current_status TEXT DEFAULT 'Watch' CHECK(current_status IN ('Escalate','Hunt','Watch','Archive')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS watchlist_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  organization_name TEXT,
+  contact_name TEXT,
+  signal_id INTEGER,
+  accumulation_profile_id INTEGER,
+  region_id INTEGER,
+  status TEXT DEFAULT 'Monitoring' CHECK(status IN ('Monitoring','Escalated','Archived')),
+  purpose TEXT,
+  last_signal_at TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(signal_id) REFERENCES signals(id),
+  FOREIGN KEY(accumulation_profile_id) REFERENCES signal_accumulation_profiles(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS keywords (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   keyword TEXT NOT NULL,

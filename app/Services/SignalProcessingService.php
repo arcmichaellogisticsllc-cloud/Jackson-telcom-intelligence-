@@ -34,6 +34,7 @@ class SignalProcessingService
             $this->convert($db, $item);
             $processed++;
         }
+        (new SignalQualityService())->rebuild();
         RecommendationEngine::regenerate();
         return ['processed' => $processed, 'duplicates' => $duplicates, 'seen' => count($items)];
     }
