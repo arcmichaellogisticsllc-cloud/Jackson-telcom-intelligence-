@@ -19,6 +19,8 @@ class DashboardController extends Controller
         $totals = $this->executiveTotals();
         $actions = $this->actions();
         $signalWidgets = $this->signalWidgets();
+        $targetWidgets = $this->targetWidgets();
+        $topTargets = $this->topTargets();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
         $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
         $topOpportunities = $db->query('SELECT op.*, r.name region_name FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.stage NOT IN ("Awarded","Lost") ORDER BY op.estimated_value DESC LIMIT 8')->fetchAll();
@@ -30,6 +32,8 @@ class DashboardController extends Controller
             'totals' => $totals,
             'actions' => $actions,
             'signalWidgets' => $signalWidgets,
+            'targetWidgets' => $targetWidgets,
+            'topTargets' => $topTargets,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
             'topOpportunities' => $topOpportunities,
@@ -145,6 +149,8 @@ class DashboardController extends Controller
         $score = CapacityService::scoreRegion($region);
         $actions = $this->actions($regionId, 5);
         $signalWidgets = $this->signalWidgets($regionId, $region['owner']);
+        $targetWidgets = $this->targetWidgets($regionId);
+        $topTargets = $this->topTargets($regionId, 6);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
         $relationships->execute([$regionId]);
         $compliance = $db->prepare("SELECT s.*, o.name organization_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id WHERE s.region_id = ? AND (s.insurance_status != 'Approved' OR s.w9_status != 'Approved') ORDER BY o.name LIMIT 8");
@@ -156,7 +162,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'targetWidgets', 'topTargets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void
@@ -240,5 +246,28 @@ class DashboardController extends Controller
         $stmt = Database::connection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    private function targetWidgets(?int $regionId = null): array
+    {
+        $db = Database::connection();
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        return [
+            'new_week' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}created_at >= datetime('now','-7 days')")->fetchColumn(),
+            'critical' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}priority = 'Critical' AND status NOT IN ('Converted','Not Fit','Archived')")->fetchColumn(),
+            'ready' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}status = 'Ready for Outreach'")->fetchColumn(),
+            'no_next' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}(recommended_next_action IS NULL OR recommended_next_action = '') AND status NOT IN ('Converted','Not Fit','Archived')")->fetchColumn(),
+            'converted_month' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}status = 'Converted' AND strftime('%Y-%m', updated_at) = strftime('%Y-%m', 'now')")->fetchColumn(),
+        ];
+    }
+
+    private function topTargets(?int $regionId = null, int $limit = 8): array
+    {
+        $sql = 'SELECT at.*, r.name region_name, s.title signal_title FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id LEFT JOIN signals s ON s.id = at.source_signal_id WHERE at.status NOT IN ("Converted","Not Fit","Archived")';
+        if ($regionId) {
+            $sql .= ' AND at.region_id = ' . (int)$regionId;
+        }
+        $sql .= ' ORDER BY CASE at.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, at.acquisition_score DESC, at.urgency_score DESC LIMIT ' . (int)$limit;
+        return Database::connection()->query($sql)->fetchAll();
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\ActivityController;
+use App\Controllers\AcquisitionTargetController;
 use App\Controllers\AuthController;
 use App\Controllers\CrudController;
 use App\Controllers\DashboardController;
@@ -25,6 +26,13 @@ $router->post('/harvesters/sources', [HarvesterController::class, 'saveSource'])
 $router->post('/harvesters/run', [HarvesterController::class, 'run']);
 $router->post('/harvesters/process', [HarvesterController::class, 'process']);
 $router->post('/harvesters/import-csv', [HarvesterController::class, 'importCsv']);
+$router->get('/targets', [AcquisitionTargetController::class, 'index']);
+$router->post('/targets', [AcquisitionTargetController::class, 'save']);
+$router->post('/targets/build', [AcquisitionTargetController::class, 'build']);
+$router->get('/targets/hunting', [AcquisitionTargetController::class, 'hunting']);
+$router->get('/targets/detail', [AcquisitionTargetController::class, 'detail']);
+$router->post('/targets/status', [AcquisitionTargetController::class, 'status']);
+$router->post('/targets/convert', [AcquisitionTargetController::class, 'convert']);
 $router->get('/traffic', [TrafficController::class, 'index']);
 $router->post('/traffic/keywords', [TrafficController::class, 'saveKeyword']);
 $router->post('/traffic/content', [TrafficController::class, 'saveContent']);

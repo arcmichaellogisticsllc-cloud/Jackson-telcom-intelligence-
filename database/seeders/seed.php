@@ -6,11 +6,12 @@ use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Core\SignalScoring;
 use App\Services\SignalProcessingService;
+use App\Services\AcquisitionTargetService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -208,6 +209,25 @@ for ($runIndex = 0; $runIndex < 5; $runIndex++) {
 $db->commit();
 
 (new SignalProcessingService())->processNew();
+(new AcquisitionTargetService())->buildFromSignals();
+
+$targetStmt = $db->prepare('INSERT INTO acquisition_targets (target_name, target_type, source_type, source_url, organization_name, contact_name, email, phone, website, region_id, state, city, owner, acquisition_score, confidence_score, strategic_value_score, urgency_score, capacity_value_score, relationship_value_score, opportunity_value_score, status, priority, reason_to_pursue, recommended_next_action, notes, duplicate_key, next_action_due_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$manualTargets = [
+    ['Michigan Fiber Splicing Contractor', 'Subcontractor', 'Google Search', 'Great Lakes', 'MI', 'Detroit', 'Ron', 86, 'Fiber splicing subcontractor target in Michigan for Great Lakes capacity.', 'Research splicing crew count, trailers, OTDR capability, and availability.'],
+    ['Frontier Michigan Relationship Target', 'Utility', 'LinkedIn', 'Great Lakes', 'MI', 'Lansing', 'Ron', 84, 'Relationship target tied to Michigan broadband and utility construction activity.', 'Identify construction manager and schedule relationship outreach.'],
+    ['Ohio Aerial Bucket Crew Target', 'Subcontractor', 'Equipment Listing', 'Great Lakes', 'OH', 'Columbus', 'Ron', 82, 'Aerial crew and bucket truck capacity target in Ohio.', 'Call to qualify aerial capacity and subcontracting interest.'],
+    ['Wisconsin Municipal Fiber Contact', 'Municipality', 'Broadband Grant', 'Great Lakes', 'WI', 'Madison', 'Ron', 78, 'Municipal fiber opportunity target for Wisconsin broadband funding.', 'Research project owner and procurement timing.'],
+    ['Indiana Prime Broadband Target', 'Prime Contractor', 'Industry News', 'Great Lakes', 'IN', 'Indianapolis', 'Ron', 80, 'Prime contractor target for Indiana broadband construction packages.', 'Identify subcontracting path and field operations contact.'],
+    ['Houston Underground Utility Contractor', 'Subcontractor', 'Google Search', 'Southwest', 'TX', 'Houston', 'Future Southwest Owner', 88, 'Houston underground utility contractor target for Southwest capacity foundation.', 'Research boring crews, insurance status, and telecom project history.'],
+    ['Texas Bucket Truck Seller', 'Equipment Seller', 'Facebook Marketplace', 'Southwest', 'TX', 'Houston', 'Future Southwest Owner', 85, 'Equipment seller may be a contractor upgrading, downsizing, or exiting market.', 'Call seller and determine whether crews or equipment are acquisition targets.'],
+    ['MasTec Southwest Prime Contractor Target', 'Prime Contractor', 'Prime Contractor Award', 'Southwest', 'TX', 'Dallas', 'Future Southwest Owner', 83, 'Prime contractor target for Southwest subcontracting path.', 'Prepare capacity introduction and identify regional subcontracting contact.'],
+    ['Louisiana Fiber Splicing Crew Target', 'Subcontractor', 'Job Board', 'Southwest', 'LA', 'Baton Rouge', 'Future Southwest Owner', 79, 'Fiber splicing workforce and subcontractor target in Louisiana.', 'Qualify splicing crew availability and markets served.'],
+    ['Oklahoma Rural Broadband Utility Target', 'Utility', 'Broadband Grant', 'Southwest', 'OK', 'Oklahoma City', 'Future Southwest Owner', 77, 'Utility opportunity target tied to rural broadband funding.', 'Research award recipient and construction decision makers.'],
+];
+foreach ($manualTargets as [$name, $type, $source, $regionName, $state, $city, $owner, $score, $reason, $next]) {
+    $duplicate = sha1(strtolower($name . '||||' . $regions[$regionName] . '|' . $type));
+    $targetStmt->execute([$name, $type, $source, '', $name, '', '', '', '', $regions[$regionName], $state, $city, $owner, $score, 72, 78, 74, in_array($type, ['Subcontractor','Equipment Seller'], true) ? 88 : 45, in_array($type, ['Utility','Prime Contractor','Municipality'], true) ? 70 : 36, in_array($type, ['Utility','Prime Contractor','Municipality'], true) ? 84 : 42, 'New', $score >= 85 ? 'High' : 'Medium', $reason, $next, 'Seeded supplemental acquisition hunting target.', $duplicate, date('Y-m-d', strtotime('+2 days'))]);
+}
 RecommendationEngine::regenerate();
 
 echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, outreach workflows, and recommendations.\n";

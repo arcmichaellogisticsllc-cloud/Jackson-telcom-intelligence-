@@ -22,6 +22,7 @@ class RecommendationEngine
         self::reviewPursuits($db);
         self::signalActions($db);
         self::trafficActions($db);
+        self::targetActions($db);
     }
 
     private static function capacityTargets(PDO $db): void
@@ -328,6 +329,50 @@ class RecommendationEngine
                 'why_it_matters' => 'Content signals should become visible assets that attract subcontractors, primes, utilities, and workforce.',
             ]);
         }
+    }
+
+    private static function targetActions(PDO $db): void
+    {
+        $rows = $db->query("SELECT at.*, r.name region_name, r.owner region_owner FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id WHERE at.status NOT IN ('Converted','Not Fit','Archived')")->fetchAll();
+        foreach ($rows as $target) {
+            if ((int)$target['acquisition_score'] > 85 && $target['status'] === 'New') {
+                self::insert($db, self::targetRecommendation($target, 90, 'Research high-score target: ' . $target['target_name'], 'Target score is above 85 and still New.', $target['recommended_next_action'] ?: 'Research and qualify this target.'));
+            }
+            if ($target['status'] === 'Ready for Outreach') {
+                self::insert($db, self::targetRecommendation($target, 84, 'Outreach ready: ' . $target['target_name'], 'Target is marked Ready for Outreach.', 'Prepare call/email notes and make first touch. No automated sending.'));
+            }
+            if (trim((string)$target['recommended_next_action']) === '') {
+                self::insert($db, self::targetRecommendation($target, 62, 'Assign next action for target: ' . $target['target_name'], 'Target has no recommended next action.', 'Define the next hunting step and due date.'));
+            }
+            if (!$target['last_touched_at'] && $target['created_at'] < (new DateTimeImmutable('-7 days'))->format('Y-m-d H:i:s')) {
+                self::insert($db, self::targetRecommendation($target, 74, 'Touch stale acquisition target: ' . $target['target_name'], 'Target has not been touched in 7 days.', 'Move target forward, archive it, or mark Not Fit.'));
+            }
+            if ($target['priority'] === 'Critical') {
+                self::insert($db, self::targetRecommendation($target, 94, 'Act on critical target: ' . $target['target_name'], 'Target priority is Critical.', $target['recommended_next_action'] ?: 'Assign immediate owner action.'));
+            }
+            if (in_array($target['target_type'], ['Subcontractor','Equipment Seller'], true) && (int)$target['capacity_value_score'] > 70) {
+                self::insert($db, self::targetRecommendation($target, 82, 'Capacity recruitment target: ' . $target['target_name'], 'Capacity target aligns with regional capacity needs.', 'Qualify capacity, equipment, and availability for the theater.'));
+            }
+        }
+    }
+
+    private static function targetRecommendation(array $target, int $score, string $title, string $trigger, string $nextAction): array
+    {
+        return [
+            'title' => $title,
+            'category' => 'Acquisition Target',
+            'priority' => self::priorityFromScore($score),
+            'region_id' => $target['region_id'],
+            'reason' => $target['reason_to_pursue'] ?: 'Acquisition target requires owner action.',
+            'recommended_next_action' => $nextAction,
+            'assigned_owner' => $target['owner'] ?: ($target['region_owner'] ?? 'Admin'),
+            'source_type' => 'acquisition_target',
+            'source_id' => $target['id'],
+            'recommendation_type' => 'Review Pursuit',
+            'priority_score' => $score,
+            'trigger_detail' => $trigger,
+            'why_it_matters' => 'Targets are the bridge from harvested intelligence to daily hunting activity.',
+        ];
     }
 
     private static function signalRecommendation(array $signal, int $score, string $title, string $trigger, string $nextAction): array

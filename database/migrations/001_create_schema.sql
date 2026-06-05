@@ -279,6 +279,43 @@ CREATE TABLE IF NOT EXISTS raw_signal_items (
   FOREIGN KEY(signal_source_id) REFERENCES signal_sources(id)
 );
 
+CREATE TABLE IF NOT EXISTS acquisition_targets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_name TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  source_signal_id INTEGER,
+  source_type TEXT,
+  source_url TEXT,
+  organization_name TEXT,
+  contact_name TEXT,
+  email TEXT,
+  phone TEXT,
+  website TEXT,
+  region_id INTEGER,
+  state TEXT,
+  city TEXT,
+  owner TEXT DEFAULT 'Unassigned',
+  acquisition_score INTEGER DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  strategic_value_score INTEGER DEFAULT 0,
+  urgency_score INTEGER DEFAULT 0,
+  capacity_value_score INTEGER DEFAULT 0,
+  relationship_value_score INTEGER DEFAULT 0,
+  opportunity_value_score INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'New',
+  priority TEXT DEFAULT 'Medium',
+  reason_to_pursue TEXT,
+  recommended_next_action TEXT,
+  notes TEXT,
+  duplicate_key TEXT,
+  last_touched_at TEXT,
+  next_action_due_at TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(source_signal_id) REFERENCES signals(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS intelligence_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   signal_id INTEGER,

@@ -27,6 +27,14 @@
   <div><span>Converted This Month</span><strong><?= $signalWidgets['converted_month'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>New Targets This Week</span><strong><?= $targetWidgets['new_week'] ?></strong></div>
+  <div><span>Critical Targets</span><strong><?= $targetWidgets['critical'] ?></strong></div>
+  <div><span>Ready for Outreach</span><strong><?= $targetWidgets['ready'] ?></strong></div>
+  <div><span>No Next Action</span><strong><?= $targetWidgets['no_next'] ?></strong></div>
+  <div><span>Converted This Month</span><strong><?= $targetWidgets['converted_month'] ?></strong></div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Available Crews by Service Type</h2><span class="score <?= strtolower($score['category']) ?>"><?= htmlspecialchars($score['category']) ?></span></div>
@@ -43,6 +51,10 @@
 </section>
 
 <section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting?region=<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Hunting List</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Target</th><th>Type</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><?= htmlspecialchars($target['target_name']) ?></a><br><small><?= htmlspecialchars($target['priority']) ?></small></td><td><?= htmlspecialchars($target['target_type']) ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
   <div class="panel">
     <h2>Open Opportunities</h2>
     <div class="table-wrap"><table><thead><tr><th>Name</th><th>Stage</th><th>Value</th><th>Pursuit Score</th><th>Capacity</th></tr></thead><tbody><?php foreach ($opportunities as $opp): ?><tr><td><a href="/record?type=opportunity&id=<?= $opp['id'] ?>"><strong><?= htmlspecialchars($opp['name']) ?></strong></a><br><small><?= htmlspecialchars($opp['organization_name'] ?? '') ?></small></td><td><?= htmlspecialchars($opp['stage']) ?></td><td>$<?= number_format((float)$opp['estimated_value']) ?></td><td><?= $opp['pursuit']['score'] ?> · <?= htmlspecialchars($opp['pursuit']['label']) ?></td><td><?= (int)$opp['available_crews'] ?> / <?= (int)$opp['capacity_required'] ?></td></tr><?php endforeach; ?></tbody></table></div>

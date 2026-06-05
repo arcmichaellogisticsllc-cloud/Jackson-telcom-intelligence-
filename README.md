@@ -20,6 +20,8 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - National Command Center
 - Regions / Theaters
 - Acquisition Harvesters
+- Acquisition Targets
+- Hunting Lists
 - Traffic Engine
 - Signal Center
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
@@ -36,6 +38,9 @@ Jackson Intelligence Platform
 │   ├── Southeast: Mike, GA, AL, FL, TN, NC, SC
 │   ├── Great Lakes: Ron, MI, OH, IN, WI, IL
 │   └── Southwest: Houston hub, TX, OK, LA, NM
+├── Acquisition Harvesters
+├── Acquisition Targets
+├── Hunting Lists
 ├── Traffic Engine
 ├── Signal Center
 ├── Capacity Acquisition
@@ -103,6 +108,8 @@ Users:
 - Authentication
 - National Command Center
 - Acquisition Harvesters
+- Acquisition Targets
+- Hunting Lists
 - Traffic Engine
 - Signal Center
 - Capacity Acquisition
@@ -131,7 +138,9 @@ The harvesting pipeline is:
 2. Harvester Run records when the source was checked and what happened.
 3. Raw Signal Item stores unprocessed harvested data.
 4. Signal Processing classifies, routes, scores, and converts raw items into clean Signals.
-5. Recommendation Engine turns Signals into owner actions.
+5. Acquisition Target Pipeline converts relevant Signals into scored Targets.
+6. Hunting Lists prioritize Targets for Mike, Ron, Admin, and the future Southwest owner.
+7. Recommendation Engine turns Signals and Targets into owner actions.
 
 Signal sources track source type, target category, collection method, URL/search query, cadence, status, last run, next run, and run counts.
 
@@ -163,6 +172,51 @@ CSV imports must include these headers when available:
 CSV rows become Raw Signal Items first, then flow through the same processor as harvested records.
 
 This framework exists before Capacity Radar because Capacity Radar needs fuel: source coverage, raw market activity, contractor movement, equipment signals, funding signals, relationship movement, SEO demand, and outreach targets.
+
+## Acquisition Target Pipeline
+
+The Acquisition Target Pipeline is the bridge between harvested intelligence and daily hunting.
+
+```text
+Signals
+↓
+Acquisition Targets
+↓
+Daily Hunting Lists
+↓
+Outreach Preparation
+↓
+Organization / Contact / Subcontractor / Opportunity / Outreach Target
+```
+
+Targets are scored with:
+
+- Acquisition Score
+- Confidence Score
+- Strategic Value
+- Urgency
+- Capacity Value
+- Relationship Value
+- Opportunity Value
+
+Targets are deduplicated by organization, phone, email, website, region, and target type. Signal-to-target conversion is handled by `app/Services/AcquisitionTargetService.php`.
+
+Hunting lists:
+
+- National Hunting List: top targets across all theaters
+- Mike's Southeast Hunting List: Southeast targets only
+- Ron's Great Lakes Hunting List: Great Lakes targets only
+- Southwest Hunting List: Southwest targets assigned to Future Southwest Owner or Admin
+
+Outreach Prep does not send messages. It only prepares a suggested opening message, call notes, reason the target matters, discovery questions, and recommended channel.
+
+Targets can convert into organizations, contacts, subcontractor profiles, opportunities, or outreach targets.
+
+CLI command:
+
+```bash
+php scripts/build_acquisition_targets.php
+```
 
 ## National Command Center
 
@@ -398,6 +452,7 @@ Recommendation categories include:
 - Content
 - Outreach
 - Regional Expansion
+- Acquisition Target
 
 Each recommendation includes a category, priority, priority score, trigger detail, business reason, suggested next action, assigned owner, and status. Regional dashboards show the top five open actions for the assigned owner.
 

@@ -28,6 +28,14 @@
   <div><span>Converted This Month</span><strong><?= $signalWidgets['converted_month'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>New Targets This Week</span><strong><?= $targetWidgets['new_week'] ?></strong></div>
+  <div><span>Critical Targets</span><strong><?= $targetWidgets['critical'] ?></strong></div>
+  <div><span>Ready for Outreach</span><strong><?= $targetWidgets['ready'] ?></strong></div>
+  <div><span>No Next Action</span><strong><?= $targetWidgets['no_next'] ?></strong></div>
+  <div><span>Converted This Month</span><strong><?= $targetWidgets['converted_month'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -59,6 +67,10 @@
 </section>
 
 <section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting">Hunting Lists</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Target</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars($target['target_type']) ?></small></td><td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Signals</h2><a class="btn secondary" href="/signals">Signal Center</a></div>
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Signal Source</th><th>Theater</th><th>Recommended Action</th></tr></thead><tbody><?php foreach ($topSignals as $signal): ?><tr><td><span class="priority <?= strtolower($signal['priority']) ?>"><?= htmlspecialchars($signal['priority']) ?></span></td><td><strong><?= htmlspecialchars($signal['title']) ?></strong><br><small><?= htmlspecialchars($signal['signal_type']) ?> · <?= htmlspecialchars($signal['source_type']) ?></small></td><td><?= htmlspecialchars($signal['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($signal['recommended_next_action'] ?: 'Review and assign next acquisition action.') ?></td></tr><?php endforeach; ?></tbody></table></div>
