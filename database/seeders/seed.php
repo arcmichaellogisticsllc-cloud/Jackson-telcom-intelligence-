@@ -8,11 +8,12 @@ use App\Core\SignalScoring;
 use App\Services\SignalProcessingService;
 use App\Services\SignalQualityService;
 use App\Services\AcquisitionTargetService;
+use App\Services\CapacityGapService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -411,6 +412,99 @@ foreach (array_slice($huntTargetIds, 0, 25) as [$huntTargetId, $target, $playboo
     };
     $taskSeedStmt->execute([$huntTargetId, $target['id'], $secondStep['step_name'], $taskType, $target['owner'], date('Y-m-d', strtotime('+' . (int)$secondStep['delay_days'] . ' days')), 'Open', $secondStep['instructions'], '', $secondStep['id']]);
 }
+
+$capacityProfileStmt = $db->prepare('INSERT INTO capacity_profiles (profile_name, profile_type, region_id, market, state, city, owner, status, primary_mobilization_readiness, max_travel_radius_miles, states_served, markets_served, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$disciplineStmt = $db->prepare('INSERT INTO capacity_discipline_counts (capacity_profile_id, discipline, total_crews, available_now, available_24_hours, available_72_hours, available_1_week, available_2_weeks, available_30_days, available_60_days, booked_count, unknown_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$equipmentStmt = $db->prepare('INSERT INTO capacity_equipment (capacity_profile_id, equipment_type, count, condition, notes) VALUES (?, ?, ?, ?, ?)');
+$trustStmt = $db->prepare('INSERT INTO capacity_trust_scores (capacity_profile_id, safety_score, quality_score, communication_score, responsiveness_score, production_score, documentation_score, relationship_history_score, trust_score, trust_category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$regionalTargetStmt = $db->prepare('INSERT INTO regional_capacity_targets (region_id, market, discipline, target_crews_now, target_crews_30_days, target_crews_60_days, strategic_notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
+$targetDefaults = [
+    'Southeast' => [
+        'Aerial' => [12, 14, 16], 'Underground' => [7, 9, 11], 'Fiber Splicing' => [7, 9, 10], 'Emergency Restoration' => [4, 5, 6], 'Traffic Control' => [4, 5, 6], 'Directional Boring' => [4, 6, 7], 'Mowing / ROW' => [2, 3, 4], 'Inspection' => [3, 5, 6], 'QC' => [3, 4, 5], 'Engineering' => [2, 3, 4], 'Make Ready' => [3, 4, 5], 'Drop Crews' => [6, 8, 10],
+    ],
+    'Great Lakes' => [
+        'Aerial' => [8, 10, 12], 'Underground' => [5, 7, 8], 'Fiber Splicing' => [5, 6, 8], 'Emergency Restoration' => [3, 4, 5], 'Traffic Control' => [3, 4, 5], 'Directional Boring' => [3, 4, 5], 'Mowing / ROW' => [1, 2, 3], 'Inspection' => [6, 8, 9], 'QC' => [5, 7, 8], 'Engineering' => [2, 3, 4], 'Make Ready' => [4, 5, 6], 'Drop Crews' => [4, 6, 7],
+    ],
+    'Southwest' => [
+        'Aerial' => [6, 8, 9], 'Underground' => [9, 12, 14], 'Fiber Splicing' => [4, 5, 6], 'Emergency Restoration' => [3, 4, 5], 'Traffic Control' => [3, 4, 5], 'Directional Boring' => [8, 10, 12], 'Mowing / ROW' => [2, 3, 4], 'Inspection' => [2, 3, 4], 'QC' => [2, 3, 4], 'Engineering' => [2, 3, 4], 'Make Ready' => [3, 4, 5], 'Drop Crews' => [5, 7, 9],
+    ],
+    'National' => [
+        'Aerial' => [8, 10, 12], 'Underground' => [8, 10, 12], 'Fiber Splicing' => [6, 8, 10], 'Emergency Restoration' => [5, 6, 8], 'Traffic Control' => [4, 5, 6], 'Directional Boring' => [5, 7, 8], 'Mowing / ROW' => [3, 4, 5], 'Inspection' => [5, 7, 8], 'QC' => [5, 7, 8], 'Engineering' => [4, 6, 7], 'Make Ready' => [5, 6, 8], 'Drop Crews' => [8, 10, 12],
+    ],
+];
+foreach ($targetDefaults as $regionName => $disciplineTargets) {
+    foreach ($disciplineTargets as $discipline => [$now, $d30, $d60]) {
+        $regionalTargetStmt->execute([$regions[$regionName], 'Broadband Infrastructure', $discipline, $now, $d30, $d60, 'Seeded target for Capacity Radar gap calculations in ' . $regionName . '.']);
+    }
+}
+
+$capacityProfiles = [
+    ['National', 'Jackson Telcom National Response Core', 'Internal', 'Admin', 'Strategic Partner', '24 Hours', 1200, ['Emergency Restoration' => [3,2,2,2,3,3], 'Fiber Splicing' => [2,1,1,2,2,2], 'QC' => [2,1,1,2,2,2]], ['Pickup Trucks' => 5, 'Fusion Splicers' => 2, 'Splicing Trailers' => 1], [94,92,88,90,91,86,90]],
+    ['National', 'Jackson Telcom Shared Engineering Bench', 'Internal', 'Admin', 'Preferred', '1 Week', 1200, ['Engineering' => [3,1,1,2,3,3], 'Make Ready' => [3,1,1,2,3,3], 'Inspection' => [2,1,1,1,2,2]], ['Pickup Trucks' => 3, 'Trailers' => 1], [88,86,85,84,82,88,84]],
+    ['Southeast', 'Jackson Telcom Southeast Field Core', 'Internal', 'Mike', 'Approved', '72 Hours', 500, ['Aerial' => [3,2,2,2,3,3], 'Fiber Splicing' => [1,1,1,1,1,1], 'Emergency Restoration' => [2,1,1,2,2,2]], ['Bucket Trucks' => 3, 'Reel Trailers' => 2, 'Fusion Splicers' => 1], [82,80,78,80,76,74,78]],
+    ['Great Lakes', 'Jackson Telcom Great Lakes Field Core', 'Internal', 'Ron', 'Approved', '72 Hours', 450, ['Aerial' => [2,1,1,2,2,2], 'Fiber Splicing' => [1,1,1,1,1,1], 'Inspection' => [2,1,1,2,2,2]], ['Bucket Trucks' => 2, 'Pickup Trucks' => 3, 'Fusion Splicers' => 1], [80,78,79,78,76,72,76]],
+    ['Southwest', 'Jackson Telcom Southwest Starter Bench', 'Internal', 'Mike/Ron Shared', 'Qualified', '2 Weeks', 550, ['Underground' => [1,0,0,1,1,1], 'Directional Boring' => [1,0,0,0,1,1], 'Traffic Control' => [1,0,0,1,1,1]], ['Pickup Trucks' => 2, 'Trailers' => 1], [68,66,64,62,60,66,58]],
+];
+
+$regionalProviderNames = [
+    'Southeast' => ['Peachtree Aerial Fiber', 'Carolina Splice Group', 'Gulf Underground Telecom', 'Volunteer Traffic Control', 'Atlanta Drop Crew Network', 'Blue Ridge Make Ready', 'Florida Restoration Partners', 'Georgia ROW Services', 'Southeast QC Inspectors', 'Metro Bucket Truck Supply'],
+    'Great Lakes' => ['Michigan Fiber Splicing', 'Ohio Pole Transfer Group', 'Indiana Inspection Services', 'Lakeshore QC Partners', 'Wisconsin Make Ready', 'Illinois Drop Crew Network', 'Detroit Emergency Fiber', 'Great Lakes Traffic Control', 'Toledo Underground Utility', 'Midwest Bucket Fleet'],
+    'Southwest' => ['Houston Underground Pros', 'Texas Directional Boring', 'Bayou Fiber Splicing', 'Oklahoma Drop Crew Network', 'New Mexico Make Ready', 'Southwest Traffic Control', 'Houston Vac Truck Supply', 'Louisiana ROW Services', 'Dallas Inspection Partners', 'Gulf Coast Emergency Fiber'],
+    'National' => ['National Storm Restoration Pool', 'Interstate Splicing Bench', 'Prime Vendor Equipment Network', 'National QC Inspection Desk', 'Shared ROW Contractor Pool', 'Multi-State Drop Crew Bench', 'National Directional Drill Exchange', 'Strategic Make Ready Partners'],
+];
+$disciplineRotations = [
+    ['Aerial', 'Fiber Splicing'], ['Underground', 'Directional Boring'], ['Traffic Control'], ['Inspection', 'QC'], ['Make Ready'], ['Drop Crews'], ['Emergency Restoration'], ['Mowing / ROW'], ['Engineering'], ['Aerial', 'Emergency Restoration'],
+];
+$profileTypes = ['Subcontractor', 'Subcontractor', 'Vendor', 'Specialty Provider', 'Equipment Provider'];
+$statuses = ['Prospect', 'Qualified', 'Approved', 'Preferred', 'Strategic Partner'];
+$readiness = ['24 Hours', '72 Hours', '1 Week', '2 Weeks', '30 Days', '60 Days'];
+foreach ($regionalProviderNames as $regionName => $names) {
+    foreach ($names as $i => $name) {
+        $owner = match ($regionName) {
+            'Southeast' => 'Mike',
+            'Great Lakes' => 'Ron',
+            'Southwest' => 'Mike/Ron Shared',
+            default => 'Admin',
+        };
+        $profileType = $profileTypes[$i % count($profileTypes)];
+        $status = $statuses[$i % count($statuses)];
+        $capacityProfiles[] = [$regionName, $name, $profileType, $owner, $status, $readiness[$i % count($readiness)], 150 + ($i * 35), array_fill_keys($disciplineRotations[$i % count($disciplineRotations)], null), [], [55 + (($i * 7) % 42), 54 + (($i * 6) % 44), 52 + (($i * 5) % 45), 50 + (($i * 8) % 45), 51 + (($i * 9) % 44), 48 + (($i * 6) % 45), 50 + (($i * 7) % 45)]];
+    }
+}
+
+foreach ($capacityProfiles as $index => [$regionName, $name, $profileType, $owner, $status, $ready, $radius, $disciplines, $equipment, $trust]) {
+    $regionId = $regions[$regionName];
+    $state = $regionData[$regionName]['state'] ?? '';
+    $city = $regionData[$regionName]['city'] ?? '';
+    $capacityProfileStmt->execute([$name, $profileType, $regionId, 'Broadband Infrastructure', $state, $city, $owner, $status, $ready, $radius, $regionRows[$regionName][6], 'Aerial, underground, splicing, restoration, utility construction', 'Seeded Capacity Radar provider.']);
+    $profileId = (int)$db->lastInsertId();
+    foreach ($disciplines as $discipline => $preset) {
+        if ($preset === null) {
+            $total = 1 + (($index + strlen($discipline)) % 4);
+            $now = max(0, $total - (($index + strlen($discipline)) % 3));
+            $preset = [$total, min($now, $total), min($now + 1, $total), min($now + 1, $total), min($now + 2, $total), $total];
+        }
+        [$total, $now, $h24, $h72, $w1, $w2] = $preset;
+        $disciplineStmt->execute([$profileId, $discipline, $total, $now, $h24, $h72, $w1, $w2, min($total, $w2 + 1), $total, max(0, $total - $now), 0]);
+    }
+    $equipment = $equipment ?: [
+        'Bucket Trucks' => ($index % 3),
+        'Directional Drills' => str_contains($name, 'Underground') || str_contains($name, 'Boring') ? 2 : 0,
+        'Splicing Trailers' => str_contains($name, 'Splic') ? 2 : 0,
+        'Pickup Trucks' => 1 + ($index % 4),
+        'Trailers' => 1 + ($index % 2),
+    ];
+    foreach ($equipment as $type => $count) {
+        if ($count > 0) {
+            $equipmentStmt->execute([$profileId, $type, $count, ['Fair','Good','Excellent'][$index % 3], 'Seeded equipment count for Capacity Radar.']);
+        }
+    }
+    $trustScore = (int)round(array_sum($trust) / count($trust));
+    $trustStmt->execute([$profileId, $trust[0], $trust[1], $trust[2], $trust[3], $trust[4], $trust[5], $trust[6], $trustScore, (new CapacityGapService())->trustCategory($trustScore)]);
+}
+
+(new CapacityGapService())->recalculateTrustScores();
 RecommendationEngine::regenerate();
 
-echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, hunt tasks, and recommendations.\n";
+echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, capacity radar, hunt tasks, and recommendations.\n";

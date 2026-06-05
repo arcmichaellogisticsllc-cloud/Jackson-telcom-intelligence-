@@ -29,6 +29,92 @@ CREATE TABLE IF NOT EXISTS capacity_targets (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS capacity_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  profile_name TEXT NOT NULL,
+  profile_type TEXT NOT NULL CHECK(profile_type IN ('Internal','Subcontractor','Vendor','Equipment Provider','Specialty Provider')),
+  organization_id INTEGER,
+  subcontractor_id INTEGER,
+  region_id INTEGER,
+  market TEXT,
+  state TEXT,
+  city TEXT,
+  owner TEXT CHECK(owner IN ('Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin')),
+  status TEXT DEFAULT 'Prospect' CHECK(status IN ('Prospect','Qualified','Approved','Preferred','Strategic Partner')),
+  primary_mobilization_readiness TEXT DEFAULT '30 Days',
+  max_travel_radius_miles INTEGER DEFAULT 0,
+  states_served TEXT,
+  markets_served TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(organization_id) REFERENCES organizations(id),
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_discipline_counts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  capacity_profile_id INTEGER NOT NULL,
+  discipline TEXT NOT NULL,
+  total_crews INTEGER DEFAULT 0,
+  available_now INTEGER DEFAULT 0,
+  available_24_hours INTEGER DEFAULT 0,
+  available_72_hours INTEGER DEFAULT 0,
+  available_1_week INTEGER DEFAULT 0,
+  available_2_weeks INTEGER DEFAULT 0,
+  available_30_days INTEGER DEFAULT 0,
+  available_60_days INTEGER DEFAULT 0,
+  booked_count INTEGER DEFAULT 0,
+  unknown_count INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(capacity_profile_id) REFERENCES capacity_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_equipment (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  capacity_profile_id INTEGER NOT NULL,
+  equipment_type TEXT NOT NULL,
+  count INTEGER DEFAULT 0,
+  condition TEXT DEFAULT 'Unknown' CHECK(condition IN ('Unknown','Poor','Fair','Good','Excellent')),
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(capacity_profile_id) REFERENCES capacity_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_trust_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  capacity_profile_id INTEGER NOT NULL UNIQUE,
+  safety_score INTEGER DEFAULT 0,
+  quality_score INTEGER DEFAULT 0,
+  communication_score INTEGER DEFAULT 0,
+  responsiveness_score INTEGER DEFAULT 0,
+  production_score INTEGER DEFAULT 0,
+  documentation_score INTEGER DEFAULT 0,
+  relationship_history_score INTEGER DEFAULT 0,
+  trust_score INTEGER DEFAULT 0,
+  trust_category TEXT DEFAULT 'Developing',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(capacity_profile_id) REFERENCES capacity_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS regional_capacity_targets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region_id INTEGER,
+  market TEXT,
+  discipline TEXT NOT NULL,
+  target_crews_now INTEGER DEFAULT 0,
+  target_crews_30_days INTEGER DEFAULT 0,
+  target_crews_60_days INTEGER DEFAULT 0,
+  strategic_notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,

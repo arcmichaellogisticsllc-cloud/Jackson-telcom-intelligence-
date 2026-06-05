@@ -13,6 +13,7 @@ class RecommendationEngine
         $db->exec('DELETE FROM recommended_actions');
 
         self::capacityTargets($db);
+        self::capacityRadarActions($db);
         self::approvedNetworkFloor($db);
         self::staleContacts($db);
         self::opportunityNextActions($db);
@@ -73,6 +74,125 @@ class RecommendationEngine
                     'why_it_matters' => 'A thin approved network limits response speed and raises execution risk.',
                 ]);
             }
+        }
+    }
+
+    private static function capacityRadarActions(PDO $db): void
+    {
+        if (!$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'regional_capacity_targets'")->fetchColumn()) {
+            return;
+        }
+        $service = new \App\Services\CapacityGapService();
+        $service->recalculateTrustScores();
+
+        foreach ($service->gaps() as $gap) {
+            if (in_array($gap['severity'], ['Critical','High'], true)) {
+                self::insert($db, [
+                    'title' => 'Recruit ' . max($gap['reactive_gap'], $gap['predictive_30_gap'], $gap['predictive_60_gap']) . ' ' . $gap['discipline'] . ' crews in ' . $gap['region_name'],
+                    'category' => 'Capacity',
+                    'priority' => $gap['severity'] === 'Critical' ? 'Critical' : 'High',
+                    'region_id' => $gap['region_id'],
+                    'reason' => $gap['discipline'] . ' capacity gap is blocking pursuit confidence in ' . $gap['market'] . '.',
+                    'recommended_next_action' => 'Review capacity signals, acquisition targets, and capacity hunts that can fill this gap before committing new work.',
+                    'assigned_owner' => self::ownerForRegion($db, (int)$gap['region_id']),
+                    'source_type' => 'capacity_gap',
+                    'source_id' => 0,
+                    'recommendation_type' => 'Recruit Capacity',
+                    'priority_score' => $gap['severity'] === 'Critical' ? 95 : 82,
+                    'trigger_detail' => 'Reactive gap ' . $gap['reactive_gap'] . ', 30-day gap ' . $gap['predictive_30_gap'] . ', 60-day gap ' . $gap['predictive_60_gap'] . '.',
+                    'why_it_matters' => 'Capacity Radar answers whether Jackson can execute before pursuit decisions are made.',
+                ]);
+            } elseif ($gap['predictive_30_gap'] > 0 || $gap['predictive_60_gap'] > 0) {
+                self::insert($db, [
+                    'title' => 'Monitor predictive ' . $gap['discipline'] . ' gap in ' . $gap['region_name'],
+                    'category' => 'Capacity',
+                    'priority' => 'Medium',
+                    'region_id' => $gap['region_id'],
+                    'reason' => 'Projected capacity gap exists within 30 or 60 days.',
+                    'recommended_next_action' => 'Add qualified capacity targets to active hunts before this becomes a reactive gap.',
+                    'assigned_owner' => self::ownerForRegion($db, (int)$gap['region_id']),
+                    'source_type' => 'capacity_gap',
+                    'source_id' => 0,
+                    'recommendation_type' => 'Recruit Capacity',
+                    'priority_score' => 62,
+                    'trigger_detail' => '30-day gap ' . $gap['predictive_30_gap'] . ', 60-day gap ' . $gap['predictive_60_gap'] . '.',
+                    'why_it_matters' => 'Predictive gaps create near-future pursuit risk even when current capacity looks acceptable.',
+                ]);
+            }
+        }
+
+        $providers = $db->query('SELECT cp.*, cts.trust_score, cts.trust_category, r.owner FROM capacity_profiles cp JOIN capacity_trust_scores cts ON cts.capacity_profile_id = cp.id LEFT JOIN regions r ON r.id = cp.region_id')->fetchAll();
+        foreach ($providers as $provider) {
+            if ((int)$provider['trust_score'] < 45 && in_array($provider['status'], ['Approved','Preferred','Strategic Partner'], true)) {
+                self::insert($db, [
+                    'title' => 'Review low trust capacity provider: ' . $provider['profile_name'],
+                    'category' => 'Capacity',
+                    'priority' => 'High',
+                    'region_id' => $provider['region_id'],
+                    'reason' => 'Approved capacity provider has low trust score.',
+                    'recommended_next_action' => 'Review safety, quality, communication, documentation, and production history before assigning work.',
+                    'assigned_owner' => $provider['owner'] ?: ($provider['owner'] ?? 'Admin'),
+                    'source_type' => 'capacity_profile',
+                    'source_id' => $provider['id'],
+                    'recommendation_type' => 'Avoid Opportunity Risk',
+                    'priority_score' => 78,
+                    'trigger_detail' => 'Trust score ' . $provider['trust_score'] . ' (' . $provider['trust_category'] . ').',
+                    'why_it_matters' => 'Low-trust capacity can create execution risk even when crew count exists.',
+                ]);
+            }
+            if ($provider['status'] === 'Approved' && (int)$provider['trust_score'] >= 78) {
+                self::insert($db, [
+                    'title' => 'Consider promoting ' . $provider['profile_name'] . ' to Preferred',
+                    'category' => 'Capacity',
+                    'priority' => 'Medium',
+                    'region_id' => $provider['region_id'],
+                    'reason' => 'Approved provider has strong trust score.',
+                    'recommended_next_action' => 'Review recent performance and decide whether this provider should become Preferred.',
+                    'assigned_owner' => $provider['owner'] ?: 'Admin',
+                    'source_type' => 'capacity_profile',
+                    'source_id' => $provider['id'],
+                    'recommendation_type' => 'Review Pursuit',
+                    'priority_score' => 66,
+                    'trigger_detail' => 'Trust score ' . $provider['trust_score'] . '.',
+                    'why_it_matters' => 'Preferred providers strengthen reliable deployable capacity.',
+                ]);
+            }
+            if ($provider['status'] === 'Preferred' && (int)$provider['trust_score'] >= 92) {
+                self::insert($db, [
+                    'title' => $provider['profile_name'] . ' may qualify as Strategic Partner',
+                    'category' => 'Capacity',
+                    'priority' => 'High',
+                    'region_id' => $provider['region_id'],
+                    'reason' => 'Preferred provider has strategic-partner-level trust score.',
+                    'recommended_next_action' => 'Review relationship history, capacity breadth, and multi-market readiness.',
+                    'assigned_owner' => $provider['owner'] ?: 'Admin',
+                    'source_type' => 'capacity_profile',
+                    'source_id' => $provider['id'],
+                    'recommendation_type' => 'Review Pursuit',
+                    'priority_score' => 82,
+                    'trigger_detail' => 'Trust score ' . $provider['trust_score'] . '.',
+                    'why_it_matters' => 'Strategic partners can anchor pursuit decisions and emergency response confidence.',
+                ]);
+            }
+        }
+
+        $trustedAvailable = $db->query("SELECT cp.*, r.name region_name, r.owner region_owner, cts.trust_score, COALESCE(SUM(cdc.available_now),0) available_now FROM capacity_profiles cp JOIN capacity_trust_scores cts ON cts.capacity_profile_id = cp.id LEFT JOIN regions r ON r.id = cp.region_id LEFT JOIN capacity_discipline_counts cdc ON cdc.capacity_profile_id = cp.id WHERE cts.trust_score >= 82 GROUP BY cp.id HAVING available_now > 0")->fetchAll();
+        foreach ($trustedAvailable as $provider) {
+            self::insert($db, [
+                'title' => 'Trusted capacity available: ' . $provider['profile_name'],
+                'category' => 'Capacity',
+                'priority' => 'Medium',
+                'region_id' => $provider['region_id'],
+                'reason' => 'Trusted provider has deployable capacity available now.',
+                'recommended_next_action' => 'Match this provider against current gaps, capacity hunts, or blocked pursuits.',
+                'assigned_owner' => $provider['region_owner'] ?: 'Admin',
+                'source_type' => 'capacity_profile',
+                'source_id' => $provider['id'],
+                'recommendation_type' => 'Recruit Capacity',
+                'priority_score' => 68,
+                'trigger_detail' => $provider['available_now'] . ' available crews, trust score ' . $provider['trust_score'] . '.',
+                'why_it_matters' => 'Available trusted capacity can unblock pursuit decisions today.',
+            ]);
         }
     }
 

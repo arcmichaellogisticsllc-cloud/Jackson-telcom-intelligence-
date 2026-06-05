@@ -31,6 +31,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Watchlists
 - Escalation Center
 - Daily Intelligence Briefing
+- Capacity Radar
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
 - Capacity Acquisition
 - Relationship Intelligence
@@ -52,6 +53,7 @@ Jackson Intelligence Platform
 ├── Traffic Engine
 ├── Signal Center
 ├── Signal Quality / Watchlists / Escalations
+├── Capacity Radar
 ├── Capacity Acquisition
 ├── Relationship Intelligence
 ├── Opportunity Intelligence
@@ -125,6 +127,7 @@ Users:
 - Watchlists
 - Escalations
 - Daily Intelligence Briefing
+- Capacity Radar
 - Capacity Acquisition
 - Relationship Intelligence
 - Opportunity Intelligence
@@ -273,6 +276,65 @@ The Daily Intelligence Briefing is the owner-facing operating screen:
 Signal decay reduces influence as signals age. At 30 days, influence starts dropping. At 60 days, it drops further. At 90 days, a signal moves toward archive unless reinforced by newer related signals.
 
 Signal Quality comes before Capacity Radar because Radar should measure verified, high-value capacity intelligence instead of raw harvested noise.
+
+## Capacity Radar
+
+Capacity Radar answers the operating question:
+
+`What capacity gaps prevent us from pursuing opportunities today?`
+
+It tracks both internal Jackson capacity and external capacity from subcontractors, vendors, equipment providers, and specialty providers. The goal is not to create a vendor database. The goal is to determine whether Jackson can execute before committing to a pursuit.
+
+Capacity disciplines tracked:
+
+- Aerial
+- Underground
+- Fiber Splicing
+- Emergency Restoration
+- Traffic Control
+- Directional Boring
+- Mowing / ROW
+- Inspection
+- QC
+- Engineering
+- Make Ready
+- Drop Crews
+
+Capacity Profiles represent internal teams, subcontractors, vendors, equipment providers, and specialty providers. Each profile can track market, theater, owner, status, mobilization readiness, travel radius, states served, markets served, equipment counts, discipline crew counts, and trust score.
+
+Mobilization readiness values:
+
+- 24 Hours
+- 72 Hours
+- 1 Week
+- 2 Weeks
+- 30 Days
+- 60 Days
+
+Trust scoring considers safety, quality, communication, responsiveness, production, documentation, and relationship history. Trust categories are:
+
+- Critical Risk
+- Developing
+- Reliable
+- Preferred
+- Strategic Partner
+
+Capacity Radar calculates reactive and predictive gaps:
+
+- Reactive gap: target crews now minus available now
+- Predictive 30-day gap: target crews in 30 days minus available within 30 days
+- Predictive 60-day gap: target crews in 60 days minus available within 60 days
+
+Severity levels are None, Low, Medium, High, and Critical. Critical or High gaps become blocking pursuit risks and feed recommendations such as recruiting crews, reviewing capacity targets, promoting strong providers, or avoiding low-trust capacity.
+
+Capacity Radar connects with the existing acquisition system:
+
+- Escalate/Hunt capacity signals suggest creating or updating Capacity Profiles.
+- Subcontractor and equipment-seller Acquisition Targets show potential capacity contribution.
+- Capacity Hunts show which gaps they are intended to solve.
+- Recommendations convert gaps into owner action.
+
+Capacity Radar comes after Signal Quality because radar should work from higher-value intelligence, not raw noise. SyncERP remains last because this phase is still acquisition and decision support, not production execution, billing, or ERP workflow.
 
 ## Acquisition Hunt Engine
 
