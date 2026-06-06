@@ -49,11 +49,18 @@ class OpportunityPursuitService
 
     private function clearGenerated(PDO $db): void
     {
+        foreach (['scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles'] as $table) {
+            if ($db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $db->quote($table))->fetchColumn()) {
+                $db->exec("DELETE FROM {$table}");
+                $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
+            }
+        }
         foreach (['strategic_alignment_profiles','pursuit_scores','opportunity_pursuit_decisions','opportunity_watchlists'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
         }
         $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Opportunity Pursuit Engine'");
+        $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Preconstruction Intelligence Engine'");
     }
 
     private function opportunities(PDO $db): array

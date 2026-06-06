@@ -1095,6 +1095,36 @@ Relationship fit evaluates whether Jackson has access to decision makers, projec
 
 The Pursuit Board shows top pursuits, fiber backbone opportunities, opportunities to avoid, capacity blockers, relationship blockers, future watchlist opportunities, and stage-based pursuit movement. Command Centers and the Executive Daily Brief promote only the highest-value pursuit actions.
 
+## Preconstruction Intelligence
+
+Preconstruction Intelligence is the bridge between Acquisition and the future SyncERP layer.
+
+The Pursuit Engine answers: should Jackson pursue this opportunity?
+
+Preconstruction answers:
+
+- can we bid it
+- can we execute it
+- can we make money
+- what capacity will it consume
+- what risks exist before award
+
+Preconstruction creates:
+
+- Preconstruction Profiles
+- Bid / No-Bid Decisions
+- Capacity Consumption Plans
+- Subcontractor Fit Plans
+- Margin Forecasts
+- Preconstruction Risks
+- Scenario Plans
+
+Bid decisions are scored from fiber backbone alignment, relationship strength, capacity availability, subcontractor readiness, estimated margin, project risk, strategic value, and market fit. Decisions are `Bid`, `Bid Selectively`, `Hold`, or `No Bid`.
+
+Capacity Consumption Plans estimate required crews by discipline and compare them against Capacity Radar availability. Subcontractor Fit Plans identify candidate, preferred, selected, or rejected subcontractor options before award. Margin Forecasts are planning estimates only and do not create billing, accounting, production, or ERP records.
+
+Risk assessment covers capacity, subcontractor, relationship, margin, schedule, market, compliance, and unknown scope risks. Scenario planning compares conservative, expected, and aggressive bid assumptions before Jackson commits capacity or attention.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

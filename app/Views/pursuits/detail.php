@@ -9,6 +9,10 @@
   <a href="/opportunities">Opportunities</a>
   <a href="/capacity-radar">Capacity Radar</a>
   <a href="/relationship-graph">Relationship Graph</a>
+  <form method="post" action="/preconstruction/create">
+    <input type="hidden" name="opportunity_id" value="<?= (int)$opportunity['id'] ?>">
+    <button class="btn secondary">Create Preconstruction Profile</button>
+  </form>
 </nav>
 
 <section class="metrics">

@@ -15,7 +15,7 @@ $count = function (string $sql) use ($db): int {
     return (int)$db->query($sql)->fetchColumn();
 };
 
-$tables = ['signals','signal_quality_profiles','acquisition_targets','capacity_profiles','capacity_trust_scores','subcontractors','subcontractor_compliance_profiles','relationship_intelligence_profiles','relationship_objectives','strategic_alignment_profiles','pursuit_scores','opportunity_pursuit_decisions','opportunity_watchlists','recommended_actions','daily_actions','outreach_intelligence','outreach_scripts','outreach_discovery_questions','outreach_outcomes','content_drafts','distribution_plans','channels','activities'];
+$tables = ['signals','signal_quality_profiles','acquisition_targets','capacity_profiles','capacity_trust_scores','subcontractors','subcontractor_compliance_profiles','relationship_intelligence_profiles','relationship_objectives','strategic_alignment_profiles','pursuit_scores','opportunity_pursuit_decisions','opportunity_watchlists','preconstruction_profiles','bid_decisions','capacity_consumption_plans','subcontractor_fit_plans','margin_forecasts','preconstruction_risks','scenario_plans','recommended_actions','daily_actions','outreach_intelligence','outreach_scripts','outreach_discovery_questions','outreach_outcomes','content_drafts','distribution_plans','channels','activities'];
 foreach ($tables as $table) {
     $exists = (bool)$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $db->quote($table))->fetchColumn();
     $add($exists ? 'PASS' : 'FAIL', "table exists: {$table}", $exists ? 0 : 1);
@@ -33,6 +33,9 @@ $add('FAIL', 'daily actions without owner', $count("SELECT COUNT(*) FROM daily_a
 $add('WARN', 'open opportunities without strategic alignment', $count("SELECT COUNT(*) FROM opportunities op LEFT JOIN strategic_alignment_profiles sap ON sap.opportunity_id = op.id WHERE op.stage NOT IN ('Awarded','Lost') AND sap.id IS NULL"));
 $add('WARN', 'open opportunities without pursuit decision', $count("SELECT COUNT(*) FROM opportunities op LEFT JOIN opportunity_pursuit_decisions opd ON opd.opportunity_id = op.id WHERE op.stage NOT IN ('Awarded','Lost') AND opd.id IS NULL"));
 $add('WARN', 'pursuit decisions without watchlist', $count('SELECT COUNT(*) FROM opportunity_pursuit_decisions opd LEFT JOIN opportunity_watchlists ow ON ow.opportunity_id = opd.opportunity_id WHERE ow.id IS NULL'));
+$add('WARN', 'preconstruction profiles without bid decision', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN bid_decisions bd ON bd.preconstruction_profile_id = pp.id WHERE bd.id IS NULL'));
+$add('WARN', 'preconstruction profiles without margin forecast', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN margin_forecasts mf ON mf.preconstruction_profile_id = pp.id WHERE mf.id IS NULL'));
+$add('WARN', 'preconstruction profiles without capacity plan', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN capacity_consumption_plans ccp ON ccp.preconstruction_profile_id = pp.id WHERE ccp.id IS NULL'));
 $add('FAIL', 'outreach records without owner', $count("SELECT COUNT(*) FROM outreach_intelligence WHERE owner IS NULL OR owner = ''"));
 $add('WARN', 'outreach records without script', $count('SELECT COUNT(*) FROM outreach_intelligence oi LEFT JOIN outreach_scripts os ON os.outreach_intelligence_id = oi.id WHERE os.id IS NULL'));
 $add('WARN', 'outreach scripts without human review flag', $count('SELECT COUNT(*) FROM outreach_scripts WHERE human_review_required != 1'));
@@ -46,6 +49,8 @@ $activityMap = [
     'subcontractor' => 'subcontractors',
     'opportunity' => 'opportunities',
     'opportunity_pursuit_decision' => 'opportunity_pursuit_decisions',
+    'preconstruction_profile' => 'preconstruction_profiles',
+    'preconstruction_risk' => 'preconstruction_risks',
     'recommended_action' => 'recommended_actions',
     'daily_action' => 'daily_actions',
     'outreach_intelligence' => 'outreach_intelligence',

@@ -360,6 +360,119 @@ CREATE TABLE IF NOT EXISTS opportunity_watchlists (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS preconstruction_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  pursuit_decision_id INTEGER,
+  region_id INTEGER,
+  owner TEXT,
+  project_name TEXT NOT NULL,
+  customer_name TEXT,
+  market TEXT,
+  state TEXT,
+  estimated_start_date TEXT,
+  estimated_duration_days INTEGER DEFAULT 0,
+  estimated_value REAL DEFAULT 0,
+  estimated_margin REAL DEFAULT 0,
+  preconstruction_status TEXT DEFAULT 'New' CHECK(preconstruction_status IN ('New','Scoping','Capacity Review','Estimating','Risk Review','Ready for Bid','Bid Submitted','No Bid','Awarded','Lost')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id),
+  FOREIGN KEY(pursuit_decision_id) REFERENCES opportunity_pursuit_decisions(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS bid_decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL UNIQUE,
+  bid_score INTEGER DEFAULT 0,
+  no_bid_score INTEGER DEFAULT 0,
+  recommended_decision TEXT DEFAULT 'Hold' CHECK(recommended_decision IN ('Bid','Bid Selectively','Hold','No Bid')),
+  reason TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_consumption_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL,
+  discipline TEXT NOT NULL,
+  required_crews INTEGER DEFAULT 0,
+  required_duration_days INTEGER DEFAULT 0,
+  preferred_source TEXT DEFAULT 'Mixed' CHECK(preferred_source IN ('Internal','Subcontractor','Mixed')),
+  current_available INTEGER DEFAULT 0,
+  projected_gap INTEGER DEFAULT 0,
+  recommended_capacity_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_fit_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL,
+  subcontractor_id INTEGER NOT NULL,
+  fit_score INTEGER DEFAULT 0,
+  trust_score INTEGER DEFAULT 0,
+  capacity_contribution_score INTEGER DEFAULT 0,
+  mobilization_readiness TEXT,
+  recommended_role TEXT,
+  risk_notes TEXT,
+  status TEXT DEFAULT 'Candidate' CHECK(status IN ('Candidate','Preferred','Selected','Rejected')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id),
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
+);
+
+CREATE TABLE IF NOT EXISTS margin_forecasts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL UNIQUE,
+  estimated_revenue REAL DEFAULT 0,
+  estimated_labor_cost REAL DEFAULT 0,
+  estimated_subcontractor_cost REAL DEFAULT 0,
+  estimated_equipment_cost REAL DEFAULT 0,
+  estimated_material_cost REAL DEFAULT 0,
+  estimated_travel_cost REAL DEFAULT 0,
+  estimated_overhead REAL DEFAULT 0,
+  estimated_profit REAL DEFAULT 0,
+  estimated_margin_percent REAL DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS preconstruction_risks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL,
+  risk_type TEXT NOT NULL,
+  severity TEXT DEFAULT 'Medium' CHECK(severity IN ('Low','Medium','High','Critical')),
+  reason TEXT,
+  mitigation TEXT,
+  status TEXT DEFAULT 'Open' CHECK(status IN ('Open','Mitigated','Accepted','Closed')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS scenario_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preconstruction_profile_id INTEGER NOT NULL,
+  scenario_name TEXT NOT NULL,
+  scenario_type TEXT NOT NULL CHECK(scenario_type IN ('Conservative','Expected','Aggressive')),
+  revenue_estimate REAL DEFAULT 0,
+  margin_estimate REAL DEFAULT 0,
+  crew_requirement INTEGER DEFAULT 0,
+  capacity_gap INTEGER DEFAULT 0,
+  risk_summary TEXT,
+  recommendation TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
+);
+
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

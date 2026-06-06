@@ -18,7 +18,6 @@ class DecisionSupportService
     public function rebuild(): void
     {
         $db = Database::connection();
-        (new OpportunityPursuitService())->rebuild();
         $this->clearGenerated($db);
         $this->buildOpportunityDecisions($db);
         $this->buildCapacityRecruitment($db);
@@ -233,6 +232,15 @@ class DecisionSupportService
         }
         foreach ($db->query("SELECT cd.*, co.region_id, co.title FROM content_drafts cd JOIN content_opportunities co ON co.id = cd.content_opportunity_id WHERE cd.review_status IN ('Draft','Review Needed') LIMIT 12")->fetchAll() as $row) {
             $stmt->execute(['Content review blocker: ' . $row['title'], 'Demand Gap', $row['region_id'], 'Medium', 'Demand asset cannot create distribution signals until human review occurs.', 'Review, approve, reject, or revise the draft.', 'content_draft', $row['id']]);
+        }
+        foreach ($db->query("SELECT ccp.*, pp.project_name, pp.region_id FROM capacity_consumption_plans ccp JOIN preconstruction_profiles pp ON pp.id = ccp.preconstruction_profile_id WHERE ccp.projected_gap > 0 ORDER BY ccp.projected_gap DESC LIMIT 20")->fetchAll() as $row) {
+            $stmt->execute(['Preconstruction capacity blocker: ' . $row['project_name'], 'Capacity Gap', $row['region_id'], $row['projected_gap'] >= 3 ? 'Critical' : 'High', $row['discipline'] . ' gap blocks bid readiness.', $row['recommended_capacity_action'], 'capacity_consumption_plan', $row['id']]);
+        }
+        foreach ($db->query("SELECT mf.*, pp.project_name, pp.region_id FROM margin_forecasts mf JOIN preconstruction_profiles pp ON pp.id = mf.preconstruction_profile_id WHERE mf.estimated_margin_percent < 16 LIMIT 12")->fetchAll() as $row) {
+            $stmt->execute(['Weak margin forecast: ' . $row['project_name'], 'Opportunity Risk', $row['region_id'], 'High', 'Forecast margin is below target before award.', 'Rework estimate assumptions or hold/no-bid.', 'margin_forecast', $row['id']]);
+        }
+        foreach ($db->query("SELECT pr.*, pp.project_name, pp.region_id FROM preconstruction_risks pr JOIN preconstruction_profiles pp ON pp.id = pr.preconstruction_profile_id WHERE pr.status = 'Open' AND pr.severity IN ('Critical','High') LIMIT 20")->fetchAll() as $row) {
+            $stmt->execute(['Preconstruction risk: ' . $row['project_name'], 'Opportunity Risk', $row['region_id'], $row['severity'], $row['reason'], $row['mitigation'], 'preconstruction_risk', $row['id']]);
         }
     }
 

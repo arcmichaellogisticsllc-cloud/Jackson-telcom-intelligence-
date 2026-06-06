@@ -75,6 +75,10 @@ $columns = [
         'demand_score' => 'INTEGER DEFAULT 0',
         'risk_score' => 'INTEGER DEFAULT 0',
     ],
+    'preconstruction_profiles' => [
+        'estimated_start_date' => 'TEXT',
+        'estimated_duration_days' => 'INTEGER DEFAULT 0',
+    ],
     'signals' => [
         'city' => 'TEXT',
         'confidence_score' => 'INTEGER DEFAULT 0',
