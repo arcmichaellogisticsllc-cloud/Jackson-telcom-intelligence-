@@ -15,7 +15,7 @@ $count = function (string $sql) use ($db): int {
     return (int)$db->query($sql)->fetchColumn();
 };
 
-$tables = ['signals','signal_quality_profiles','acquisition_targets','capacity_profiles','capacity_trust_scores','subcontractors','subcontractor_compliance_profiles','relationship_intelligence_profiles','relationship_objectives','strategic_alignment_profiles','pursuit_scores','opportunity_pursuit_decisions','opportunity_watchlists','preconstruction_profiles','bid_decisions','capacity_consumption_plans','subcontractor_fit_plans','margin_forecasts','preconstruction_risks','scenario_plans','recommended_actions','daily_actions','outreach_intelligence','outreach_scripts','outreach_discovery_questions','outreach_outcomes','content_drafts','distribution_plans','channels','activities'];
+$tables = ['signals','signal_quality_profiles','acquisition_targets','capacity_profiles','capacity_trust_scores','subcontractors','subcontractor_compliance_profiles','relationship_intelligence_profiles','relationship_objectives','strategic_alignment_profiles','pursuit_scores','opportunity_pursuit_decisions','opportunity_watchlists','preconstruction_profiles','bid_decisions','capacity_consumption_plans','subcontractor_fit_plans','margin_forecasts','preconstruction_risks','scenario_plans','outcome_records','relationship_performance_profiles','subcontractor_performance_profiles','hunt_performance_profiles','demand_performance_profiles','pursuit_performance_profiles','regional_learning_profiles','lessons_learned','learning_insights','recommended_actions','daily_actions','outreach_intelligence','outreach_scripts','outreach_discovery_questions','outreach_outcomes','content_drafts','distribution_plans','channels','activities'];
 foreach ($tables as $table) {
     $exists = (bool)$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $db->quote($table))->fetchColumn();
     $add($exists ? 'PASS' : 'FAIL', "table exists: {$table}", $exists ? 0 : 1);
@@ -36,6 +36,9 @@ $add('WARN', 'pursuit decisions without watchlist', $count('SELECT COUNT(*) FROM
 $add('WARN', 'preconstruction profiles without bid decision', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN bid_decisions bd ON bd.preconstruction_profile_id = pp.id WHERE bd.id IS NULL'));
 $add('WARN', 'preconstruction profiles without margin forecast', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN margin_forecasts mf ON mf.preconstruction_profile_id = pp.id WHERE mf.id IS NULL'));
 $add('WARN', 'preconstruction profiles without capacity plan', $count('SELECT COUNT(*) FROM preconstruction_profiles pp LEFT JOIN capacity_consumption_plans ccp ON ccp.preconstruction_profile_id = pp.id WHERE ccp.id IS NULL'));
+$add('FAIL', 'outcome records without source module', $count("SELECT COUNT(*) FROM outcome_records WHERE source_module IS NULL OR source_module = ''"));
+$add('WARN', 'regions without learning profile', $count('SELECT COUNT(*) FROM regions r LEFT JOIN regional_learning_profiles rlp ON rlp.region_id = r.id WHERE rlp.id IS NULL'));
+$add('WARN', 'learning insights without recommended action', $count("SELECT COUNT(*) FROM learning_insights WHERE recommended_action IS NULL OR recommended_action = ''"));
 $add('FAIL', 'outreach records without owner', $count("SELECT COUNT(*) FROM outreach_intelligence WHERE owner IS NULL OR owner = ''"));
 $add('WARN', 'outreach records without script', $count('SELECT COUNT(*) FROM outreach_intelligence oi LEFT JOIN outreach_scripts os ON os.outreach_intelligence_id = oi.id WHERE os.id IS NULL'));
 $add('WARN', 'outreach scripts without human review flag', $count('SELECT COUNT(*) FROM outreach_scripts WHERE human_review_required != 1'));

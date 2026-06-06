@@ -473,6 +473,138 @@ CREATE TABLE IF NOT EXISTS scenario_plans (
   FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
 );
 
+CREATE TABLE IF NOT EXISTS outcome_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_module TEXT NOT NULL CHECK(source_module IN ('Signal','Target','Hunt','Relationship','Capacity','Subcontractor','Demand','Outreach','Pursuit','Preconstruction')),
+  source_record_type TEXT,
+  source_record_id INTEGER,
+  outcome_type TEXT NOT NULL CHECK(outcome_type IN ('Success','Failure','Converted','Lost','Capacity Added','Relationship Strengthened','Opportunity Created','Opportunity Lost','Bid Submitted','Bid Won','Bid Lost','Content Published','Content Performed','Outreach Converted','Outreach Failed')),
+  region_id INTEGER,
+  owner TEXT,
+  outcome_date TEXT DEFAULT CURRENT_DATE,
+  notes TEXT,
+  impact_score INTEGER DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_performance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL UNIQUE,
+  opportunities_created INTEGER DEFAULT 0,
+  opportunities_won INTEGER DEFAULT 0,
+  opportunities_lost INTEGER DEFAULT 0,
+  capacity_gained INTEGER DEFAULT 0,
+  introductions_generated INTEGER DEFAULT 0,
+  intelligence_generated INTEGER DEFAULT 0,
+  relationship_performance_score INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS subcontractor_performance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcontractor_id INTEGER NOT NULL UNIQUE,
+  qualification_score INTEGER DEFAULT 0,
+  trust_score INTEGER DEFAULT 0,
+  capacity_contribution_score INTEGER DEFAULT 0,
+  promotions INTEGER DEFAULT 0,
+  opportunities_supported INTEGER DEFAULT 0,
+  subcontractor_performance_score INTEGER DEFAULT 0,
+  performance_category TEXT DEFAULT 'Developing' CHECK(performance_category IN ('Developing','Reliable','Preferred','Strategic')),
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(subcontractor_id) REFERENCES subcontractors(id)
+);
+
+CREATE TABLE IF NOT EXISTS hunt_performance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hunt_id INTEGER NOT NULL UNIQUE,
+  targets_hunted INTEGER DEFAULT 0,
+  targets_qualified INTEGER DEFAULT 0,
+  targets_converted INTEGER DEFAULT 0,
+  capacity_added INTEGER DEFAULT 0,
+  opportunities_created INTEGER DEFAULT 0,
+  hunt_effectiveness_score INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(hunt_id) REFERENCES hunts(id)
+);
+
+CREATE TABLE IF NOT EXISTS demand_performance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_opportunity_id INTEGER NOT NULL UNIQUE,
+  content_drafts INTEGER DEFAULT 0,
+  published_content INTEGER DEFAULT 0,
+  distribution_plans INTEGER DEFAULT 0,
+  attributed_signals INTEGER DEFAULT 0,
+  attributed_targets INTEGER DEFAULT 0,
+  attributed_opportunities INTEGER DEFAULT 0,
+  demand_performance_score INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(content_opportunity_id) REFERENCES content_opportunities(id)
+);
+
+CREATE TABLE IF NOT EXISTS pursuit_performance_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  pursued INTEGER DEFAULT 0,
+  avoided INTEGER DEFAULT 0,
+  bids_submitted INTEGER DEFAULT 0,
+  bids_won INTEGER DEFAULT 0,
+  bids_lost INTEGER DEFAULT 0,
+  pursuit_performance_score INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id)
+);
+
+CREATE TABLE IF NOT EXISTS regional_learning_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region_id INTEGER NOT NULL UNIQUE,
+  strongest_relationships TEXT,
+  strongest_capacity_disciplines TEXT,
+  strongest_hunts TEXT,
+  strongest_demand_channels TEXT,
+  strongest_opportunity_sources TEXT,
+  weakest_areas TEXT,
+  recurring_blockers TEXT,
+  relationship_intelligence_score INTEGER DEFAULT 0,
+  capacity_intelligence_score INTEGER DEFAULT 0,
+  demand_intelligence_score INTEGER DEFAULT 0,
+  pursuit_intelligence_score INTEGER DEFAULT 0,
+  regional_intelligence_score INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS lessons_learned (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL CHECK(category IN ('Relationship','Capacity','Demand','Outreach','Opportunity','Pursuit','Regional Strategy')),
+  title TEXT NOT NULL,
+  lesson TEXT,
+  region_id INTEGER,
+  linked_record_type TEXT,
+  linked_record_id INTEGER,
+  impact_level TEXT DEFAULT 'Medium' CHECK(impact_level IN ('Low','Medium','High','Critical')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS learning_insights (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  insight_title TEXT NOT NULL,
+  insight_body TEXT,
+  category TEXT,
+  region_id INTEGER,
+  priority TEXT DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
+  evidence TEXT,
+  recommended_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

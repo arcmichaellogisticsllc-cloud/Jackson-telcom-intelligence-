@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor_autoload.php';
 use App\Core\RecommendationEngine;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
+use App\Services\IntelligenceWarehouseService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
 use App\Services\PreconstructionIntelligenceService;
@@ -36,6 +37,7 @@ echo "== Rebuild recommendations and Decision Support ==\n";
 RecommendationEngine::regenerate();
 (new OpportunityPursuitService())->rebuild();
 (new PreconstructionIntelligenceService())->rebuild();
+(new IntelligenceWarehouseService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

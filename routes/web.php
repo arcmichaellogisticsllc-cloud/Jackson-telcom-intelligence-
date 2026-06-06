@@ -19,6 +19,7 @@ use App\Controllers\SignalQualityController;
 use App\Controllers\SignalController;
 use App\Controllers\SubcontractorAcquisitionController;
 use App\Controllers\TrafficController;
+use App\Controllers\WarehouseController;
 use App\Core\Router;
 
 $router = new Router();
@@ -86,6 +87,12 @@ $router->get('/preconstruction/southwest', [PreconstructionController::class, 's
 $router->get('/preconstruction/detail', [PreconstructionController::class, 'detail']);
 $router->post('/preconstruction/create', [PreconstructionController::class, 'create']);
 $router->post('/preconstruction/rebuild', [PreconstructionController::class, 'rebuild']);
+$router->get('/warehouse', [WarehouseController::class, 'index']);
+$router->get('/warehouse/southeast', [WarehouseController::class, 'southeast']);
+$router->get('/warehouse/great-lakes', [WarehouseController::class, 'greatLakes']);
+$router->get('/warehouse/southwest', [WarehouseController::class, 'southwest']);
+$router->get('/warehouse/brief', [WarehouseController::class, 'brief']);
+$router->post('/warehouse/rebuild', [WarehouseController::class, 'rebuild']);
 $router->get('/decision-support', [DecisionSupportController::class, 'index']);
 $router->get('/decision-support/southeast', [DecisionSupportController::class, 'southeast']);
 $router->get('/decision-support/great-lakes', [DecisionSupportController::class, 'greatLakes']);

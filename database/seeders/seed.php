@@ -11,6 +11,7 @@ use App\Services\AcquisitionTargetService;
 use App\Services\CapacityGapService;
 use App\Services\DemandDistributionService;
 use App\Services\DecisionSupportService;
+use App\Services\IntelligenceWarehouseService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
 use App\Services\PreconstructionIntelligenceService;
@@ -21,7 +22,7 @@ $db = Database::connection();
 $db->beginTransaction();
 $seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
 
-foreach (['activities','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles','opportunity_watchlists','opportunity_pursuit_decisions','pursuit_scores','strategic_alignment_profiles','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','learning_insights','lessons_learned','regional_learning_profiles','pursuit_performance_profiles','demand_performance_profiles','hunt_performance_profiles','subcontractor_performance_profiles','relationship_performance_profiles','outcome_records','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles','opportunity_watchlists','opportunity_pursuit_decisions','pursuit_scores','strategic_alignment_profiles','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -800,6 +801,7 @@ foreach ($opportunityRows as [$name, $orgName, $regionName, $type, $customer, $f
 RecommendationEngine::regenerate();
 (new OpportunityPursuitService())->rebuild();
 (new PreconstructionIntelligenceService())->rebuild();
+(new IntelligenceWarehouseService())->rebuild();
 (new DecisionSupportService())->rebuild();
 (new OutreachIntelligenceService())->rebuild();
 

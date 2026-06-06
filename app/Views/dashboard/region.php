@@ -75,6 +75,14 @@
   <div><span>Relationship Gaps</span><strong><?= (int)$pursuitWidgets['metrics']['relationship_blocked'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Intelligence Score</span><strong><?= (int)$warehouseWidgets['metrics']['intelligence_score'] ?></strong></div>
+  <div><span>Learning Insights</span><strong><?= (int)$warehouseWidgets['metrics']['insights'] ?></strong></div>
+  <div><span>Outcome Records</span><strong><?= (int)$warehouseWidgets['metrics']['outcomes'] ?></strong></div>
+  <div><span>Lessons Learned</span><strong><?= (int)$warehouseWidgets['metrics']['lessons'] ?></strong></div>
+  <div><span>High Impact Lessons</span><strong><?= (int)$warehouseWidgets['metrics']['high_impact'] ?></strong></div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Top Daily Actions</h2><a class="btn secondary" href="/decision-support/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Decision Support</a></div>
@@ -110,6 +118,10 @@
   <div class="panel">
     <div class="panel-title"><h2>Blocking Pursuits</h2><span class="status">Can We Execute?</span></div>
     <div class="action-stack"><?php foreach (array_slice(array_merge($pursuitWidgets['capacityBlocked'], $pursuitWidgets['relationshipBlocked']), 0, 8) as $opp): ?><article><span class="priority medium"><?= $opp['capacity_gap'] ? 'Capacity Gap' : 'Relationship Gap' ?></span><h3><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><?= htmlspecialchars($opp['name']) ?></a></h3><p><?= htmlspecialchars($opp['capacity_gap'] ?: $opp['relationship_gap']) ?></p></article><?php endforeach; ?></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Learning Insights</h2><a class="btn secondary" href="/warehouse/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Warehouse</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Insight</th><th>Action</th></tr></thead><tbody><?php foreach ($warehouseWidgets['insights'] as $insight): ?><tr><td><span class="priority <?= strtolower($insight['priority']) ?>"><?= htmlspecialchars($insight['priority']) ?></span></td><td><strong><?= htmlspecialchars($insight['title']) ?></strong><br><small><?= htmlspecialchars($insight['insight']) ?></small></td><td><?= htmlspecialchars($insight['recommended_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/watchlists">Watchlists</a></div>

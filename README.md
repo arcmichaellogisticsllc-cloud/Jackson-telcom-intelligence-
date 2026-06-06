@@ -1125,6 +1125,51 @@ Capacity Consumption Plans estimate required crews by discipline and compare the
 
 Risk assessment covers capacity, subcontractor, relationship, margin, schedule, market, compliance, and unknown scope risks. Scenario planning compares conservative, expected, and aggressive bid assumptions before Jackson commits capacity or attention.
 
+## Intelligence Warehouse & Learning Engine
+
+The Intelligence Warehouse preserves outcomes across the acquisition system so Jackson can learn from every relationship, hunt, target, pursuit, outreach result, demand asset, subcontractor decision, and preconstruction review.
+
+The warehouse answers:
+
+- what is working
+- what is not working
+- which relationships create opportunities
+- which subcontractors create capacity
+- which hunts convert
+- which demand channels create signals, targets, relationships, and opportunities
+- which pursuits win or lose
+- which regions are improving
+
+Warehouse records include:
+
+- Outcome Records
+- Relationship Performance Profiles
+- Subcontractor Performance Profiles
+- Hunt Performance Profiles
+- Demand Performance Profiles
+- Pursuit Performance Profiles
+- Regional Learning Profiles
+- Lessons Learned
+- Learning Insights
+
+Outcome Records store historical wins, losses, conversions, capacity added, relationships strengthened, bids submitted, bids won, bids lost, content performance, outreach conversions, and failed actions. These records create institutional memory without building SyncERP, execution workflows, billing, or production reporting.
+
+Performance engines calculate:
+
+- Relationship Performance Score
+- Subcontractor Performance Score
+- Hunt Effectiveness Score
+- Demand Performance Score
+- Pursuit Performance Score
+
+Regional Learning Profiles summarize strongest relationships, capacity disciplines, hunts, demand channels, opportunity sources, weak areas, recurring blockers, and a regional intelligence score. The National Intelligence Score is built from relationship intelligence, capacity intelligence, demand intelligence, pursuit intelligence, and regional intelligence.
+
+The Executive Intelligence Brief shows what worked this month, what failed, best relationships, best subcontractors, best hunts, best content, best opportunity sources, biggest capacity blockers, and regional performance. Command Centers surface learning insights, best performers, top lessons learned, strongest regions, and weakest regions.
+
+Decision Support consumes warehouse insights by creating recommended actions for high-value lessons and critical learning signals. This makes the platform improve its recommendations over time instead of only reacting to current records.
+
+The warehouse exists before SyncERP because Jackson needs acquisition memory first: what created capacity, what created work, what wasted attention, and what should be repeated.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

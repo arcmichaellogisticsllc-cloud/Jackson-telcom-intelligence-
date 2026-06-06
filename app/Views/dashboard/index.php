@@ -76,6 +76,14 @@
   <div><span>Relationship Gaps</span><strong><?= (int)$pursuitWidgets['metrics']['relationship_blocked'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Intelligence Score</span><strong><?= (int)$warehouseWidgets['metrics']['intelligence_score'] ?></strong></div>
+  <div><span>Learning Insights</span><strong><?= (int)$warehouseWidgets['metrics']['insights'] ?></strong></div>
+  <div><span>Outcome Records</span><strong><?= (int)$warehouseWidgets['metrics']['outcomes'] ?></strong></div>
+  <div><span>Lessons Learned</span><strong><?= (int)$warehouseWidgets['metrics']['lessons'] ?></strong></div>
+  <div><span>High Impact Lessons</span><strong><?= (int)$warehouseWidgets['metrics']['high_impact'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -122,6 +130,10 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Fiber Backbone Pursuits</h2><a class="btn secondary" href="/pursuits">Pursuit Board</a></div>
     <div class="table-wrap"><table><thead><tr><th>Decision</th><th>Opportunity</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($pursuitWidgets['topPursuits'] as $opp): ?><tr><td><span class="priority high"><?= htmlspecialchars($opp['recommended_decision']) ?></span></td><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><strong><?= htmlspecialchars($opp['name']) ?></strong></a><br><small><?= htmlspecialchars($opp['classification']) ?> · <?= htmlspecialchars($opp['category']) ?></small></td><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= (int)$opp['pursuit_score'] ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Learning Insights</h2><a class="btn secondary" href="/warehouse">Warehouse</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Insight</th><th>Theater</th><th>Action</th></tr></thead><tbody><?php foreach ($warehouseWidgets['insights'] as $insight): ?><tr><td><span class="priority <?= strtolower($insight['priority']) ?>"><?= htmlspecialchars($insight['priority']) ?></span></td><td><strong><?= htmlspecialchars($insight['title']) ?></strong><br><small><?= htmlspecialchars($insight['insight']) ?></small></td><td><?= htmlspecialchars($insight['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($insight['recommended_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Opportunities To Avoid</h2><a class="btn secondary" href="/pursuits">Pursue / Avoid</a></div>
