@@ -18,6 +18,7 @@ class DecisionSupportService
     public function rebuild(): void
     {
         $db = Database::connection();
+        (new OpportunityPursuitService())->rebuild();
         $this->clearGenerated($db);
         $this->buildOpportunityDecisions($db);
         $this->buildCapacityRecruitment($db);
@@ -115,18 +116,21 @@ class DecisionSupportService
 
     private function buildOpportunityDecisions(PDO $db): void
     {
-        $rows = $db->query("SELECT op.*, o.name organization_name, c.relationship_strength, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred','Strategic Partner') THEN s.available_crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id LEFT JOIN subcontractors s ON s.region_id = op.region_id WHERE op.stage NOT IN ('Awarded','Lost') GROUP BY op.id")->fetchAll();
+        $rows = $db->query("SELECT op.*, o.name organization_name, c.relationship_strength, opd.recommended_decision pursuit_decision, opd.decision_reason pursuit_reason, ps.pursuit_score, op.risk_score pursuit_risk_score, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred','Strategic Partner') THEN s.available_crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id LEFT JOIN subcontractors s ON s.region_id = op.region_id LEFT JOIN opportunity_pursuit_decisions opd ON opd.opportunity_id = op.id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id WHERE op.stage NOT IN ('Awarded','Lost') GROUP BY op.id")->fetchAll();
         $stmt = $db->prepare('INSERT INTO opportunity_decisions (opportunity_id, region_id, pursue_score, avoid_score, recommended_decision, reason) VALUES (?, ?, ?, ?, ?, ?)');
         foreach ($rows as $row) {
-            $pursuit = OpportunityScoring::score($row);
+            $pursuit = ['score' => (int)($row['pursuit_score'] ?? 0), 'label' => $row['pursuit_decision'] ?: OpportunityScoring::score($row)['label']];
+            if ($pursuit['score'] <= 0) {
+                $pursuit = OpportunityScoring::score($row);
+            }
             $capacityRisk = (int)$row['capacity_required'] > (int)$row['available_crews'] ? 32 : 0;
             $marginRisk = (float)$row['estimated_margin'] < 12 ? 22 : 0;
             $relationshipRisk = in_array($row['relationship_strength'] ?? '', ['Cold', null, ''], true) ? 20 : 0;
-            $avoid = min(100, $capacityRisk + $marginRisk + $relationshipRisk + (stripos((string)$row['notes'], 'risk') !== false ? 18 : 0));
-            $decision = $avoid >= 65 ? 'Avoid' : ($pursuit['score'] >= 76 ? 'Pursue Aggressively' : ($pursuit['score'] >= 55 ? 'Pursue Selectively' : 'Monitor'));
-            $reason = $decision === 'Avoid'
+            $avoid = max((int)($row['pursuit_risk_score'] ?? 0), min(100, $capacityRisk + $marginRisk + $relationshipRisk + (stripos((string)$row['notes'], 'risk') !== false ? 18 : 0)));
+            $decision = $row['pursuit_decision'] ?: ($avoid >= 65 ? 'Avoid' : ($pursuit['score'] >= 76 ? 'Pursue Aggressively' : ($pursuit['score'] >= 55 ? 'Pursue Selectively' : 'Monitor')));
+            $reason = $row['pursuit_reason'] ?: ($decision === 'Avoid'
                 ? 'Risk outweighs pursuit value because capacity, margin, or relationship strength is weak.'
-                : 'Pursuit score reflects margin, probability, relationship access, strategic value, and capacity fit.';
+                : 'Pursuit score reflects margin, probability, relationship access, strategic value, and capacity fit.');
             $stmt->execute([(int)$row['id'], $row['region_id'], $pursuit['score'], $avoid, $decision, $reason]);
         }
     }
@@ -331,6 +335,26 @@ class DecisionSupportService
                 'urgency' => 55,
                 'confidence' => 74,
                 'demand' => (int)$row['impact_score'],
+            ]);
+        }
+
+        foreach ($db->query("SELECT opd.*, op.name opportunity_name, op.owner, ps.pursuit_score, r.owner region_owner FROM opportunity_pursuit_decisions opd JOIN opportunities op ON op.id = opd.opportunity_id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id LEFT JOIN regions r ON r.id = opd.region_id WHERE opd.recommended_decision IN ('Pursue Aggressively','Pursue','Avoid') ORDER BY ps.pursuit_score DESC, op.risk_score DESC LIMIT 12")->fetchAll() as $row) {
+            $this->insertDailyAction($db, [
+                'title' => $row['recommended_decision'] . ': ' . $row['opportunity_name'],
+                'category' => 'Opportunity',
+                'region_id' => $row['region_id'],
+                'owner' => $row['owner'] ?: ($row['region_owner'] ?: 'Admin'),
+                'priority' => $row['recommended_decision'] === 'Pursue Aggressively' ? 'Critical' : 'High',
+                'reason' => $row['decision_reason'],
+                'next' => $row['next_best_action'],
+                'linked_type' => 'opportunity_pursuit_decision',
+                'linked_id' => $row['id'],
+                'due' => date('Y-m-d', strtotime('+2 days')),
+                'impact' => (int)$row['pursuit_score'],
+                'urgency' => $row['recommended_decision'] === 'Avoid' ? 76 : 84,
+                'confidence' => 78,
+                'opportunity' => (int)$row['pursuit_score'],
+                'strategic' => (int)$row['pursuit_score'],
             ]);
         }
 

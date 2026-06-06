@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\OpportunityScoring;
 use App\Core\RecommendationEngine;
+use App\Services\OpportunityPursuitService;
 
 class CrudController extends Controller
 {
@@ -43,8 +44,10 @@ class CrudController extends Controller
     public function saveOpportunity(): void
     {
         Auth::requireLogin();
-        $this->upsert('opportunities', ['name','organization_id','region_id','market','estimated_value','estimated_margin','probability','stage','capacity_required','decision_makers','next_action','owner','notes']);
+        $this->saveOpportunityRecord();
+        (new OpportunityPursuitService())->rebuild();
         RecommendationEngine::regenerate();
+        $this->redirect('/opportunities');
     }
 
     public function delete(): void
@@ -76,7 +79,7 @@ class CrudController extends Controller
         $organizations = $db->query('SELECT o.*, r.name region_name FROM organizations o JOIN regions r ON r.id = o.region_id ORDER BY o.name')->fetchAll();
         $contacts = $db->query('SELECT c.*, o.name organization_name, r.name region_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id JOIN regions r ON r.id = c.region_id ORDER BY c.last_name')->fetchAll();
         $subcontractors = $db->query('SELECT s.*, o.name organization_name, r.name region_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id ORDER BY o.name')->fetchAll();
-        $opportunities = $db->query("SELECT op.*, o.name organization_name, r.name region_name, c.relationship_strength, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred') THEN s.crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id JOIN regions r ON r.id = op.region_id LEFT JOIN subcontractors s ON s.region_id = op.region_id GROUP BY op.id ORDER BY op.created_at DESC")->fetchAll();
+        $opportunities = $db->query("SELECT op.*, o.name organization_name, r.name region_name, c.relationship_strength, sap.classification, sap.category, ps.pursuit_score, ps.relationship_fit_score, ps.capacity_fit_score, opd.recommended_decision, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred') THEN s.crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id JOIN regions r ON r.id = op.region_id LEFT JOIN subcontractors s ON s.region_id = op.region_id LEFT JOIN strategic_alignment_profiles sap ON sap.opportunity_id = op.id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id LEFT JOIN opportunity_pursuit_decisions opd ON opd.opportunity_id = op.id GROUP BY op.id ORDER BY op.created_at DESC")->fetchAll();
         $opportunities = array_map(function (array $opportunity): array {
             $opportunity['pursuit'] = OpportunityScoring::score($opportunity);
             return $opportunity;
@@ -107,6 +110,26 @@ class CrudController extends Controller
         $this->redirect('/' . $table);
     }
 
+    private function saveOpportunityRecord(): void
+    {
+        $fields = ['name','organization_id','region_id','market','opportunity_type','customer_type','funding_source','estimated_value','estimated_margin','probability','stage','capacity_required','decision_makers','next_action','owner','notes'];
+        $db = Database::connection();
+        $data = [];
+        foreach ($fields as $field) {
+            $data[$field] = $_POST[$field] ?? null;
+        }
+        if (!empty($_POST['id'])) {
+            $sets = implode(', ', array_map(fn($field) => "{$field} = :{$field}", $fields));
+            $data['id'] = $_POST['id'];
+            $stmt = $db->prepare("UPDATE opportunities SET {$sets}, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+        } else {
+            $columns = implode(', ', $fields);
+            $params = ':' . implode(', :', $fields);
+            $stmt = $db->prepare("INSERT INTO opportunities ({$columns}) VALUES ({$params})");
+        }
+        $stmt->execute($data);
+    }
+
     private function options(): array
     {
         return [
@@ -119,6 +142,9 @@ class CrudController extends Controller
             'approval' => ['Prospect','Researching','Qualified','Documents Requested','Compliance Review','Approved','Preferred','Strategic Partner','Inactive','Rejected'],
             'availability' => ['Available Now','Available Soon','Limited','Not Available'],
             'stages' => ['Intelligence','Qualified','Pursuit','Proposal','Negotiation','Awarded','Lost'],
+            'opportunityTypes' => ['Fiber Backbone Construction','Long Haul Fiber','Middle Mile Fiber','Metro Fiber','Backbone Expansion','Backbone Maintenance','Backbone Restoration','Fiber Splicing','Directional Boring','Underground Construction','Aerial Construction','Make Ready','Fiber Testing','Inspection','QC','Engineering','Traffic Control','ROW Clearing','Structured Cabling','Home Automation','Security Systems','General Low Voltage','Small Commercial Cabling'],
+            'customerTypes' => ['Utility','Prime Contractor','Municipality','Co-op','ISP','Enterprise','Government','Other'],
+            'fundingSources' => ['Private Capital','BEAD','Broadband Grant','Utility Capital Plan','Municipal Bond','Prime Contractor Award','Maintenance Budget','Emergency Restoration','Unknown'],
         ];
     }
 }

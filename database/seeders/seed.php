@@ -12,6 +12,7 @@ use App\Services\CapacityGapService;
 use App\Services\DemandDistributionService;
 use App\Services\DecisionSupportService;
 use App\Services\OutreachIntelligenceService;
+use App\Services\OpportunityPursuitService;
 use App\Services\SubcontractorAcquisitionService;
 use App\Services\RelationshipIntelligenceService;
 
@@ -19,7 +20,7 @@ $db = Database::connection();
 $db->beginTransaction();
 $seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
 
-foreach (['activities','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','opportunity_watchlists','opportunity_pursuit_decisions','pursuit_scores','strategic_alignment_profiles','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -765,9 +766,38 @@ foreach ($plansForAttribution as $index => $plan) {
 }
 (new DemandDistributionService())->rebuild();
 
+$findOrg = $db->prepare('SELECT id FROM organizations WHERE name = ? LIMIT 1');
+$opportunitySeedStmt = $db->prepare('INSERT INTO opportunities (name, organization_id, region_id, market, opportunity_type, customer_type, funding_source, estimated_value, estimated_margin, probability, stage, capacity_required, decision_makers, next_action, owner, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$opportunityRows = [
+    ['Comcast Georgia Backbone Expansion', 'Comcast Southeast Construction', 'Southeast', 'Fiber Backbone Construction', 'Prime Contractor', 'Private Capital', 4200000, 24, 72, 'Qualified', 8, 'Project Manager Caleb Martin; OSP Manager Andre Phillips', 'Call Comcast PM and validate construction package timing.', 'Mike', 'Core fiber backbone expansion across Georgia. Strong strategic fit and relationship path.'],
+    ['Charter Carolinas Backbone Upgrade', 'Charter Southeast Fiber', 'Southeast', 'Backbone Expansion', 'Utility', 'Utility Capital Plan', 3600000, 22, 68, 'Pursuit', 7, 'Project Manager Maya Collins; Construction Manager Reed Johnson', 'Confirm capacity requirements and prime/subcontracting path.', 'Mike', 'Core backbone upgrade with aerial, underground, and splicing scope.'],
+    ['Georgia Small Commercial Cabling Package', 'Georgia Rural Fiber Cooperative', 'Southeast', 'Structured Cabling', 'Enterprise', 'Private Capital', 95000, 18, 55, 'Intelligence', 2, '', 'Archive unless bundled into strategic backbone access.', 'Mike', 'Small commercial cabling and low voltage scope. Non-strategic distraction.'],
+    ['Frontier Michigan Middle Mile Fiber Build', 'Frontier Michigan Construction', 'Great Lakes', 'Middle Mile Fiber', 'Utility', 'BEAD', 5100000, 26, 74, 'Qualified', 9, 'Project Manager Dana Collins; OSP Manager Mark Edison', 'Strengthen Frontier PM relationship and confirm splicing crew requirements.', 'Ron', 'BEAD-funded middle mile fiber build with strong backbone alignment.'],
+    ['Michigan Municipal Fiber Ring', 'Michigan Municipal Fiber Authority', 'Great Lakes', 'Metro Fiber', 'Municipality', 'Broadband Grant', 2800000, 21, 62, 'Pursuit', 6, 'Program Manager Sharon Lee; Project Manager Peter Grant', 'Review municipal ring procurement path and decision calendar.', 'Ron', 'Municipal fiber ring supports backbone and metro expansion strategy.'],
+    ['Ohio Retail Security Camera Upgrade', 'Ohio Rural Electric Broadband', 'Great Lakes', 'Security Systems', 'Enterprise', 'Maintenance Budget', 140000, 16, 52, 'Intelligence', 1, '', 'Avoid and keep attention on fiber backbone opportunities.', 'Ron', 'Security systems and small low-voltage work. Outside fiber backbone mission.'],
+    ['Houston Metro Fiber Backbone Route', 'Houston Utility Broadband Office', 'Southwest', 'Metro Fiber', 'Utility', 'Municipal Bond', 4600000, 23, 58, 'Intelligence', 10, 'Project Manager Evan Moore; OSP Manager Bianca Wells', 'Resolve Southwest underground and boring capacity gap before pursuit commitment.', 'Mike/Ron Shared', 'Strong fiber backbone opportunity, but Southwest capacity fit needs work.'],
+    ['Texas BEAD Backbone Project', 'Texas Rural Fiber Cooperative', 'Southwest', 'Long Haul Fiber', 'Utility', 'BEAD', 6200000, 25, 64, 'Qualified', 12, 'Project Manager Malik Turner; Construction Manager Samantha Ruiz', 'Recruit underground and directional boring capacity before proposal decision.', 'Mike/Ron Shared', 'Large BEAD-funded long haul fiber opportunity with capacity gap risk.'],
+    ['MasTec Southwest Prime Award Path', 'MasTec Southwest Fiber', 'Southwest', 'Backbone Restoration', 'Prime Contractor', 'Prime Contractor Award', 2400000, 20, 60, 'Pursuit', 5, 'Project Manager Jose Ramirez; Subcontractor Coordinator Rebecca Stone', 'Open subcontracting path and qualify restoration crew needs.', 'Mike/Ron Shared', 'Prime award creates restoration and maintenance path in Southwest.'],
+    ['National Emergency Fiber Restoration Bench', 'NorthStar Prime Broadband', 'National', 'Backbone Restoration', 'Prime Contractor', 'Emergency Restoration', 1800000, 28, 70, 'Qualified', 4, 'Marcus Reid', 'Confirm national restoration coverage and theater handoff requirements.', 'Admin', 'National backbone restoration pursuit suited for shared response capacity.'],
+    ['Southeast Fiber Testing Support Package', 'Southeast Testing Authority', 'Southeast', 'Fiber Testing', 'Prime Contractor', 'Maintenance Budget', 550000, 17, 48, 'Intelligence', 2, '', 'Monitor fit and only pursue if tied to larger backbone maintenance.', 'Mike', 'Supporting fiber testing work. Useful if connected to larger backbone maintenance, but not enough by itself to consume major capacity.'],
+    ['Great Lakes Make Ready Support Work', 'Great Lakes Make Ready Buyer', 'Great Lakes', 'Make Ready', 'Utility', 'Utility Capital Plan', 720000, 18, 50, 'Intelligence', 3, '', 'Pursue selectively if it opens utility access or future fiber work.', 'Ron', 'Supporting make ready work with possible relationship value but moderate direct backbone value.'],
+    ['Southwest Traffic Control Standalone Contract', 'Southwest Traffic Control Buyer', 'Southwest', 'Traffic Control', 'Municipality', 'Maintenance Budget', 180000, 12, 42, 'Intelligence', 1, '', 'Monitor only. Do not pursue unless attached to strategic fiber construction.', 'Mike/Ron Shared', 'Adjacent traffic control scope. Potential support value, but not a standalone fiber backbone pursuit.'],
+    ['National Home Automation Rollout', 'NorthStar Prime Broadband', 'National', 'Home Automation', 'Enterprise', 'Private Capital', 300000, 15, 45, 'Intelligence', 3, '', 'Avoid. Not fiber backbone construction, maintenance, or restoration.', 'Admin', 'Home automation rollout is non-strategic and should not consume pursuit attention.'],
+];
+foreach ($opportunityRows as [$name, $orgName, $regionName, $type, $customer, $funding, $value, $margin, $probability, $stage, $capacity, $decisionMakers, $nextAction, $owner, $notes]) {
+    $findOrg->execute([$orgName]);
+    $orgId = (int)$findOrg->fetchColumn();
+    if (!$orgId) {
+        $relationshipOrgStmt->execute([$orgName, $customer, $regions[$regionName], $regionData[$regionName]['state'] ?? '', $regionData[$regionName]['city'] ?? '', 'https://example.local/' . strtolower(str_replace(' ', '-', $orgName)), '555-9000', 'Seeded opportunity organization.']);
+        $orgId = (int)$db->lastInsertId();
+    }
+    $opportunitySeedStmt->execute([$name, $orgId, $regions[$regionName], 'Fiber Backbone Infrastructure', $type, $customer, $funding, $value, $margin, $probability, $stage, $capacity, $decisionMakers, $nextAction, $owner, $notes]);
+}
+
 (new SubcontractorAcquisitionService())->recalculateAll();
 (new CapacityGapService())->recalculateTrustScores();
 RecommendationEngine::regenerate();
+(new OpportunityPursuitService())->rebuild();
 (new DecisionSupportService())->rebuild();
 (new OutreachIntelligenceService())->rebuild();
 

@@ -68,6 +68,14 @@
   <div><span>Capacity to Recruit</span><strong><?= (int)$decisionWidgets['metrics']['recruitment_needs'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Top Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['top_pursuits'] ?></strong></div>
+  <div><span>Fiber Backbone Opps</span><strong><?= (int)$pursuitWidgets['metrics']['fiber_backbone'] ?></strong></div>
+  <div><span>Opportunities To Avoid</span><strong><?= (int)$pursuitWidgets['metrics']['avoid'] ?></strong></div>
+  <div><span>Capacity Blocking Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['capacity_blocked'] ?></strong></div>
+  <div><span>Relationship Gaps</span><strong><?= (int)$pursuitWidgets['metrics']['relationship_blocked'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -110,6 +118,14 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting">Hunting Lists</a></div>
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Target</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars($target['target_type']) ?></small></td><td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Fiber Backbone Pursuits</h2><a class="btn secondary" href="/pursuits">Pursuit Board</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Decision</th><th>Opportunity</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($pursuitWidgets['topPursuits'] as $opp): ?><tr><td><span class="priority high"><?= htmlspecialchars($opp['recommended_decision']) ?></span></td><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><strong><?= htmlspecialchars($opp['name']) ?></strong></a><br><small><?= htmlspecialchars($opp['classification']) ?> · <?= htmlspecialchars($opp['category']) ?></small></td><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= (int)$opp['pursuit_score'] ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Opportunities To Avoid</h2><a class="btn secondary" href="/pursuits">Pursue / Avoid</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Theater</th><th>Reason</th></tr></thead><tbody><?php foreach ($pursuitWidgets['avoid'] as $opp): ?><tr><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><?= htmlspecialchars($opp['name']) ?></a></td><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/escalations">Escalations</a></div>

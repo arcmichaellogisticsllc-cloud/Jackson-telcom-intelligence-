@@ -67,6 +67,14 @@
   <div><span>Capacity to Recruit</span><strong><?= (int)$decisionWidgets['metrics']['recruitment_needs'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Top Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['top_pursuits'] ?></strong></div>
+  <div><span>Fiber Backbone Opps</span><strong><?= (int)$pursuitWidgets['metrics']['fiber_backbone'] ?></strong></div>
+  <div><span>Opportunities To Avoid</span><strong><?= (int)$pursuitWidgets['metrics']['avoid'] ?></strong></div>
+  <div><span>Capacity Blocking Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['capacity_blocked'] ?></strong></div>
+  <div><span>Relationship Gaps</span><strong><?= (int)$pursuitWidgets['metrics']['relationship_blocked'] ?></strong></div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Top Daily Actions</h2><a class="btn secondary" href="/decision-support/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Decision Support</a></div>
@@ -94,6 +102,14 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting?region=<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Hunting List</a></div>
     <div class="table-wrap"><table><thead><tr><th>Target</th><th>Type</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><?= htmlspecialchars($target['target_name']) ?></a><br><small><?= htmlspecialchars($target['priority']) ?></small></td><td><?= htmlspecialchars($target['target_type']) ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Pursuits</h2><a class="btn secondary" href="/pursuits/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Pursuit Board</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Decision</th><th>Opportunity</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($pursuitWidgets['topPursuits'] as $opp): ?><tr><td><span class="priority high"><?= htmlspecialchars($opp['recommended_decision']) ?></span></td><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><?= htmlspecialchars($opp['name']) ?></a><br><small><?= htmlspecialchars($opp['classification']) ?> · <?= htmlspecialchars($opp['category']) ?></small></td><td><?= (int)$opp['pursuit_score'] ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Blocking Pursuits</h2><span class="status">Can We Execute?</span></div>
+    <div class="action-stack"><?php foreach (array_slice(array_merge($pursuitWidgets['capacityBlocked'], $pursuitWidgets['relationshipBlocked']), 0, 8) as $opp): ?><article><span class="priority medium"><?= $opp['capacity_gap'] ? 'Capacity Gap' : 'Relationship Gap' ?></span><h3><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><?= htmlspecialchars($opp['name']) ?></a></h3><p><?= htmlspecialchars($opp['capacity_gap'] ?: $opp['relationship_gap']) ?></p></article><?php endforeach; ?></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/watchlists">Watchlists</a></div>

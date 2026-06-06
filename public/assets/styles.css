@@ -82,6 +82,8 @@ small { color: var(--muted); }
 .kanban-column { min-width: 220px; border: 1px solid var(--line); background: var(--bg); padding: 10px; }
 .kanban-column h3 { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; color: var(--blue-dark); }
 .kanban-column h3 span { background: #fff; border: 1px solid var(--line); padding: 2px 7px; font-size: 12px; }
+.mini-card { background: #fff; border: 1px solid var(--line); padding: 10px; margin-bottom: 8px; }
+.mini-card strong, .mini-card small { display: block; }
 .signal-card { display: grid; gap: 8px; background: #fff; border: 1px solid var(--line); padding: 12px; margin-bottom: 10px; }
 .signal-card h4 { margin: 0; color: var(--ink); }
 .signal-card p { margin: 0; color: var(--muted); }

@@ -65,6 +65,16 @@ $columns = [
     'outreach_intelligence' => [
         'due_date' => 'TEXT',
     ],
+    'opportunities' => [
+        'opportunity_type' => 'TEXT',
+        'customer_type' => 'TEXT',
+        'funding_source' => 'TEXT',
+        'strategic_alignment_score' => 'INTEGER DEFAULT 0',
+        'relationship_score' => 'INTEGER DEFAULT 0',
+        'capacity_score' => 'INTEGER DEFAULT 0',
+        'demand_score' => 'INTEGER DEFAULT 0',
+        'risk_score' => 'INTEGER DEFAULT 0',
+    ],
     'signals' => [
         'city' => 'TEXT',
         'confidence_score' => 'INTEGER DEFAULT 0',

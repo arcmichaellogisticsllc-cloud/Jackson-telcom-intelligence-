@@ -1055,6 +1055,46 @@ The operator workflow is:
 5. Human performs the outreach outside the system.
 6. Capture the outcome and follow-up date.
 
+## Fiber Backbone Opportunity & Pursuit Engine
+
+The Pursuit Engine decides what work Jackson should pursue, monitor, or avoid before execution resources are committed.
+
+Strategic alignment is weighted toward Jackson Telcom's core mission:
+
+- Fiber Backbone Construction
+- Long Haul Fiber
+- Middle Mile Fiber
+- Metro Fiber
+- Backbone Expansion
+- Backbone Maintenance
+- Backbone Restoration
+
+Supporting work such as fiber splicing, directional boring, underground construction, aerial construction, make ready, and fiber testing can strengthen a pursuit when it supports backbone infrastructure. Adjacent work such as inspection, QC, engineering, traffic control, and ROW clearing is monitored for strategic value. Non-strategic work such as structured cabling, home automation, security systems, general low voltage, and small commercial cabling is pushed toward Avoid.
+
+The Pursuit Engine calculates:
+
+- Strategic Alignment Profile
+- Fiber Backbone Classification
+- Relationship Fit
+- Capacity Fit
+- Market Fit
+- Risk Score
+- Pursuit Score
+- Pursuit Decision
+- Opportunity Watchlist status
+
+Decision options are:
+
+- Pursue Aggressively
+- Pursue
+- Pursue Selectively
+- Monitor
+- Avoid
+
+Relationship fit evaluates whether Jackson has access to decision makers, project managers, utility contacts, and prime contacts. Capacity fit uses Capacity Radar, approved subcontractor capacity, and mobilization readiness to answer: can we execute? Market fit weighs theater priority across Southeast, Great Lakes, Southwest, and National opportunities.
+
+The Pursuit Board shows top pursuits, fiber backbone opportunities, opportunities to avoid, capacity blockers, relationship blockers, future watchlist opportunities, and stage-based pursuit movement. Command Centers and the Executive Daily Brief promote only the highest-value pursuit actions.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

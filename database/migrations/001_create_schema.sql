@@ -278,6 +278,9 @@ CREATE TABLE IF NOT EXISTS opportunities (
   organization_id INTEGER,
   region_id INTEGER NOT NULL,
   market TEXT,
+  opportunity_type TEXT,
+  customer_type TEXT,
+  funding_source TEXT,
   estimated_value REAL DEFAULT 0,
   estimated_margin REAL DEFAULT 0,
   probability INTEGER DEFAULT 0,
@@ -286,10 +289,74 @@ CREATE TABLE IF NOT EXISTS opportunities (
   decision_makers TEXT,
   next_action TEXT,
   owner TEXT,
+  strategic_alignment_score INTEGER DEFAULT 0,
+  relationship_score INTEGER DEFAULT 0,
+  capacity_score INTEGER DEFAULT 0,
+  demand_score INTEGER DEFAULT 0,
+  risk_score INTEGER DEFAULT 0,
   notes TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(organization_id) REFERENCES organizations(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS strategic_alignment_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  fiber_backbone_alignment_score INTEGER DEFAULT 0,
+  strategic_market_score INTEGER DEFAULT 0,
+  relationship_alignment_score INTEGER DEFAULT 0,
+  capacity_alignment_score INTEGER DEFAULT 0,
+  strategic_alignment_score INTEGER DEFAULT 0,
+  category TEXT DEFAULT 'Moderate' CHECK(category IN ('Core','Strong','Moderate','Weak','Avoid')),
+  classification TEXT DEFAULT 'Supporting' CHECK(classification IN ('Core','Supporting','Adjacent','Non-Strategic')),
+  reason TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id)
+);
+
+CREATE TABLE IF NOT EXISTS pursuit_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  relationship_fit_score INTEGER DEFAULT 0,
+  capacity_fit_score INTEGER DEFAULT 0,
+  market_fit_score INTEGER DEFAULT 0,
+  margin_score INTEGER DEFAULT 0,
+  risk_score INTEGER DEFAULT 0,
+  pursuit_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id)
+);
+
+CREATE TABLE IF NOT EXISTS opportunity_pursuit_decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  region_id INTEGER,
+  recommended_decision TEXT DEFAULT 'Monitor' CHECK(recommended_decision IN ('Pursue Aggressively','Pursue','Pursue Selectively','Monitor','Avoid')),
+  decision_reason TEXT,
+  relationship_gap TEXT,
+  capacity_gap TEXT,
+  next_best_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS opportunity_watchlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  region_id INTEGER,
+  status TEXT DEFAULT 'Watch' CHECK(status IN ('Watch','Pursue Later','Active Pursuit','Avoid')),
+  reason TEXT,
+  next_review_date TEXT,
+  owner TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id),
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
