@@ -845,6 +845,48 @@ Decision Support answers:
 - what outreach to send
 - what projects to avoid
 
+## Decision Support Layer V2
+
+Decision Support V2 is the operating brain above the module-level recommendation engine.
+
+Recommended Actions are system findings. Daily Actions are the smaller executive list that Mike, Ron, shared Southwest ownership, and Admin should act on first.
+
+Decision Support V2 adds:
+
+- Daily Actions ranked by Decision Score
+- National, Southeast, Great Lakes, and Southwest decision dashboards
+- Executive Daily Brief
+- Regional Strategy Scorecards
+- Growth Blockers
+- Pursue / Avoid decisions
+- Capacity recruitment recommendations
+- Content review and distribution decisions
+- Relationship decisions
+- Action completion, dismissal, and follow-up creation
+
+Decision Score is a weighted score from impact, urgency, confidence, strategic value, capacity gap severity, relationship value, opportunity value, demand value, and risk severity.
+
+Growth Blockers show what is stopping growth:
+
+- Capacity Gap
+- Relationship Risk
+- Opportunity Risk
+- Demand Gap
+- Compliance Issue
+- Hunt Stagnation
+- Signal Quality Issue
+- Regional Coverage Gap
+
+Regional Strategy Scorecards answer: is this region ready to grow? The score combines capacity, relationships, opportunity position, demand, signal quality, subcontractor network health, hunt execution, and risk.
+
+Pursue / Avoid decisions compare pursuit value against avoid risk. The system recommends Pursue Aggressively, Pursue Selectively, Monitor, or Avoid based on margin, probability, relationship access, capacity availability, strategic fit, compliance risk, and capacity gaps.
+
+Capacity recruitment recommendations answer: what capacity should we recruit next? Suggested sources include Hunts, Acquisition Targets, Watchlists, Demand Content, and Direct Outreach.
+
+Content decisions never publish automatically. They only recommend Draft, Review, Publish, Distribute, or Archive, with human review required before publication or distribution.
+
+Relationship decisions identify which influence assets should be contacted, strengthened, assigned objectives, de-risked, or asked for work, capacity, or market intelligence.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

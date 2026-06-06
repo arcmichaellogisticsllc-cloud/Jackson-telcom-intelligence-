@@ -60,6 +60,14 @@
   <div><span>Top Acquisition Content</span><strong><?= $demandWidgets['top_acquisition_content'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Top Daily Actions</span><strong><?= (int)$decisionWidgets['metrics']['top_actions'] ?></strong></div>
+  <div><span>Growth Blockers</span><strong><?= (int)$decisionWidgets['metrics']['critical_blockers'] ?></strong></div>
+  <div><span>Pursue</span><strong><?= (int)$decisionWidgets['metrics']['pursue'] ?></strong></div>
+  <div><span>Avoid</span><strong><?= (int)$decisionWidgets['metrics']['avoid'] ?></strong></div>
+  <div><span>Capacity to Recruit</span><strong><?= (int)$decisionWidgets['metrics']['recruitment_needs'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -91,6 +99,14 @@
 </section>
 
 <section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Daily Actions</h2><a class="btn secondary" href="/decision-support">Decision Support</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Action Required</th><th>Owner</th><th>Decision Score</th></tr></thead><tbody><?php foreach ($decisionWidgets['topActions'] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['action_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_next_step']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?></td><td><?= (int)$item['decision_score'] ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Growth Blockers</h2><a class="btn secondary" href="/daily-brief">Executive Brief</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Severity</th><th>Blocker</th><th>Resolution</th></tr></thead><tbody><?php foreach ($decisionWidgets['blockers'] as $item): ?><tr><td><span class="priority <?= strtolower($item['severity']) ?>"><?= htmlspecialchars($item['severity']) ?></span></td><td><?= htmlspecialchars($item['blocker_title']) ?></td><td><?= htmlspecialchars($item['recommended_resolution']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting">Hunting Lists</a></div>
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Target</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars($target['target_type']) ?></small></td><td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>

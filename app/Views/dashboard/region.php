@@ -59,7 +59,23 @@
   <div><span>Top Acquisition Content</span><strong><?= $demandWidgets['top_acquisition_content'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Top Daily Actions</span><strong><?= (int)$decisionWidgets['metrics']['top_actions'] ?></strong></div>
+  <div><span>Growth Blockers</span><strong><?= (int)$decisionWidgets['metrics']['critical_blockers'] ?></strong></div>
+  <div><span>Pursue</span><strong><?= (int)$decisionWidgets['metrics']['pursue'] ?></strong></div>
+  <div><span>Avoid</span><strong><?= (int)$decisionWidgets['metrics']['avoid'] ?></strong></div>
+  <div><span>Capacity to Recruit</span><strong><?= (int)$decisionWidgets['metrics']['recruitment_needs'] ?></strong></div>
+</section>
+
 <section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Daily Actions</h2><a class="btn secondary" href="/decision-support/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Decision Support</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Action Required</th><th>Owner</th><th>Score</th></tr></thead><tbody><?php foreach ($decisionWidgets['topActions'] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['action_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_next_step']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?></td><td><?= (int)$item['decision_score'] ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <h2>Growth Blockers</h2>
+    <div class="table-wrap"><table><thead><tr><th>Severity</th><th>Blocker</th><th>Resolution</th></tr></thead><tbody><?php foreach ($decisionWidgets['blockers'] as $item): ?><tr><td><span class="priority <?= strtolower($item['severity']) ?>"><?= htmlspecialchars($item['severity']) ?></span></td><td><?= htmlspecialchars($item['blocker_title']) ?></td><td><?= htmlspecialchars($item['recommended_resolution']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
   <div class="panel">
     <div class="panel-title"><h2>Available Crews by Service Type</h2><span class="score <?= strtolower($score['category']) ?>"><?= htmlspecialchars($score['category']) ?></span></div>
     <div class="gap-list">

@@ -871,6 +871,126 @@ CREATE TABLE IF NOT EXISTS content_attributions (
   FOREIGN KEY(channel_id) REFERENCES channels(id)
 );
 
+CREATE TABLE IF NOT EXISTS daily_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  action_title TEXT NOT NULL,
+  action_category TEXT NOT NULL,
+  region_id INTEGER,
+  owner TEXT,
+  priority TEXT DEFAULT 'Medium',
+  reason TEXT,
+  recommended_next_step TEXT,
+  linked_record_type TEXT,
+  linked_record_id INTEGER,
+  due_date TEXT,
+  status TEXT DEFAULT 'Open',
+  impact_score INTEGER DEFAULT 0,
+  urgency_score INTEGER DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  decision_score INTEGER DEFAULT 0,
+  outcome_notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS regional_strategy_scorecards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region_id INTEGER,
+  scorecard_date TEXT NOT NULL,
+  capacity_score INTEGER DEFAULT 0,
+  relationship_score INTEGER DEFAULT 0,
+  opportunity_score INTEGER DEFAULT 0,
+  demand_score INTEGER DEFAULT 0,
+  signal_quality_score INTEGER DEFAULT 0,
+  subcontractor_network_score INTEGER DEFAULT 0,
+  hunt_execution_score INTEGER DEFAULT 0,
+  risk_score INTEGER DEFAULT 0,
+  overall_growth_score INTEGER DEFAULT 0,
+  summary TEXT,
+  top_blocker TEXT,
+  recommended_focus TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS growth_blockers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  blocker_title TEXT NOT NULL,
+  blocker_type TEXT NOT NULL,
+  region_id INTEGER,
+  severity TEXT DEFAULT 'Medium',
+  reason TEXT,
+  recommended_resolution TEXT,
+  linked_record_type TEXT,
+  linked_record_id INTEGER,
+  status TEXT DEFAULT 'Open',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS opportunity_decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL,
+  region_id INTEGER,
+  pursue_score INTEGER DEFAULT 0,
+  avoid_score INTEGER DEFAULT 0,
+  recommended_decision TEXT DEFAULT 'Monitor',
+  reason TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_recruitment_recommendations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region_id INTEGER,
+  discipline TEXT NOT NULL,
+  needed_count INTEGER DEFAULT 0,
+  urgency TEXT DEFAULT 'Medium',
+  reason TEXT,
+  linked_capacity_gap TEXT,
+  suggested_sources TEXT,
+  status TEXT DEFAULT 'Open',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS content_decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_opportunity_id INTEGER,
+  region_id INTEGER,
+  audience TEXT,
+  decision TEXT DEFAULT 'Review',
+  reason TEXT,
+  impact_score INTEGER DEFAULT 0,
+  recommended_channel TEXT,
+  status TEXT DEFAULT 'Open',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(content_opportunity_id) REFERENCES content_opportunities(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_decisions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL,
+  region_id INTEGER,
+  decision TEXT DEFAULT 'Monitor',
+  reason TEXT,
+  impact_score INTEGER DEFAULT 0,
+  recommended_action TEXT,
+  status TEXT DEFAULT 'Open',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS recommended_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
