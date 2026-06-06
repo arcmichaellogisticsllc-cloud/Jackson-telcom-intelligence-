@@ -62,6 +62,9 @@ $columns = [
         'trigger_detail' => 'TEXT',
         'why_it_matters' => 'TEXT',
     ],
+    'outreach_intelligence' => [
+        'due_date' => 'TEXT',
+    ],
     'signals' => [
         'city' => 'TEXT',
         'confidence_score' => 'INTEGER DEFAULT 0',

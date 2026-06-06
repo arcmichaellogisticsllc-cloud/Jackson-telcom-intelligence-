@@ -966,6 +966,7 @@ The runner executes, in order:
 3. `php scripts/build_acquisition_targets.php`
 4. Capacity Radar trust-score rebuild
 5. Recommendation and Decision Support rebuild
+6. Outreach Intelligence rebuild
 
 Do not run DB-writing scripts in parallel on SQLite.
 
@@ -1004,6 +1005,55 @@ JIP_SEED_MODE=production php scripts/seed.php
 ```
 
 Production seed mode creates regions, users, and capacity targets only. Demo acquisition data remains available for development and training, but should not be treated as production intelligence.
+
+## Outreach Intelligence
+
+Outreach Intelligence turns platform intelligence into prepared human outreach actions. It answers:
+
+- who should we contact
+- why should we contact them
+- what should we say
+- what channel should we use
+- what outcome are we trying to create
+
+Outreach Intelligence is generated from:
+
+- Daily Actions
+- Acquisition Targets
+- Hunts
+- Relationship Actions
+- Capacity Recruitment Recommendations
+- Subcontractor compliance issues
+- Demand distribution plans
+- Growth Blockers
+
+No automated sending exists in this phase. The system does not send emails, SMS, LinkedIn messages, Facebook messages, or publish content. Scripts are drafts with `human_review_required = true`.
+
+Prepared outreach includes:
+
+- target type
+- linked source record
+- theater and owner
+- recommended channel
+- outreach goal
+- reason
+- recommended opening
+- discovery questions
+- desired outcome
+- human-reviewed scripts
+
+Discovery question banks support subcontractors, equipment sellers, utilities, prime contractors, relationship contacts, workforce candidates, and vendors.
+
+Outcomes can be captured as No Answer, Left Message, Interested, Not Interested, Needs Follow-Up, Meeting Scheduled, Documents Requested, Converted, or Bad Data. Outcomes log activity, can create follow-up Daily Actions, and can update linked targets or relationship actions when appropriate.
+
+The operator workflow is:
+
+1. Open Outreach Intelligence.
+2. Review priority and reason.
+3. Review the call opener, message draft, or meeting agenda.
+4. Human approves or revises the script.
+5. Human performs the outreach outside the system.
+6. Capture the outcome and follow-up date.
 
 ## SyncERP Boundary
 

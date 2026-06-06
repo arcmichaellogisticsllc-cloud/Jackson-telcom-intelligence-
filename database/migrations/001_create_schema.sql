@@ -455,6 +455,62 @@ CREATE TABLE IF NOT EXISTS outreach_sequences (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS outreach_intelligence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  outreach_title TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  linked_record_type TEXT,
+  linked_record_id INTEGER,
+  region_id INTEGER,
+  owner TEXT,
+  channel TEXT NOT NULL,
+  outreach_goal TEXT NOT NULL,
+  priority TEXT DEFAULT 'Medium',
+  reason TEXT,
+  recommended_opening TEXT,
+  discovery_questions TEXT,
+  desired_outcome TEXT,
+  status TEXT DEFAULT 'Draft',
+  notes TEXT,
+  due_date TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS outreach_scripts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  outreach_intelligence_id INTEGER NOT NULL,
+  script_type TEXT NOT NULL,
+  subject_line TEXT,
+  body TEXT,
+  review_status TEXT DEFAULT 'Draft',
+  human_review_required INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(outreach_intelligence_id) REFERENCES outreach_intelligence(id)
+);
+
+CREATE TABLE IF NOT EXISTS outreach_discovery_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_type TEXT NOT NULL,
+  question TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS outreach_outcomes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  outreach_intelligence_id INTEGER NOT NULL,
+  outcome_type TEXT NOT NULL,
+  outcome_notes TEXT,
+  follow_up_date TEXT,
+  created_by TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(outreach_intelligence_id) REFERENCES outreach_intelligence(id)
+);
+
 CREATE TABLE IF NOT EXISTS signal_sources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,

@@ -106,7 +106,7 @@ class DecisionSupportService
 
     private function clearGenerated(PDO $db): void
     {
-        $db->exec("DELETE FROM daily_actions WHERE status IN ('Open','In Progress') AND COALESCE(linked_record_type,'') != 'daily_action'");
+        $db->exec("DELETE FROM daily_actions WHERE status IN ('Open','In Progress') AND COALESCE(linked_record_type,'') NOT IN ('daily_action','outreach_intelligence')");
         foreach (['regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");

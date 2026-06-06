@@ -16,6 +16,11 @@ $routes = [
     '/',
     '/briefing',
     '/decision-support',
+    '/outreach',
+    '/outreach/southeast',
+    '/outreach/great-lakes',
+    '/outreach/southwest',
+    '/outreach/detail?id=1',
     '/harvesters',
     '/signals',
     '/escalations',
@@ -39,9 +44,23 @@ $routes = [
 
 $failed = 0;
 $results = [];
+$reported = false;
+$report = function () use (&$results, &$failed, &$reported): void {
+    if ($reported) {
+        return;
+    }
+    $reported = true;
+    foreach ($results as $result) {
+        echo $result . PHP_EOL;
+    }
+    echo "\nRoute smoke summary: " . ($failed ? 'FAIL' : 'PASS') . "\n";
+};
+register_shutdown_function($report);
 foreach ($routes as $route) {
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['REQUEST_URI'] = $route;
+    $_GET = [];
+    parse_str((string)(parse_url($route, PHP_URL_QUERY) ?: ''), $_GET);
     http_response_code(200);
     ob_start();
     try {
@@ -60,8 +79,5 @@ foreach ($routes as $route) {
     }
 }
 
-foreach ($results as $result) {
-    echo $result . PHP_EOL;
-}
-echo "\nRoute smoke summary: " . ($failed ? 'FAIL' : 'PASS') . "\n";
+$report();
 exit($failed ? 1 : 0);

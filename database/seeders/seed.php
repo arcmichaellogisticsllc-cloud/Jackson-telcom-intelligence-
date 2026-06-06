@@ -11,6 +11,7 @@ use App\Services\AcquisitionTargetService;
 use App\Services\CapacityGapService;
 use App\Services\DemandDistributionService;
 use App\Services\DecisionSupportService;
+use App\Services\OutreachIntelligenceService;
 use App\Services\SubcontractorAcquisitionService;
 use App\Services\RelationshipIntelligenceService;
 
@@ -18,7 +19,7 @@ $db = Database::connection();
 $db->beginTransaction();
 $seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
 
-foreach (['activities','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -768,5 +769,16 @@ foreach ($plansForAttribution as $index => $plan) {
 (new CapacityGapService())->recalculateTrustScores();
 RecommendationEngine::regenerate();
 (new DecisionSupportService())->rebuild();
+(new OutreachIntelligenceService())->rebuild();
 
-echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, capacity radar, subcontractor acquisition, relationship influence, demand distribution, decision support, and recommendations.\n";
+$outcomeRows = $db->query('SELECT id FROM outreach_intelligence ORDER BY id LIMIT 12')->fetchAll();
+foreach ($outcomeRows as $index => $row) {
+    $db->prepare('INSERT INTO outreach_outcomes (outreach_intelligence_id, outcome_type, outcome_notes, follow_up_date, created_by) VALUES (?, ?, ?, ?, "Seeder")')->execute([
+        (int)$row['id'],
+        ['Left Message','Interested','Needs Follow-Up','Meeting Scheduled'][$index % 4],
+        'Seeded outreach outcome for operator workflow validation. No message was sent automatically.',
+        $index % 3 === 0 ? date('Y-m-d', strtotime('+3 days')) : null,
+    ]);
+}
+
+echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, capacity radar, subcontractor acquisition, relationship influence, demand distribution, decision support, outreach intelligence, and recommendations.\n";

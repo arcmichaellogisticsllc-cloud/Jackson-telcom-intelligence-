@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor_autoload.php';
 use App\Core\RecommendationEngine;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
+use App\Services\OutreachIntelligenceService;
 
 echo "Jackson Intelligence Platform acquisition cycle\n";
 echo "SQLite mode: running database-writing jobs sequentially. Do not run these jobs in parallel.\n\n";
@@ -32,6 +33,10 @@ echo "PASS Capacity Radar trust scores rebuilt\n\n";
 echo "== Rebuild recommendations and Decision Support ==\n";
 RecommendationEngine::regenerate();
 (new DecisionSupportService())->rebuild();
-echo "PASS Decision Support rebuilt\n";
+echo "PASS Decision Support rebuilt\n\n";
+
+echo "== Rebuild Outreach Intelligence ==\n";
+(new OutreachIntelligenceService())->rebuild();
+echo "PASS Outreach Intelligence rebuilt\n";
 
 echo "\nAcquisition cycle complete.\n";
