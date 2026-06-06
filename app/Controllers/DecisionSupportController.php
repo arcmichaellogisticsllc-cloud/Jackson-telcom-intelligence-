@@ -39,7 +39,11 @@ class DecisionSupportController extends Controller
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll();
         $briefs = [];
+        $allowed = $this->allowedBriefRegions();
         foreach ($regions as $region) {
+            if ($allowed && !in_array($region['name'], $allowed, true)) {
+                continue;
+            }
             $briefs[$region['name']] = $service->dashboardData((int)$region['id']);
         }
         $this->view('decision/brief', compact('briefs', 'regions'));
@@ -93,5 +97,16 @@ class DecisionSupportController extends Controller
         $data = $service->dashboardData($regionId);
         $regions = Database::connection()->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll();
         $this->view('decision/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'regions')));
+    }
+
+    private function allowedBriefRegions(): array
+    {
+        $role = Auth::user()['role'] ?? 'Admin';
+        return match ($role) {
+            'Southeast Owner' => ['National', 'Southeast', 'Southwest'],
+            'Great Lakes Owner' => ['National', 'Great Lakes', 'Southwest'],
+            'Southwest Owner' => ['National', 'Southwest'],
+            default => [],
+        };
     }
 }

@@ -37,6 +37,7 @@ $router->get('/targets', [AcquisitionTargetController::class, 'index']);
 $router->post('/targets', [AcquisitionTargetController::class, 'save']);
 $router->post('/targets/build', [AcquisitionTargetController::class, 'build']);
 $router->get('/targets/hunting', [AcquisitionTargetController::class, 'hunting']);
+$router->get('/hunting-lists', [AcquisitionTargetController::class, 'hunting']);
 $router->get('/targets/detail', [AcquisitionTargetController::class, 'detail']);
 $router->post('/targets/status', [AcquisitionTargetController::class, 'status']);
 $router->post('/targets/convert', [AcquisitionTargetController::class, 'convert']);

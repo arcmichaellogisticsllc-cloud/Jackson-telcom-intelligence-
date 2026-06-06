@@ -887,6 +887,124 @@ Content decisions never publish automatically. They only recommend Draft, Review
 
 Relationship decisions identify which influence assets should be contacted, strengthened, assigned objectives, de-risked, or asked for work, capacity, or market intelligence.
 
+## Platform Hardening
+
+This platform is now organized for operator use, not generic CRM browsing. Primary navigation uses acquisition language:
+
+- National Command Center
+- Regional Command Centers
+- Executive Daily Brief
+- Decision Support
+- Acquisition Harvesters
+- Signal Center
+- Escalations
+- Watchlists
+- Acquisition Targets
+- Hunting Lists
+- Hunts
+- Playbooks
+- Capacity Radar
+- Subcontractor Acquisition
+- Relationship Graph
+- Demand Engine
+- Traffic Engine
+- Organizations
+- Contacts
+- Opportunities
+- Recommendations
+- Activities
+- Settings
+
+Owner and theater conventions:
+
+- Southeast: Mike
+- Great Lakes: Ron
+- Southwest: Mike/Ron Shared until a future Southwest owner exists
+- National: Mike/Ron Shared or Admin
+
+## Operator Workflow
+
+Daily flow:
+
+1. Open Executive Daily Brief.
+2. Review Decision Support.
+3. Review Escalations.
+4. Review Today Hunt Actions.
+5. Review Capacity Radar gaps.
+6. Complete actions.
+7. Add outcome notes.
+
+Weekly flow:
+
+1. Run the acquisition cycle.
+2. Review signal quality.
+3. Review hunting lists.
+4. Review subcontractor pipeline.
+5. Review demand/content review queue.
+6. Review regional strategy scorecards.
+
+Development flow:
+
+1. Run migrations.
+2. Run seed.
+3. Run acquisition cycle sequentially.
+4. Run data integrity check.
+5. Run route smoke tests.
+
+## Acquisition Cycle
+
+SQLite can lock when database-writing jobs run in parallel. Use the sequential runner:
+
+```bash
+php scripts/run_acquisition_cycle.php
+```
+
+The runner executes, in order:
+
+1. `php scripts/run_harvesters.php`
+2. `php scripts/process_raw_signals.php`
+3. `php scripts/build_acquisition_targets.php`
+4. Capacity Radar trust-score rebuild
+5. Recommendation and Decision Support rebuild
+
+Do not run DB-writing scripts in parallel on SQLite.
+
+## Data Integrity
+
+Run:
+
+```bash
+php scripts/check_data_integrity.php
+```
+
+The integrity check reports PASS, WARN, or FAIL for missing quality profiles, orphaned activities, missing owners, missing compliance records, missing recommendation categories, daily actions without owners, and demand/distribution consistency.
+
+## Route Smoke Tests
+
+Run:
+
+```bash
+php scripts/smoke_routes.php
+```
+
+This dispatches authenticated GET smoke tests for the primary operator routes without requiring a browser.
+
+## Seed Modes
+
+Default seed mode is demo/operator training data:
+
+```bash
+php scripts/seed.php
+```
+
+Minimal production baseline:
+
+```bash
+JIP_SEED_MODE=production php scripts/seed.php
+```
+
+Production seed mode creates regions, users, and capacity targets only. Demo acquisition data remains available for development and training, but should not be treated as production intelligence.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

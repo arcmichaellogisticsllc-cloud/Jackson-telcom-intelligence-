@@ -10,7 +10,7 @@ class RecommendationEngine
     public static function regenerate(): void
     {
         $db = Database::connection();
-        $db->exec('DELETE FROM recommended_actions');
+        $db->exec("DELETE FROM recommended_actions WHERE status = 'Open'");
 
         self::capacityTargets($db);
         self::capacityRadarActions($db);
@@ -1080,8 +1080,45 @@ class RecommendationEngine
 
     private static function insert(PDO $db, array $data): void
     {
-        $stmt = $db->prepare('INSERT INTO recommended_actions (title, category, region_id, priority, reason, recommended_next_action, assigned_owner, status, source_type, source_id, recommendation_type, priority_score, trigger_detail, why_it_matters) VALUES (:title, :category, :region_id, :priority, :reason, :recommended_next_action, :assigned_owner, "Open", :source_type, :source_id, :recommendation_type, :priority_score, :trigger_detail, :why_it_matters)');
+        $data['source_module'] = $data['source_module'] ?? self::moduleFor($data['category'] ?? '', $data['source_type'] ?? '');
+        $existing = $db->prepare('SELECT id FROM recommended_actions WHERE status = "Open" AND category = :category AND COALESCE(source_type,"") = COALESCE(:source_type,"") AND COALESCE(source_id,0) = COALESCE(:source_id,0) AND recommended_next_action = :recommended_next_action LIMIT 1');
+        $existing->execute([
+            'category' => $data['category'],
+            'source_type' => $data['source_type'] ?? '',
+            'source_id' => $data['source_id'] ?? 0,
+            'recommended_next_action' => $data['recommended_next_action'],
+        ]);
+        $id = $existing->fetchColumn();
+        if ($id) {
+            $stmt = $db->prepare('UPDATE recommended_actions SET title = :title, priority = :priority, reason = :reason, assigned_owner = :assigned_owner, source_module = :source_module, recommendation_type = :recommendation_type, priority_score = :priority_score, trigger_detail = :trigger_detail, why_it_matters = :why_it_matters, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+            $stmt->execute([
+                'title' => $data['title'],
+                'priority' => $data['priority'],
+                'reason' => $data['reason'],
+                'assigned_owner' => $data['assigned_owner'],
+                'source_module' => $data['source_module'],
+                'recommendation_type' => $data['recommendation_type'],
+                'priority_score' => $data['priority_score'],
+                'trigger_detail' => $data['trigger_detail'],
+                'why_it_matters' => $data['why_it_matters'],
+                'id' => $id,
+            ]);
+            return;
+        }
+        $stmt = $db->prepare('INSERT INTO recommended_actions (title, category, region_id, priority, reason, recommended_next_action, assigned_owner, status, source_type, source_id, source_module, recommendation_type, priority_score, trigger_detail, why_it_matters) VALUES (:title, :category, :region_id, :priority, :reason, :recommended_next_action, :assigned_owner, "Open", :source_type, :source_id, :source_module, :recommendation_type, :priority_score, :trigger_detail, :why_it_matters)');
         $stmt->execute($data);
+    }
+
+    private static function moduleFor(string $category, string $sourceType): string
+    {
+        return match (true) {
+            in_array($category, ['Capacity','Compliance'], true) => 'Capacity / Subcontractor Acquisition',
+            $category === 'Relationship' => 'Relationship & Influence',
+            $category === 'Acquisition Target' || str_contains($sourceType, 'hunt') => 'Hunt / Target Engine',
+            in_array($category, ['SEO','Content','Outreach','Regional Expansion'], true) => 'Demand / Traffic Engine',
+            in_array($category, ['Market','Opportunity'], true) => 'Signal / Opportunity Intelligence',
+            default => 'Decision Support',
+        };
     }
 
     private static function gapScore(int $gap, int $target): int

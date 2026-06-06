@@ -393,7 +393,8 @@ class DashboardController extends Controller
 
     private function decisionWidgets(?int $regionId = null): array
     {
-        (new DecisionSupportService())->rebuild();
-        return (new DecisionSupportService())->dashboardData($regionId);
+        $service = new DecisionSupportService();
+        $service->rebuild();
+        return $service->dashboardData($regionId);
     }
 }

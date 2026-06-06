@@ -16,6 +16,7 @@ use App\Services\RelationshipIntelligenceService;
 
 $db = Database::connection();
 $db->beginTransaction();
+$seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
 
 foreach (['activities','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
@@ -27,7 +28,7 @@ $regionRows = [
     'National' => ['National', 'National', 'National', 'admin@jacksontelcom.com', '', '', 'National', 'National / Multi-region', 'National', 'Active', 'National layer for organizations, content, signals, and opportunities that span multiple theaters.', 82, 64, 66, 58, 62],
     'Southeast' => ['Southeast', 'Mike', 'Mike', 'mike@jacksontlcom.com', 'Atlanta', 'GA', 'GA, AL, FL, TN, NC, SC', 'GA, AL, FL, TN, NC, SC', 'Tier 1', 'Active', 'Tier 1 growth theater for broadband, aerial, underground, splicing, and restoration capacity.', 76, 58, 61, 64, 54],
     'Great Lakes' => ['Great Lakes', 'Ron', 'Ron', 'ron@jacksontelcom.com', 'Detroit', 'MI', 'MI, OH, IN, WI, IL', 'MI, OH, IN, WI, IL', 'Tier 1', 'Active', 'Tier 1 relationship and opportunity theater across Great Lakes broadband and utility markets.', 72, 55, 63, 60, 52],
-    'Southwest' => ['Southwest', 'Unassigned', '', '', 'Houston', 'TX', 'TX, OK, LA, NM', 'TX, OK, LA, NM', 'Tier 2', 'Expansion', 'Tier 2 Houston-centered capacity and traffic foundation theater.', 38, 34, 28, 32, 26],
+    'Southwest' => ['Southwest', 'Mike/Ron Shared', 'Mike/Ron Shared', '', 'Houston', 'TX', 'TX, OK, LA, NM', 'TX, OK, LA, NM', 'Tier 2', 'Expansion', 'Tier 2 Houston-centered capacity and traffic foundation theater.', 38, 34, 28, 32, 26],
 ];
 $regions = [];
 foreach ($regionRows as $key => $row) {
@@ -52,6 +53,14 @@ foreach ($targets as $regionName => $services) {
         $targetStmt->execute([$regions[$regionName], $service, $target]);
     }
 }
+
+if (in_array($seedMode, ['production', 'minimal'], true)) {
+    $db->commit();
+    echo "Seeded minimal production baseline: regions, users, and capacity targets only. No demo acquisition data was inserted.\n";
+    exit;
+}
+
+echo "Seeding demo acquisition data for development/operator training. Use JIP_SEED_MODE=production for a minimal production baseline.\n";
 
 $keywordStmt = $db->prepare('INSERT INTO keywords (keyword, intent_type, region_id, state, city, priority, current_rank, target_rank, search_intent_notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 $contentStmt = $db->prepare('INSERT INTO content_ideas (title, content_type, region_id, target_keyword, audience, status, recommended_channel, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');

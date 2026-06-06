@@ -368,9 +368,22 @@ class DecisionSupportService
             'risk_severity' => $data['risk'] ?? 0,
         ]);
         $priority = $this->scoring->priorityFromScore(max($score, $this->scoring->priorityScore($data['priority'] ?? 'Medium')));
-        $exists = $db->prepare('SELECT id FROM daily_actions WHERE action_title = ? AND action_category = ? AND COALESCE(region_id,0) = COALESCE(?,0) LIMIT 1');
-        $exists->execute([$data['title'], $data['category'], $data['region_id']]);
-        if ($exists->fetchColumn()) {
+        $exists = $db->prepare('SELECT id, priority FROM daily_actions WHERE status IN ("Open","In Progress") AND action_category = ? AND COALESCE(linked_record_type,"") = COALESCE(?, "") AND COALESCE(linked_record_id,0) = COALESCE(?,0) LIMIT 1');
+        $exists->execute([$data['category'], $data['linked_type'] ?? '', $data['linked_id'] ?? 0]);
+        $existing = $exists->fetch();
+        if ($existing) {
+            $db->prepare('UPDATE daily_actions SET action_title = ?, priority = ?, reason = ?, recommended_next_step = ?, due_date = ?, impact_score = ?, urgency_score = ?, confidence_score = ?, decision_score = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([
+                $data['title'],
+                $priority,
+                $data['reason'] ?? '',
+                $data['next'] ?? '',
+                $data['due'] ?? date('Y-m-d', strtotime('+3 days')),
+                (int)($data['impact'] ?? 50),
+                (int)($data['urgency'] ?? 50),
+                (int)($data['confidence'] ?? 60),
+                $score,
+                (int)$existing['id'],
+            ]);
             return;
         }
         $db->prepare('INSERT INTO daily_actions (action_title, action_category, region_id, owner, priority, reason, recommended_next_step, linked_record_type, linked_record_id, due_date, impact_score, urgency_score, confidence_score, decision_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')->execute([

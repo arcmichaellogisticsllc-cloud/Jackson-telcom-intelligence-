@@ -1003,6 +1003,7 @@ CREATE TABLE IF NOT EXISTS recommended_actions (
   status TEXT DEFAULT 'Open',
   source_type TEXT,
   source_id INTEGER,
+  source_module TEXT,
   recommendation_type TEXT,
   priority_score INTEGER DEFAULT 0,
   trigger_detail TEXT,

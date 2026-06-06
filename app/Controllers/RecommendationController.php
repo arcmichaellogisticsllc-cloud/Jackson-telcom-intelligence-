@@ -19,8 +19,21 @@ class RecommendationController extends Controller
     public function update(): void
     {
         Auth::requireLogin();
-        $stmt = Database::connection()->prepare('UPDATE recommended_actions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $db = Database::connection();
+        $existing = $db->prepare('SELECT * FROM recommended_actions WHERE id = ?');
+        $existing->execute([$_POST['id']]);
+        $row = $existing->fetch();
+        $stmt = $db->prepare('UPDATE recommended_actions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
         $stmt->execute([$_POST['status'], $_POST['id']]);
+        if ($row) {
+            $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, owner) VALUES ("recommended_action", ?, ?, "Status Change", ?, ?, ?)')->execute([
+                (int)$row['id'],
+                $row['region_id'],
+                $row['title'],
+                'Recommendation status changed to ' . ($_POST['status'] ?? ''),
+                Auth::user()['name'] ?? 'Admin',
+            ]);
+        }
         $this->redirect('/recommendations');
     }
 
@@ -31,4 +44,3 @@ class RecommendationController extends Controller
         $this->redirect('/recommendations');
     }
 }
-

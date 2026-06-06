@@ -56,6 +56,7 @@ $columns = [
         'vac_trucks' => 'INTEGER DEFAULT 0',
     ],
     'recommended_actions' => [
+        'source_module' => 'TEXT',
         'recommendation_type' => 'TEXT',
         'priority_score' => 'INTEGER DEFAULT 0',
         'trigger_detail' => 'TEXT',

@@ -1,0 +1,67 @@
+<?php
+
+require __DIR__ . '/../vendor_autoload.php';
+
+session_start();
+$_SESSION['user'] = [
+    'id' => 1,
+    'name' => 'Admin',
+    'email' => 'admin@jacksontelcom.com',
+    'role' => 'Admin',
+    'region_id' => null,
+];
+
+$router = require __DIR__ . '/../routes/web.php';
+$routes = [
+    '/',
+    '/briefing',
+    '/decision-support',
+    '/harvesters',
+    '/signals',
+    '/escalations',
+    '/watchlists',
+    '/targets',
+    '/hunting-lists',
+    '/hunts',
+    '/playbooks',
+    '/capacity-radar',
+    '/subcontractor-acquisition',
+    '/relationship-graph',
+    '/demand',
+    '/traffic',
+    '/organizations',
+    '/contacts',
+    '/opportunities',
+    '/recommendations',
+    '/activities',
+    '/settings',
+];
+
+$failed = 0;
+$results = [];
+foreach ($routes as $route) {
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+    $_SERVER['REQUEST_URI'] = $route;
+    http_response_code(200);
+    ob_start();
+    try {
+        $router->dispatch('GET', $route);
+        $body = ob_get_clean();
+        $code = http_response_code() ?: 200;
+        $ok = $code >= 200 && $code < 400 && !str_contains($body, 'Fatal error');
+        $results[] = ($ok ? 'PASS' : 'FAIL') . " {$code} {$route}";
+        if (!$ok) {
+            $failed++;
+        }
+    } catch (Throwable $e) {
+        ob_end_clean();
+        $failed++;
+        $results[] = 'FAIL 500 ' . $route . ' - ' . $e->getMessage();
+    }
+}
+
+foreach ($results as $result) {
+    echo $result . PHP_EOL;
+}
+echo "\nRoute smoke summary: " . ($failed ? 'FAIL' : 'PASS') . "\n";
+exit($failed ? 1 : 0);

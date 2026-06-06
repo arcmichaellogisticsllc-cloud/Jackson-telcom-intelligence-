@@ -74,7 +74,20 @@ class DemandController extends Controller
     public function reviewDraft(): void
     {
         Auth::requireLogin();
+        $db = Database::connection();
+        $draft = $db->prepare('SELECT cd.*, co.region_id FROM content_drafts cd JOIN content_opportunities co ON co.id = cd.content_opportunity_id WHERE cd.id = ?');
+        $draft->execute([(int)$_POST['id']]);
+        $row = $draft->fetch();
         (new DemandDistributionService())->updateDraftReview((int)$_POST['id'], $_POST['review_status'] ?? 'Review Needed');
+        if ($row) {
+            $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, owner) VALUES ("content_draft", ?, ?, "Status Change", ?, ?, ?)')->execute([
+                (int)$row['id'],
+                $row['region_id'],
+                $row['draft_title'],
+                'Content draft review status changed to ' . ($_POST['review_status'] ?? 'Review Needed') . '. Human review remains required before publication.',
+                Auth::user()['name'] ?? 'Admin',
+            ]);
+        }
         RecommendationEngine::regenerate();
         $this->redirect($_POST['return_to'] ?? '/demand');
     }
@@ -82,7 +95,20 @@ class DemandController extends Controller
     public function updateDistribution(): void
     {
         Auth::requireLogin();
+        $db = Database::connection();
+        $plan = $db->prepare('SELECT dp.*, co.region_id, co.title content_title FROM distribution_plans dp JOIN content_opportunities co ON co.id = dp.content_id WHERE dp.id = ?');
+        $plan->execute([(int)$_POST['id']]);
+        $row = $plan->fetch();
         (new DemandDistributionService())->updateDistributionStatus((int)$_POST['id'], $_POST['status'] ?? 'Planned');
+        if ($row) {
+            $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, owner) VALUES ("distribution_plan", ?, ?, "Status Change", ?, ?, ?)')->execute([
+                (int)$row['id'],
+                $row['region_id'],
+                $row['content_title'],
+                'Distribution plan status changed to ' . ($_POST['status'] ?? 'Planned') . '. No automated publishing occurred.',
+                Auth::user()['name'] ?? 'Admin',
+            ]);
+        }
         RecommendationEngine::regenerate();
         $this->redirect($_POST['return_to'] ?? '/demand');
     }
