@@ -27,6 +27,7 @@ class RecommendationEngine
         self::trafficActions($db);
         self::targetActions($db);
         self::huntActions($db);
+        self::relationshipActions($db);
     }
 
     private static function capacityTargets(PDO $db): void
@@ -373,6 +374,134 @@ class RecommendationEngine
                 'priority_score' => 76,
                 'trigger_detail' => 'Capacity contribution score ' . $sub['capacity_contribution_score'] . '.',
                 'why_it_matters' => 'Qualified subcontractors should be routed toward gaps that block pursuit decisions.',
+            ]);
+        }
+    }
+
+    private static function relationshipActions(PDO $db): void
+    {
+        if (!$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'relationship_intelligence_profiles'")->fetchColumn()) {
+            return;
+        }
+        (new \App\Services\RelationshipIntelligenceService())->rebuild();
+
+        $profiles = $db->query("SELECT rip.*, c.first_name, c.last_name, c.title, c.last_contact_date, o.name organization_name, o.type organization_type, r.name region_name FROM relationship_intelligence_profiles rip LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id LEFT JOIN regions r ON r.id = rip.region_id ORDER BY rip.relationship_value_score DESC")->fetchAll();
+        foreach ($profiles as $profile) {
+            $name = trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? ''));
+            if ((int)$profile['relationship_value_score'] >= 85) {
+                self::insert($db, [
+                    'title' => 'Strengthen critical relationship: ' . ($name ?: $profile['organization_name']),
+                    'category' => 'Relationship',
+                    'priority' => 'Critical',
+                    'region_id' => $profile['region_id'],
+                    'reason' => 'Relationship has high influence, access, authority, and strategic value.',
+                    'recommended_next_action' => $profile['next_best_action'] ?: 'Assign a direct owner action today.',
+                    'assigned_owner' => $profile['owner'] ?: 'Admin',
+                    'source_type' => 'relationship_profile',
+                    'source_id' => $profile['id'],
+                    'recommendation_type' => 'Follow Up Relationship',
+                    'priority_score' => (int)$profile['relationship_value_score'],
+                    'trigger_detail' => 'Influence Value ' . (int)$profile['relationship_value_score'] . ' at ' . ($profile['organization_name'] ?: 'unknown organization') . '.',
+                    'why_it_matters' => 'High-value relationships can create work, capacity, market intelligence, and access to primes or utilities.',
+                ]);
+            }
+            if (str_contains(strtolower((string)$profile['title']), 'project manager')) {
+                self::insert($db, [
+                    'title' => 'Call project manager: ' . ($name ?: $profile['organization_name']),
+                    'category' => 'Relationship',
+                    'priority' => (int)$profile['relationship_value_score'] >= 75 ? 'High' : 'Medium',
+                    'region_id' => $profile['region_id'],
+                    'reason' => 'Project managers commonly surface work, field needs, and subcontractor access.',
+                    'recommended_next_action' => 'Ask what projects need field capacity, subcontractor support, or fast response.',
+                    'assigned_owner' => $profile['owner'] ?: 'Admin',
+                    'source_type' => 'influence_role',
+                    'source_id' => $profile['contact_id'],
+                    'recommendation_type' => 'Follow Up Relationship',
+                    'priority_score' => max(72, (int)$profile['relationship_value_score']),
+                    'trigger_detail' => 'Project Manager role discovered.',
+                    'why_it_matters' => 'Project access relationships can become work access before formal opportunities appear.',
+                ]);
+            }
+        }
+
+        $missingObjectives = $db->query("SELECT rip.*, c.first_name, c.last_name, o.name organization_name FROM relationship_intelligence_profiles rip LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id WHERE NOT EXISTS (SELECT 1 FROM relationship_objectives ro WHERE ro.relationship_profile_id = rip.id AND ro.priority = 'Primary' AND ro.status != 'Not Relevant')")->fetchAll();
+        foreach ($missingObjectives as $profile) {
+            self::insert($db, [
+                'title' => 'Assign primary relationship objective: ' . (trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')) ?: $profile['organization_name']),
+                'category' => 'Relationship',
+                'priority' => 'High',
+                'region_id' => $profile['region_id'],
+                'reason' => 'Relationship has no primary purpose.',
+                'recommended_next_action' => 'Choose Project Access, Prime Access, Utility Access, Capacity Access, Market Intelligence, or Future Opportunity.',
+                'assigned_owner' => $profile['owner'] ?: 'Admin',
+                'source_type' => 'relationship_profile',
+                'source_id' => $profile['id'],
+                'recommendation_type' => 'Follow Up Relationship',
+                'priority_score' => 76,
+                'trigger_detail' => 'Primary objective missing.',
+                'why_it_matters' => 'Relationships without objectives become passive CRM records instead of influence assets.',
+            ]);
+        }
+
+        $noAction = $db->query("SELECT rip.*, c.first_name, c.last_name, o.name organization_name FROM relationship_intelligence_profiles rip LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id WHERE NOT EXISTS (SELECT 1 FROM relationship_actions ra WHERE ra.relationship_profile_id = rip.id AND ra.status IN ('Open','In Progress'))")->fetchAll();
+        foreach ($noAction as $profile) {
+            self::insert($db, [
+                'title' => 'Create relationship action: ' . (trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? '')) ?: $profile['organization_name']),
+                'category' => 'Relationship',
+                'priority' => 'Medium',
+                'region_id' => $profile['region_id'],
+                'reason' => 'Relationship has no active next action.',
+                'recommended_next_action' => $profile['next_best_action'] ?: 'Create a direct action for the assigned owner.',
+                'assigned_owner' => $profile['owner'] ?: 'Admin',
+                'source_type' => 'relationship_profile',
+                'source_id' => $profile['id'],
+                'recommendation_type' => 'Follow Up Relationship',
+                'priority_score' => 62,
+                'trigger_detail' => 'No open relationship action.',
+                'why_it_matters' => 'Influence only compounds when there is a next move.',
+            ]);
+        }
+
+        $risks = $db->query("SELECT rr.*, rip.region_id, rip.owner, rip.relationship_value_score, c.first_name, c.last_name, o.name organization_name FROM relationship_risks rr JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id WHERE rr.status = 'Open'")->fetchAll();
+        foreach ($risks as $risk) {
+            self::insert($db, [
+                'title' => $risk['risk_type'] . ': ' . (trim(($risk['first_name'] ?? '') . ' ' . ($risk['last_name'] ?? '')) ?: $risk['organization_name']),
+                'category' => 'Relationship',
+                'priority' => $risk['severity'],
+                'region_id' => $risk['region_id'],
+                'reason' => $risk['reason'],
+                'recommended_next_action' => $risk['recommended_mitigation'],
+                'assigned_owner' => $risk['owner'] ?: 'Admin',
+                'source_type' => 'relationship_risk',
+                'source_id' => $risk['id'],
+                'recommendation_type' => 'Follow Up Relationship',
+                'priority_score' => match ($risk['severity']) {
+                    'Critical' => 94,
+                    'High' => 80,
+                    'Medium' => 58,
+                    default => 35,
+                },
+                'trigger_detail' => 'Relationship risk: ' . $risk['risk_type'] . '.',
+                'why_it_matters' => 'Relationship risk can block access to work, capacity, intelligence, or decision makers.',
+            ]);
+        }
+
+        $wins = $db->query("SELECT rw.*, rip.region_id, rip.owner, rip.relationship_value_score, c.first_name, c.last_name, o.name organization_name FROM relationship_wins rw JOIN relationship_intelligence_profiles rip ON rip.id = rw.relationship_profile_id LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id WHERE rw.win_status IN ('Potential','Active')")->fetchAll();
+        foreach ($wins as $win) {
+            self::insert($db, [
+                'title' => $win['win_type'] . ': ' . (trim(($win['first_name'] ?? '') . ' ' . ($win['last_name'] ?? '')) ?: $win['organization_name']),
+                'category' => 'Relationship',
+                'priority' => (int)$win['relationship_value_score'] >= 85 ? 'High' : 'Medium',
+                'region_id' => $win['region_id'],
+                'reason' => 'Relationship has a potential win condition.',
+                'recommended_next_action' => 'Ask directly about this win condition and convert the outcome into capacity, opportunity, or access.',
+                'assigned_owner' => $win['owner'] ?: 'Admin',
+                'source_type' => 'relationship_win',
+                'source_id' => $win['id'],
+                'recommendation_type' => 'Follow Up Relationship',
+                'priority_score' => max(65, (int)$win['relationship_value_score']),
+                'trigger_detail' => 'Win condition: ' . $win['win_type'] . '.',
+                'why_it_matters' => 'Relationship wins convert influence into work, capacity, intelligence, or access.',
             ]);
         }
     }

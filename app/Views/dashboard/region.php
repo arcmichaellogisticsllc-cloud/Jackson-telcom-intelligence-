@@ -43,6 +43,14 @@
   <div><span>Preferred Network Growth</span><strong><?= $subcontractorWidgets['preferred_growth'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Critical Relationships</span><strong><?= $relationshipWidgets['critical'] ?></strong></div>
+  <div><span>Strategic Relationships</span><strong><?= $relationshipWidgets['strategic'] ?></strong></div>
+  <div><span>Project Managers</span><strong><?= $relationshipWidgets['project_managers'] ?></strong></div>
+  <div><span>Relationship Risks</span><strong><?= $relationshipWidgets['open_risks'] ?></strong></div>
+  <div><span>Relationship Actions</span><strong><?= $relationshipWidgets['open_actions'] ?></strong></div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Available Crews by Service Type</h2><span class="score <?= strtolower($score['category']) ?>"><?= htmlspecialchars($score['category']) ?></span></div>
@@ -73,7 +81,11 @@
   </div>
   <div class="panel">
     <h2>Top Relationships Needing Follow-Up</h2>
-    <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Influence</th><th>Strength</th><th>Last Contact</th></tr></thead><tbody><?php foreach ($relationships as $rel): ?><tr><td><a href="/record?type=contact&id=<?= $rel['id'] ?>"><?= htmlspecialchars($rel['first_name'] . ' ' . $rel['last_name']) ?></a><br><small><?= htmlspecialchars($rel['organization_name'] ?? '') ?></small></td><td><?= htmlspecialchars($rel['influence_level']) ?></td><td><?= htmlspecialchars($rel['relationship_strength']) ?></td><td><?= htmlspecialchars($rel['last_contact_date'] ?: 'Missing') ?></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Influence</th><th>Strength</th><th>Last Contact</th></tr></thead><tbody><?php foreach ($relationships as $rel): ?><tr><td><a href="/contacts/detail?id=<?= $rel['id'] ?>"><?= htmlspecialchars($rel['first_name'] . ' ' . $rel['last_name']) ?></a><br><small><?= htmlspecialchars($rel['organization_name'] ?? '') ?></small></td><td><?= htmlspecialchars($rel['influence_level']) ?></td><td><?= htmlspecialchars($rel['relationship_strength']) ?></td><td><?= htmlspecialchars($rel['last_contact_date'] ?: 'Missing') ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Influence Assets</h2><a class="btn secondary" href="/relationship-graph/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">Relationship Graph</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Organization</th><th>Role</th><th>Influence Value</th><th>Next Best Action</th></tr></thead><tbody><?php foreach ($topRelationships as $rel): ?><tr><td><a href="/contacts/detail?id=<?= (int)$rel['contact_id'] ?>"><?= htmlspecialchars(trim(($rel['first_name'] ?? '') . ' ' . ($rel['last_name'] ?? ''))) ?></a></td><td><?= htmlspecialchars($rel['organization_name'] ?? '') ?></td><td><?= htmlspecialchars($rel['influence_role'] ?? 'Unknown') ?></td><td><?= (int)$rel['relationship_value_score'] ?><br><small><?= htmlspecialchars($rel['relationship_priority']) ?></small></td><td><?= htmlspecialchars($rel['next_best_action'] ?? '') ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
 </section>
 

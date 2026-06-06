@@ -33,6 +33,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Daily Intelligence Briefing
 - Capacity Radar
 - Subcontractor Acquisition Engine
+- Relationship & Influence Intelligence Engine
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
 - Capacity Acquisition
 - Relationship Intelligence
@@ -56,6 +57,7 @@ Jackson Intelligence Platform
 ├── Signal Quality / Watchlists / Escalations
 ├── Capacity Radar
 ├── Subcontractor Acquisition Engine
+├── Relationship & Influence Intelligence Engine
 ├── Capacity Acquisition
 ├── Relationship Intelligence
 ├── Opportunity Intelligence
@@ -134,6 +136,7 @@ Users:
 - Daily Intelligence Briefing
 - Capacity Radar
 - Subcontractor Acquisition Engine
+- Relationship & Influence Intelligence Engine
 - Capacity Acquisition
 - Relationship Intelligence
 - Opportunity Intelligence
@@ -400,6 +403,76 @@ Acquisition Targets can convert directly into Subcontractor Candidates while pre
 Capacity Radar uses subcontractor network levels to show how much capacity exists at each maturity level by region and discipline. Command Centers surface new subcontractor candidates, compliance issues, capacity added this month, strategic partner candidates, and preferred network growth.
 
 SyncERP remains last. This phase establishes qualified, compliant, deployable subcontractor capacity before production execution, billing, or ERP workflows exist.
+
+## Relationship & Influence Intelligence Engine
+
+Relationships are treated as influence assets, not passive CRM contacts. Every relationship should answer:
+
+- Can this relationship create work?
+- Can this relationship create capacity?
+- Can this relationship create market intelligence?
+- Can this relationship create access to primes, utilities, or projects?
+- What should Mike or Ron do next?
+
+The Relationship Graph organizes national and regional influence:
+
+- National Relationship Graph
+- Southeast Relationship Graph for Mike
+- Great Lakes Relationship Graph for Ron
+- Southwest Relationship Graph for shared Mike/Ron ownership
+
+Relationship Intelligence Profiles connect contacts and organizations to scoring, objectives, risks, win conditions, and owner actions.
+
+Scoring model:
+
+- Decision Authority Score
+- Influence Score
+- Access Score
+- Trust Score
+- Strategic Value Score
+- Relationship Value Score
+- Relationship Priority: Low, Medium, High, Critical
+- Relationship Status: Unknown, Cold, Developing, Warm, Strong, Strategic
+
+Project Managers, Construction Managers, OSP Managers, Program Managers, Operations Managers, Procurement contacts, Executives, Field Supervisors, Engineers, Estimators, and Subcontractor Coordinators receive explicit influence roles. Project Managers score highly because they commonly expose real work access.
+
+Every relationship requires a primary objective:
+
+- Project Access
+- Prime Access
+- Utility Access
+- Market Intelligence
+- Capacity Access
+- Future Opportunity
+
+Win conditions track when a relationship can create an operating advantage:
+
+- Looking for Work
+- Looking for Workers
+- Ready to Mobilize
+- Prime Access Opened
+- Utility Access Opened
+- Market Intelligence Provided
+- Future Opportunity Created
+
+Relationship risks keep influence from becoming fragile:
+
+- Single Point of Failure
+- No Recent Contact
+- Low Trust
+- Low Access
+- Weak Strategic Value
+- Relationship Owner Missing
+- Contact Role Unknown
+- Objective Missing
+
+Relationship Actions turn influence into daily work. Actions include calls, email, LinkedIn engagement, direct outreach, conference follow-up, research, meetings, content share, asking for work, asking for capacity, and asking for market intelligence. No real outreach is sent in this phase.
+
+Aggressive Relationship Creation Signals capture non-passive relationship generation from LinkedIn engagement, direct outreach, conference attendance, convention attendance, thought leadership, cold calls, website visits, content interactions, referrals, manual physical traffic, and other sources. These signals can convert into contacts and relationship intelligence profiles.
+
+The Daily Intelligence Briefing now surfaces top relationships to strengthen today, project managers to contact, utility access contacts, prime access contacts, relationship risks, and aggressive relationship creation actions. The goal is action, not raw contact volume.
+
+This feeds Decision Support Layer V2 by generating recommendations for high-value relationships, project manager discoveries, missing objectives, missing actions, stale utility/prime access, single-point-of-failure risk, and relationships that can open work, capacity, or market intelligence.
 
 ## Acquisition Hunt Engine
 

@@ -7,6 +7,7 @@ use App\Core\CapacityService;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\OpportunityScoring;
+use App\Services\RelationshipIntelligenceService;
 
 class DashboardController extends Controller
 {
@@ -22,6 +23,8 @@ class DashboardController extends Controller
         $qualityWidgets = $this->qualityWidgets();
         $topSources = $this->topSources();
         $subcontractorWidgets = $this->subcontractorWidgets();
+        $relationshipWidgets = $this->relationshipWidgets();
+        $topRelationships = $this->topRelationships();
         $targetWidgets = $this->targetWidgets();
         $topTargets = $this->topTargets();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
@@ -38,6 +41,8 @@ class DashboardController extends Controller
             'qualityWidgets' => $qualityWidgets,
             'topSources' => $topSources,
             'subcontractorWidgets' => $subcontractorWidgets,
+            'relationshipWidgets' => $relationshipWidgets,
+            'topRelationships' => $topRelationships,
             'targetWidgets' => $targetWidgets,
             'topTargets' => $topTargets,
             'topSignals' => $topSignals,
@@ -158,6 +163,8 @@ class DashboardController extends Controller
         $qualityWidgets = $this->qualityWidgets($regionId);
         $topSources = $this->topSources($regionId);
         $subcontractorWidgets = $this->subcontractorWidgets($regionId);
+        $relationshipWidgets = $this->relationshipWidgets($regionId);
+        $topRelationships = $this->topRelationships($regionId, 6);
         $targetWidgets = $this->targetWidgets($regionId);
         $topTargets = $this->topTargets($regionId, 6);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
@@ -171,7 +178,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'targetWidgets', 'topTargets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'targetWidgets', 'topTargets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void
@@ -308,6 +315,32 @@ class DashboardController extends Controller
             'strategic_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractor_network_scores sns {$networkJoin}sns.promotion_recommendation LIKE '%Strategic Partner%'")->fetchColumn(),
             'preferred_growth' => (int)$db->query("SELECT COUNT(*) FROM subcontractors {$where}approval_stage IN ('Preferred','Strategic Partner')")->fetchColumn(),
         ];
+    }
+
+    private function relationshipWidgets(?int $regionId = null): array
+    {
+        (new RelationshipIntelligenceService())->rebuild();
+        $db = Database::connection();
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $riskJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $actionJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = ra.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        return [
+            'critical' => (int)$db->query("SELECT COUNT(*) FROM relationship_intelligence_profiles {$where}relationship_priority = 'Critical'")->fetchColumn(),
+            'strategic' => (int)$db->query("SELECT COUNT(*) FROM relationship_intelligence_profiles {$where}relationship_status = 'Strategic'")->fetchColumn(),
+            'project_managers' => (int)$db->query("SELECT COUNT(*) FROM influence_roles ir JOIN relationship_intelligence_profiles rip ON rip.contact_id = ir.contact_id " . ($regionId ? 'WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ') . "ir.influence_role = 'Project Manager'")->fetchColumn(),
+            'open_risks' => (int)$db->query("SELECT COUNT(*) FROM relationship_risks rr {$riskJoin}rr.status = 'Open'")->fetchColumn(),
+            'open_actions' => (int)$db->query("SELECT COUNT(*) FROM relationship_actions ra {$actionJoin}ra.status IN ('Open','In Progress')")->fetchColumn(),
+        ];
+    }
+
+    private function topRelationships(?int $regionId = null, int $limit = 8): array
+    {
+        $sql = 'SELECT rip.*, c.first_name, c.last_name, c.title, o.name organization_name, r.name region_name, ir.influence_role FROM relationship_intelligence_profiles rip LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id LEFT JOIN regions r ON r.id = rip.region_id LEFT JOIN influence_roles ir ON ir.contact_id = c.id WHERE 1 = 1';
+        if ($regionId) {
+            $sql .= ' AND rip.region_id = ' . (int)$regionId;
+        }
+        $sql .= ' ORDER BY rip.relationship_value_score DESC LIMIT ' . (int)$limit;
+        return Database::connection()->query($sql)->fetchAll();
     }
 
     private function topTargets(?int $regionId = null, int $limit = 8): array

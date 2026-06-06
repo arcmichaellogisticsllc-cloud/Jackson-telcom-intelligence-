@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
+use App\Services\RelationshipIntelligenceService;
 use App\Services\SignalQualityService;
 
 class SignalQualityController extends Controller
@@ -35,6 +36,7 @@ class SignalQualityController extends Controller
     {
         Auth::requireLogin();
         (new SignalQualityService())->rebuild();
+        (new RelationshipIntelligenceService())->rebuild();
         RecommendationEngine::regenerate();
         $db = Database::connection();
         $regionSlug = $_GET['region'] ?? 'national';
@@ -48,9 +50,12 @@ class SignalQualityController extends Controller
         $hunts = $db->query("SELECT h.*, r.name region_name, COUNT(ht.id) target_count FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id {$huntWhere} GROUP BY h.id ORDER BY h.status, h.start_date DESC LIMIT 8")->fetchAll();
         $watchlist = $db->query("SELECT wi.*, s.title signal_title, r.name region_name FROM watchlist_items wi LEFT JOIN signals s ON s.id = wi.signal_id LEFT JOIN regions r ON r.id = wi.region_id WHERE wi.status IN ('Monitoring','Escalated') {$watchWhere} ORDER BY wi.updated_at DESC LIMIT 8")->fetchAll();
         $actions = $db->query("SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.status = 'Open' {$actionWhere} ORDER BY ra.priority_score DESC LIMIT 8")->fetchAll();
+        $relationshipActions = $db->query("SELECT ra.*, rip.relationship_value_score, rip.relationship_priority, c.first_name, c.last_name, c.title, o.name organization_name, r.name region_name FROM relationship_actions ra JOIN relationship_intelligence_profiles rip ON rip.id = ra.relationship_profile_id LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id LEFT JOIN regions r ON r.id = rip.region_id WHERE ra.status IN ('Open','In Progress') " . ($region ? ' AND rip.region_id = ' . (int)$region['id'] : '') . " ORDER BY rip.relationship_value_score DESC, date(ra.due_date) ASC LIMIT 8")->fetchAll();
+        $relationshipRisks = $db->query("SELECT rr.*, rip.relationship_value_score, c.first_name, c.last_name, o.name organization_name, r.name region_name FROM relationship_risks rr JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id LEFT JOIN regions r ON r.id = rip.region_id WHERE rr.status = 'Open' " . ($region ? ' AND rip.region_id = ' . (int)$region['id'] : '') . " ORDER BY CASE rr.severity WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END, rip.relationship_value_score DESC LIMIT 8")->fetchAll();
+        $creationSignals = $db->query("SELECT rcs.*, r.name region_name FROM relationship_creation_signals rcs LEFT JOIN regions r ON r.id = rcs.region_id WHERE rcs.status IN ('New','Researched') " . ($region ? ' AND rcs.region_id = ' . (int)$region['id'] : '') . " ORDER BY rcs.confidence_score DESC LIMIT 8")->fetchAll();
         $regionComparison = $db->query("SELECT r.name region_name, SUM(CASE WHEN sqp.classification = 'Escalate' THEN 1 ELSE 0 END) escalations, SUM(CASE WHEN sqp.classification = 'Hunt' THEN 1 ELSE 0 END) hunt_signals, SUM(CASE WHEN sqp.classification = 'Watch' THEN 1 ELSE 0 END) watch_signals FROM regions r LEFT JOIN signals s ON s.region_id = r.id LEFT JOIN signal_quality_profiles sqp ON sqp.signal_id = s.id GROUP BY r.id ORDER BY escalations DESC, hunt_signals DESC")->fetchAll();
 
-        $this->view('quality/briefing', compact('region', 'regionSlug', 'escalations', 'hunts', 'watchlist', 'actions', 'regionComparison'));
+        $this->view('quality/briefing', compact('region', 'regionSlug', 'escalations', 'hunts', 'watchlist', 'actions', 'relationshipActions', 'relationshipRisks', 'creationSignals', 'regionComparison'));
     }
 
     public function rebuild(): void

@@ -15,6 +15,7 @@
   <div><span>Escalations</span><strong><?= count($escalations) ?></strong></div>
   <div><span>Active Hunts</span><strong><?= count($hunts) ?></strong></div>
   <div><span>Watchlist Changes</span><strong><?= count($watchlist) ?></strong></div>
+  <div><span>Relationship Actions</span><strong><?= count($relationshipActions) ?></strong></div>
   <div><span>Top Recommendations</span><strong><?= count($actions) ?></strong></div>
 </section>
 
@@ -34,6 +35,25 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Recommendations</h2><a class="btn secondary" href="/recommendations">All Actions</a></div>
     <div class="action-stack"><?php foreach ($actions as $action): ?><article><span class="priority <?= strtolower($action['priority']) ?>"><?= htmlspecialchars($action['priority']) ?></span><h3><?= htmlspecialchars($action['title']) ?></h3><p><?= htmlspecialchars($action['recommended_next_action']) ?></p><small><?= htmlspecialchars($action['region_name'] ?? 'National') ?> · <?= htmlspecialchars($action['assigned_owner']) ?></small></article><?php endforeach; ?><?php if (!$actions): ?><p>No recommendations for this briefing.</p><?php endif; ?></div>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Relationships to Strengthen Today</h2><a class="btn secondary" href="/relationship-graph">Relationship Graph</a></div>
+    <div class="action-stack"><?php foreach ($relationshipActions as $item): ?><article><span class="priority high"><?= htmlspecialchars($item['action_type']) ?></span><h3><?= htmlspecialchars(trim(($item['first_name'] ?? '') . ' ' . ($item['last_name'] ?? ''))) ?> · <?= htmlspecialchars($item['organization_name'] ?? '') ?></h3><p><?= htmlspecialchars($item['recommended_script'] ?? '') ?></p><small><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · Influence Value <?= (int)$item['relationship_value_score'] ?> · Due <?= htmlspecialchars($item['due_date'] ?? '') ?></small></article><?php endforeach; ?><?php if (!$relationshipActions): ?><p>No relationship actions for this briefing.</p><?php endif; ?></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Relationship Risks</h2><span class="status">Access and influence risks</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Risk</th><th>Relationship</th><th>Mitigation</th></tr></thead><tbody><?php foreach ($relationshipRisks as $risk): ?><tr><td><span class="priority <?= strtolower($risk['severity']) ?>"><?= htmlspecialchars($risk['severity']) ?></span><br><?= htmlspecialchars($risk['risk_type']) ?></td><td><?= htmlspecialchars(trim(($risk['first_name'] ?? '') . ' ' . ($risk['last_name'] ?? ''))) ?><br><small><?= htmlspecialchars($risk['organization_name'] ?? '') ?></small></td><td><?= htmlspecialchars($risk['recommended_mitigation'] ?? '') ?></td></tr><?php endforeach; ?><?php if (!$relationshipRisks): ?><tr><td colspan="3">No relationship risks for this briefing.</td></tr><?php endif; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Project / Utility / Prime Access</h2><span class="status">Relationship recommendations</span></div>
+    <div class="action-stack"><?php foreach (array_filter($actions, fn($a) => $a['category'] === 'Relationship') as $action): ?><article><span class="priority <?= strtolower($action['priority']) ?>"><?= htmlspecialchars($action['priority']) ?></span><h3><?= htmlspecialchars($action['title']) ?></h3><p><?= htmlspecialchars($action['recommended_next_action']) ?></p><small><?= htmlspecialchars($action['region_name'] ?? 'National') ?> · <?= htmlspecialchars($action['assigned_owner']) ?></small></article><?php endforeach; ?></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Aggressive Relationship Creation</h2><span class="status">Cold signals to work</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Source</th><th>Contact</th><th>Organization</th><th>Next Action</th></tr></thead><tbody><?php foreach ($creationSignals as $signal): ?><tr><td><?= htmlspecialchars($signal['source']) ?><br><small><?= htmlspecialchars($signal['region_name'] ?? '') ?> · <?= (int)$signal['confidence_score'] ?> confidence</small></td><td><?= htmlspecialchars($signal['contact_name'] ?? '') ?><br><small><?= htmlspecialchars($signal['title'] ?? '') ?></small></td><td><?= htmlspecialchars($signal['organization_name'] ?? '') ?></td><td><?= htmlspecialchars($signal['recommended_next_action'] ?? '') ?></td></tr><?php endforeach; ?><?php if (!$creationSignals): ?><tr><td colspan="4">No creation signals for this briefing.</td></tr><?php endif; ?></tbody></table></div>
   </div>
 </section>
 

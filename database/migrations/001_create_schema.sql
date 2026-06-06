@@ -668,6 +668,113 @@ CREATE TABLE IF NOT EXISTS intelligence_records (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS relationship_intelligence_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  contact_id INTEGER,
+  organization_id INTEGER,
+  region_id INTEGER,
+  owner TEXT DEFAULT 'Unassigned',
+  decision_authority_score INTEGER DEFAULT 0,
+  influence_score INTEGER DEFAULT 0,
+  access_score INTEGER DEFAULT 0,
+  trust_score INTEGER DEFAULT 0,
+  strategic_value_score INTEGER DEFAULT 0,
+  relationship_value_score INTEGER DEFAULT 0,
+  relationship_priority TEXT DEFAULT 'Low',
+  relationship_status TEXT DEFAULT 'Unknown',
+  relationship_summary TEXT,
+  known_context TEXT,
+  next_best_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(contact_id, organization_id),
+  FOREIGN KEY(contact_id) REFERENCES contacts(id),
+  FOREIGN KEY(organization_id) REFERENCES organizations(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_objectives (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL,
+  objective_type TEXT NOT NULL,
+  priority TEXT DEFAULT 'Primary',
+  status TEXT DEFAULT 'New',
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS influence_roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  contact_id INTEGER,
+  organization_id INTEGER,
+  influence_role TEXT DEFAULT 'Unknown',
+  influence_scope TEXT DEFAULT 'Unknown',
+  influence_notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(contact_id, organization_id, influence_role),
+  FOREIGN KEY(contact_id) REFERENCES contacts(id),
+  FOREIGN KEY(organization_id) REFERENCES organizations(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_wins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL,
+  win_type TEXT NOT NULL,
+  win_status TEXT DEFAULT 'Potential',
+  win_notes TEXT,
+  win_date TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_risks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL,
+  risk_type TEXT NOT NULL,
+  severity TEXT DEFAULT 'Medium',
+  reason TEXT,
+  recommended_mitigation TEXT,
+  status TEXT DEFAULT 'Open',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER NOT NULL,
+  action_type TEXT NOT NULL,
+  owner TEXT DEFAULT 'Unassigned',
+  due_date TEXT,
+  status TEXT DEFAULT 'Open',
+  recommended_script TEXT,
+  notes TEXT,
+  outcome TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_creation_signals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL,
+  region_id INTEGER,
+  organization_name TEXT,
+  contact_name TEXT,
+  title TEXT,
+  notes TEXT,
+  confidence_score INTEGER DEFAULT 0,
+  recommended_next_action TEXT,
+  status TEXT DEFAULT 'New',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS recommended_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

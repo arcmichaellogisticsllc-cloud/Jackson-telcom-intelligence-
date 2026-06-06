@@ -10,11 +10,12 @@ use App\Services\SignalQualityService;
 use App\Services\AcquisitionTargetService;
 use App\Services\CapacityGapService;
 use App\Services\SubcontractorAcquisitionService;
+use App\Services\RelationshipIntelligenceService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -603,8 +604,78 @@ foreach ($candidateNames as $regionName => $names) {
     }
 }
 
+$relationshipOrgStmt = $db->prepare('INSERT INTO organizations (name, type, region_id, state, city, website, phone, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "Active")');
+$relationshipContactStmt = $db->prepare('INSERT INTO contacts (first_name, last_name, title, email, phone, organization_id, region_id, relationship_owner, influence_level, relationship_strength, last_contact_date, next_action, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$relationshipGroups = [
+    'Southeast' => [
+        ['Comcast Southeast Construction', 'Prime Contractor', 'GA', 'Atlanta', ['Caleb Martin','Project Manager','Decision Maker','Warm'], ['Denise Walker','Construction Manager','High','Developing'], ['Andre Phillips','OSP Manager','High','Warm'], ['Natalie Brown','Procurement Manager','Medium','Developing'], ['Victor Hayes','Program Manager','High','Strong']],
+        ['Charter Southeast Fiber', 'Utility', 'NC', 'Charlotte', ['Maya Collins','Project Manager','Decision Maker','Strong'], ['Reed Johnson','Construction Manager','High','Warm'], ['Tasha King','OSP Manager','High','Developing'], ['Owen Brooks','Field Supervisor','Medium','Developing'], ['Jill Morgan','Procurement','Medium','Cold']],
+        ['Ansco Southeast Operations', 'Prime Contractor', 'GA', 'Norcross', ['Eric Foster','Project Manager','High','Warm'], ['Paula Reed','Subcontractor Coordinator','High','Developing'], ['Shawn Davis','Operations Manager','High','Warm'], ['Monica Lane','Estimator','Medium','Developing'], ['Harold Scott','Executive Director','Decision Maker','Cold']],
+        ['Georgia Rural Fiber Cooperative', 'Utility', 'GA', 'Macon', ['Laura Jenkins','Program Manager','High','Developing'], ['Chris Newton','Project Manager','High','Warm'], ['Nina Bell','Procurement Manager','Medium','Developing'], ['Wes Carter','Engineer','Medium','Cold'], ['Jordan Miles','Operations Manager','High','Developing']],
+        ['Carolina Broadband Authority', 'Municipality', 'SC', 'Columbia', ['Felicia Price','Project Manager','High','Warm'], ['Tim Owens','Construction Manager','High','Developing'], ['Alicia Stone','Program Manager','Decision Maker','Developing'], ['Cory Long','Engineer','Medium','Cold'], ['Dana Hill','Procurement','Medium','Cold']],
+    ],
+    'Great Lakes' => [
+        ['Frontier Michigan Construction', 'Utility', 'MI', 'Detroit', ['Dana Collins','Project Manager','Decision Maker','Warm'], ['Mark Edison','OSP Manager','High','Strong'], ['Priya Shah','Construction Manager','High','Developing'], ['Ellen Marsh','Procurement Manager','Medium','Developing'], ['Scott Young','Operations Manager','High','Warm']],
+        ['Congruex Great Lakes', 'Prime Contractor', 'OH', 'Columbus', ['Marcus Reid','Project Manager','High','Warm'], ['Terry Lawson','Subcontractor Coordinator','High','Developing'], ['Pamela West','Program Manager','Decision Maker','Cold'], ['Jon Keller','Estimator','Medium','Developing'], ['Rachel Ames','Operations Manager','High','Warm']],
+        ['Ervin Cable Midwest', 'Prime Contractor', 'IN', 'Indianapolis', ['Devin Gray','Project Manager','High','Developing'], ['Angela Cross','Construction Manager','High','Warm'], ['Brad Ellis','OSP Manager','High','Developing'], ['Mina Torres','Procurement','Medium','Cold'], ['Greg Warren','Executive VP','Decision Maker','Cold']],
+        ['Michigan Municipal Fiber Authority', 'Municipality', 'MI', 'Lansing', ['Sharon Lee','Program Manager','Decision Maker','Warm'], ['Peter Grant','Project Manager','High','Developing'], ['Ivy Chen','Engineer','Medium','Developing'], ['Noah Ford','Procurement Manager','Medium','Cold'], ['Lena Brooks','Operations Manager','High','Developing']],
+        ['Ohio Rural Electric Broadband', 'Utility', 'OH', 'Akron', ['Keith Miller','Project Manager','High','Warm'], ['Rosa Diaz','Construction Manager','High','Developing'], ['Miles Parker','OSP Manager','High','Cold'], ['Janet Kim','Procurement','Medium','Developing'], ['Alan Price','Field Supervisor','Medium','Warm']],
+    ],
+    'Southwest' => [
+        ['MasTec Southwest Fiber', 'Prime Contractor', 'TX', 'Dallas', ['Jose Ramirez','Project Manager','Decision Maker','Warm'], ['Rebecca Stone','Subcontractor Coordinator','High','Developing'], ['Derek Vaughn','Construction Manager','High','Warm'], ['Sonia Patel','Procurement Manager','Medium','Cold'], ['Will Nash','Operations Manager','High','Developing']],
+        ['Houston Utility Broadband Office', 'Utility', 'TX', 'Houston', ['April Turner','Program Manager','Decision Maker','Developing'], ['Evan Moore','Project Manager','High','Warm'], ['Bianca Wells','OSP Manager','High','Developing'], ['Grant Ellis','Engineer','Medium','Cold'], ['Nora Diaz','Procurement','Medium','Cold']],
+        ['Texas Rural Fiber Cooperative', 'Utility', 'TX', 'Austin', ['Malik Turner','Project Manager','High','Warm'], ['Samantha Ruiz','Construction Manager','High','Developing'], ['Phillip Shaw','Operations Manager','High','Warm'], ['Grace Morgan','Procurement Manager','Medium','Developing'], ['Eli Harper','Engineer','Medium','Cold']],
+        ['Houston Underground Telecom Alliance', 'Subcontractor', 'TX', 'Houston', ['Ramon Garcia','Owner','Decision Maker','Strong'], ['Diana Flores','Operations Manager','High','Warm'], ['Carl Benton','Field Supervisor','Medium','Warm'], ['Melanie Fox','Subcontractor Coordinator','High','Developing'], ['Steve Holt','Estimator','Medium','Cold']],
+        ['Louisiana Broadband Build Partners', 'Prime Contractor', 'LA', 'Baton Rouge', ['Trent Boudreaux','Project Manager','High','Developing'], ['Amelia King','Construction Manager','High','Warm'], ['Omar Lewis','OSP Manager','High','Developing'], ['Cynthia Ross','Procurement','Medium','Cold'], ['James Grant','Program Manager','Decision Maker','Developing']],
+    ],
+];
+
+$relationshipContactIndex = 0;
+foreach ($relationshipGroups as $regionName => $groups) {
+    foreach ($groups as $group) {
+        [$orgName, $orgType, $state, $city] = array_slice($group, 0, 4);
+        $people = array_slice($group, 4);
+        $relationshipOrgStmt->execute([$orgName, $orgType, $regions[$regionName], $state, $city, 'https://example.local/' . strtolower(str_replace(' ', '-', $orgName)), '555-20' . str_pad((string)$relationshipContactIndex, 2, '0', STR_PAD_LEFT), 'Seeded relationship influence account for ' . $regionName . '.']);
+        $orgId = (int)$db->lastInsertId();
+        foreach ($people as [$fullName, $title, $influence, $strength]) {
+            $relationshipContactIndex++;
+            [$first, $last] = explode(' ', $fullName, 2);
+            $owner = $regionData[$regionName]['owner'] === 'Unassigned' ? 'Mike/Ron Shared' : $regionData[$regionName]['owner'];
+            $lastContact = $relationshipContactIndex % 5 === 0 ? null : date('Y-m-d', strtotime('-' . (($relationshipContactIndex * 11) % 120) . ' days'));
+            $next = str_contains($title, 'Project Manager') ? 'Ask what active projects need field capacity or subcontractor support.' : (str_contains($title, 'Procurement') ? 'Map vendor/subcontractor onboarding path.' : 'Confirm influence path and next useful introduction.');
+            $relationshipContactStmt->execute([$first, $last, $title, strtolower($first . '.' . $last) . '@example.local', '555-30' . str_pad((string)$relationshipContactIndex, 2, '0', STR_PAD_LEFT), $orgId, $regions[$regionName], $owner, $influence, $strength, $lastContact, $next, 'Seeded relationship asset for influence graph.']);
+        }
+    }
+}
+
+(new RelationshipIntelligenceService())->rebuild();
+
+$profileIds = $db->query('SELECT id FROM relationship_intelligence_profiles ORDER BY relationship_value_score DESC')->fetchAll();
+$objectiveTypes = ['Project Access','Prime Access','Utility Access','Market Intelligence','Capacity Access','Future Opportunity'];
+foreach (array_slice($profileIds, 0, 25) as $index => $profile) {
+    $db->prepare('INSERT INTO relationship_objectives (relationship_profile_id, objective_type, priority, status, notes) VALUES (?, ?, "Secondary", "Active", ?)')->execute([(int)$profile['id'], $objectiveTypes[$index % count($objectiveTypes)], 'Seeded secondary objective to show multi-purpose relationship value.']);
+}
+foreach (array_slice($profileIds, 0, 25) as $index => $profile) {
+    $db->prepare('INSERT INTO relationship_actions (relationship_profile_id, action_type, owner, due_date, status, recommended_script, notes) SELECT id, ?, owner, ?, "Open", ?, "Seeded additional relationship action." FROM relationship_intelligence_profiles WHERE id = ?')->execute([
+        ['Call','Meeting','Ask for Work','Ask for Capacity','Ask for Market Intelligence'][$index % 5],
+        date('Y-m-d', strtotime('+' . (($index % 7) + 1) . ' days')),
+        'Use this relationship to clarify work access, capacity access, or market intelligence.',
+        (int)$profile['id'],
+    ]);
+}
+
+$creationSignalStmt = $db->prepare('INSERT INTO relationship_creation_signals (source, region_id, organization_name, contact_name, title, notes, confidence_score, recommended_next_action, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$creationSources = ['LinkedIn Engagement','Direct Outreach','Conference Attendance','Convention Attendance','Thought Leadership','Cold Call','Website Visit','Content Interaction','Referral','Manual Physical Traffic'];
+for ($i = 1; $i <= 50; $i++) {
+    $regionName = ['Southeast','Great Lakes','Southwest','National'][$i % 4];
+    $source = $creationSources[$i % count($creationSources)];
+    $orgName = ($regionName === 'National' ? 'National' : $regionName) . ' Influence Prospect ' . $i;
+    $title = ['Project Manager','Construction Manager','OSP Manager','Procurement Manager','Operations Manager'][$i % 5];
+    $creationSignalStmt->execute([$source, $regions[$regionName], $orgName, 'Relationship Prospect ' . $i, $title, 'Aggressive relationship creation signal from ' . $source . '.', 50 + (($i * 7) % 48), 'Research current role and create contact if access path is valid.', $i % 6 === 0 ? 'Researched' : 'New']);
+}
+
 (new SubcontractorAcquisitionService())->recalculateAll();
 (new CapacityGapService())->recalculateTrustScores();
 RecommendationEngine::regenerate();
 
-echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, capacity radar, hunt tasks, and recommendations.\n";
+echo "Seeded national footprint, traffic records, harvesting sources, raw items, processed signals, acquisition targets, hunts, playbooks, capacity radar, subcontractor acquisition, relationship influence, and recommendations.\n";

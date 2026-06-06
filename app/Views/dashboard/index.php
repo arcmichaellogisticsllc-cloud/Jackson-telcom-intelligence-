@@ -44,6 +44,14 @@
   <div><span>Preferred Network Growth</span><strong><?= $subcontractorWidgets['preferred_growth'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Critical Relationships</span><strong><?= $relationshipWidgets['critical'] ?></strong></div>
+  <div><span>Strategic Relationships</span><strong><?= $relationshipWidgets['strategic'] ?></strong></div>
+  <div><span>Project Managers</span><strong><?= $relationshipWidgets['project_managers'] ?></strong></div>
+  <div><span>Relationship Risks</span><strong><?= $relationshipWidgets['open_risks'] ?></strong></div>
+  <div><span>Relationship Actions</span><strong><?= $relationshipWidgets['open_actions'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -86,6 +94,10 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Capacity Needs</h2><a class="btn secondary" href="/recommendations">Recommended Actions</a></div>
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Theater</th><th>Capacity Recruitment</th></tr></thead><tbody><?php foreach ($topCapacityNeeds as $need): ?><tr><td><span class="priority <?= strtolower($need['priority']) ?>"><?= htmlspecialchars($need['priority']) ?></span></td><td><?= htmlspecialchars($need['region_name'] ?? 'National') ?></td><td><strong><?= htmlspecialchars($need['title']) ?></strong><br><small><?= htmlspecialchars($need['recommended_next_action']) ?></small></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Influence Assets</h2><a class="btn secondary" href="/relationship-graph">Relationship Graph</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Organization</th><th>Role</th><th>Influence Value</th><th>Next Best Action</th></tr></thead><tbody><?php foreach ($topRelationships as $rel): ?><tr><td><a href="/contacts/detail?id=<?= (int)$rel['contact_id'] ?>"><?= htmlspecialchars(trim(($rel['first_name'] ?? '') . ' ' . ($rel['last_name'] ?? ''))) ?></a></td><td><?= htmlspecialchars($rel['organization_name'] ?? '') ?><br><small><?= htmlspecialchars($rel['region_name'] ?? '') ?></small></td><td><?= htmlspecialchars($rel['influence_role'] ?? 'Unknown') ?></td><td><?= (int)$rel['relationship_value_score'] ?><br><small><?= htmlspecialchars($rel['relationship_priority']) ?></small></td><td><?= htmlspecialchars($rel['next_best_action'] ?? '') ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
 </section>
 
