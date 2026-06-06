@@ -52,6 +52,14 @@
   <div><span>Relationship Actions</span><strong><?= $relationshipWidgets['open_actions'] ?></strong></div>
 </section>
 
+<section class="metrics">
+  <div><span>Demand Opportunities</span><strong><?= $demandWidgets['opportunities'] ?></strong></div>
+  <div><span>Distribution Queue</span><strong><?= $demandWidgets['distribution_queue'] ?></strong></div>
+  <div><span>Channel Performance</span><strong><?= (int)$demandWidgets['channel_performance'] ?></strong></div>
+  <div><span>Content Awaiting Review</span><strong><?= $demandWidgets['awaiting_review'] ?></strong></div>
+  <div><span>Top Acquisition Content</span><strong><?= $demandWidgets['top_acquisition_content'] ?></strong></div>
+</section>
+
 <section class="region-grid">
   <?php foreach ($regions as $region): ?>
     <article class="panel">
@@ -98,6 +106,10 @@
   <div class="panel">
     <div class="panel-title"><h2>Top Influence Assets</h2><a class="btn secondary" href="/relationship-graph">Relationship Graph</a></div>
     <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Organization</th><th>Role</th><th>Influence Value</th><th>Next Best Action</th></tr></thead><tbody><?php foreach ($topRelationships as $rel): ?><tr><td><a href="/contacts/detail?id=<?= (int)$rel['contact_id'] ?>"><?= htmlspecialchars(trim(($rel['first_name'] ?? '') . ' ' . ($rel['last_name'] ?? ''))) ?></a></td><td><?= htmlspecialchars($rel['organization_name'] ?? '') ?><br><small><?= htmlspecialchars($rel['region_name'] ?? '') ?></small></td><td><?= htmlspecialchars($rel['influence_role'] ?? 'Unknown') ?></td><td><?= (int)$rel['relationship_value_score'] ?><br><small><?= htmlspecialchars($rel['relationship_priority']) ?></small></td><td><?= htmlspecialchars($rel['next_best_action'] ?? '') ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Acquisition Content</h2><a class="btn secondary" href="/demand">Demand Engine</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Content</th><th>Audience</th><th>Theater</th><th>Strategic</th><th>Expected Impact</th></tr></thead><tbody><?php foreach ($topDemandContent as $item): ?><tr><td><?= htmlspecialchars($item['title']) ?><br><small><?= htmlspecialchars($item['content_type']) ?></small></td><td><?= htmlspecialchars($item['audience']) ?></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td><?= (int)$item['strategic_value'] ?></td><td>C <?= (int)$item['expected_capacity_impact'] ?> · R <?= (int)$item['expected_relationship_impact'] ?> · O <?= (int)$item['expected_opportunity_impact'] ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
 </section>
 

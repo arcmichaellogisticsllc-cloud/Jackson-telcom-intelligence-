@@ -9,13 +9,14 @@ use App\Services\SignalProcessingService;
 use App\Services\SignalQualityService;
 use App\Services\AcquisitionTargetService;
 use App\Services\CapacityGapService;
+use App\Services\DemandDistributionService;
 use App\Services\SubcontractorAcquisitionService;
 use App\Services\RelationshipIntelligenceService;
 
 $db = Database::connection();
 $db->beginTransaction();
 
-foreach (['activities','recommended_actions','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
+foreach (['activities','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
@@ -673,6 +674,85 @@ for ($i = 1; $i <= 50; $i++) {
     $title = ['Project Manager','Construction Manager','OSP Manager','Procurement Manager','Operations Manager'][$i % 5];
     $creationSignalStmt->execute([$source, $regions[$regionName], $orgName, 'Relationship Prospect ' . $i, $title, 'Aggressive relationship creation signal from ' . $source . '.', 50 + (($i * 7) % 48), 'Research current role and create contact if access path is valid.', $i % 6 === 0 ? 'Researched' : 'New']);
 }
+
+$channelStmt = $db->prepare('INSERT INTO channels (channel_name, channel_type, audience_type, region_id, quality_score, relationship_generation_score, capacity_generation_score, opportunity_generation_score, quality_category, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$channelRows = [
+    ['Jackson Telcom Website - National Capacity Pages','Website','General Industry','National',82,74,86,70,'High Value','Active'],
+    ['LinkedIn Broadband Infrastructure Network','LinkedIn','Prime Contractor','National',88,90,50,84,'Elite','Active'],
+    ['Georgia Fiber Construction LinkedIn Audience','LinkedIn','Subcontractor','Southeast',78,62,88,52,'High Value','Active'],
+    ['Southeast Utility Broadband Forum','Industry Forum','Utility','Southeast',74,82,42,76,'High Value','Testing'],
+    ['Carolinas Telecom Construction Facebook Group','Facebook Group','Subcontractor','Southeast',68,48,82,36,'Moderate','Testing'],
+    ['Michigan Broadband Expansion Newsletter','Email Newsletter','Utility','Great Lakes',86,84,40,88,'Elite','Active'],
+    ['Great Lakes Fiber Splicing Contractor Search','Website','Subcontractor','Great Lakes',80,58,90,48,'High Value','Active'],
+    ['Ohio Broadband Prime Contractor LinkedIn','LinkedIn','Prime Contractor','Great Lakes',76,78,46,80,'High Value','Testing'],
+    ['Houston Telecom Construction Capacity Page','Website','Subcontractor','Southwest',84,62,92,50,'High Value','Active'],
+    ['Texas Utility Construction Forum','Industry Forum','Utility','Southwest',70,76,48,74,'High Value','Testing'],
+    ['Southwest Equipment Seller Facebook Marketplace','Facebook Group','Vendor','Southwest',64,42,76,38,'Moderate','Testing'],
+    ['National Broadband Funding Publication','Industry Publication','Prime Contractor','National',90,86,42,92,'Elite','Active'],
+    ['Telecom Construction YouTube Shorts','YouTube','Workforce','National',58,36,62,28,'Moderate','Testing'],
+    ['Reddit Broadband Construction Watch','Reddit','General Industry','National',24,18,12,16,'Noise','Testing'],
+    ['Fiber Connect Conference Follow-Up','Conference','General Industry','National',92,94,72,88,'Elite','Active'],
+];
+foreach ($channelRows as [$name, $type, $audience, $regionName, $quality, $relationship, $capacity, $opportunity, $category, $status]) {
+    $channelStmt->execute([$name, $type, $audience, $regions[$regionName], $quality, $relationship, $capacity, $opportunity, $category, $status, 'Seeded demand distribution channel.']);
+}
+
+$demandSignalStmt = $db->prepare('INSERT INTO demand_signals (topic, demand_score, trend_direction, region_id, audience, suggested_content, suggested_distribution) VALUES (?, ?, ?, ?, ?, ?, ?)');
+$demandRows = [
+    ['Georgia Fiber Construction', 88, 'Rising', 'Southeast', 'Prime Contractor', 'Georgia fiber construction capacity partner article', 'Website and LinkedIn prime contractor audience'],
+    ['Georgia aerial subcontractor recruitment', 84, 'Rising', 'Southeast', 'Subcontractor', 'Landing page for aerial fiber subcontractors in Georgia', 'Website, LinkedIn, and Facebook group'],
+    ['Michigan Broadband Expansion', 92, 'Rising', 'Great Lakes', 'Utility', 'Michigan broadband expansion intelligence report', 'Newsletter and LinkedIn utility audience'],
+    ['Michigan fiber splicing contractor opportunities', 87, 'Rising', 'Great Lakes', 'Subcontractor', 'Fiber splicing contractor opportunities in Michigan', 'Website and contractor search distribution'],
+    ['Houston Telecom Construction Capacity', 90, 'Rising', 'Southwest', 'Subcontractor', 'Houston telecom construction capacity landing page', 'Website and Southwest groups'],
+    ['Texas underground utility contractor demand', 83, 'Rising', 'Southwest', 'Subcontractor', 'Houston underground telecom contractor opportunity post', 'Website and industry forum'],
+    ['Prime Contractor Capacity Partner', 86, 'Stable', 'National', 'Prime Contractor', 'Jackson Telcom as broadband construction capacity partner', 'LinkedIn and industry publication'],
+    ['Fiber splicing contractor opportunities', 80, 'Rising', 'National', 'Subcontractor', 'National fiber splicing subcontractor opportunity article', 'Website and LinkedIn'],
+    ['Broadband grant construction capacity', 89, 'Rising', 'National', 'Utility', 'Broadband grant construction capacity intelligence report', 'Industry publication and email newsletter'],
+    ['Telecom workforce field careers', 71, 'Stable', 'National', 'Workforce', 'Field career content for telecom construction crews', 'Website and YouTube'],
+];
+foreach ($demandRows as [$topic, $score, $trend, $regionName, $audience, $contentSuggestion, $distribution]) {
+    $demandSignalStmt->execute([$topic, $score, $trend, $regions[$regionName], $audience, $contentSuggestion, $distribution]);
+}
+
+$contentOppStmt = $db->prepare('INSERT INTO content_opportunities (title, content_type, audience, region_id, source_type, strategic_value, expected_capacity_impact, expected_relationship_impact, expected_opportunity_impact, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+$contentRows = [
+    ['Georgia Fiber Construction Capacity Partner', 'Article', 'Prime Contractor', 'Southeast', 'Demand Trends', 86, 48, 82, 86, 'Draft Needed'],
+    ['Aerial Fiber Subcontractor Opportunities in Georgia', 'Landing Page', 'Subcontractor', 'Southeast', 'Capacity Gaps', 84, 92, 58, 44, 'Draft Needed'],
+    ['Michigan Broadband Expansion Intelligence Report', 'Regional Intelligence Report', 'Utility', 'Great Lakes', 'Broadband Grants', 91, 44, 88, 92, 'Human Review'],
+    ['Fiber Splicing Contractor Opportunities in Michigan', 'Landing Page', 'Subcontractor', 'Great Lakes', 'Demand Trends', 85, 94, 54, 46, 'Draft Needed'],
+    ['Houston Telecom Construction Capacity', 'Landing Page', 'Subcontractor', 'Southwest', 'Regional Expansion', 90, 96, 60, 52, 'Draft Needed'],
+    ['Prime Contractor Capacity Partner Overview', 'Case Study', 'Prime Contractor', 'National', 'Relationship Trends', 88, 60, 84, 86, 'Human Review'],
+    ['Broadband Grant Construction Capacity Report', 'Newsletter', 'Utility', 'National', 'Broadband Grants', 87, 48, 82, 90, 'Draft Ready'],
+    ['Fiber Splicing Contractor Opportunity Post', 'LinkedIn Post', 'Subcontractor', 'National', 'Demand Trends', 80, 88, 62, 40, 'Draft Needed'],
+];
+foreach ($contentRows as [$title, $type, $audience, $regionName, $source, $strategic, $capacity, $relationship, $opportunity, $status]) {
+    $contentOppStmt->execute([$title, $type, $audience, $regions[$regionName], $source, $strategic, $capacity, $relationship, $opportunity, $status, 'Seeded content opportunity for closed-loop acquisition flywheel.']);
+}
+
+(new DemandDistributionService())->rebuild();
+
+$draftIds = $db->query('SELECT id FROM content_drafts ORDER BY id LIMIT 4')->fetchAll();
+foreach ($draftIds as $draft) {
+    $db->prepare('UPDATE content_drafts SET review_status = "Review Needed" WHERE id = ?')->execute([(int)$draft['id']]);
+}
+$plansForAttribution = $db->query('SELECT id, content_id, channel_id FROM distribution_plans ORDER BY audience_match_score DESC LIMIT 8')->fetchAll();
+foreach ($plansForAttribution as $index => $plan) {
+    $status = $index < 3 ? 'Approved' : ($index < 5 ? 'Scheduled' : 'Planned');
+    $db->prepare('UPDATE distribution_plans SET status = ? WHERE id = ?')->execute([$status, (int)$plan['id']]);
+    if ($index < 5) {
+        $db->prepare('INSERT INTO content_attributions (content_id, channel_id, signals_created, targets_created, relationships_created, subcontractors_created, opportunities_created, attribution_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([
+            (int)$plan['content_id'],
+            (int)$plan['channel_id'],
+            1 + ($index % 3),
+            $index % 2,
+            1 + ($index % 2),
+            $index % 3 === 0 ? 1 : 0,
+            $index % 4 === 0 ? 1 : 0,
+            'Seeded attribution example showing content/distribution flywheel output.',
+        ]);
+    }
+}
+(new DemandDistributionService())->rebuild();
 
 (new SubcontractorAcquisitionService())->recalculateAll();
 (new CapacityGapService())->recalculateTrustScores();

@@ -28,6 +28,7 @@ class RecommendationEngine
         self::targetActions($db);
         self::huntActions($db);
         self::relationshipActions($db);
+        self::demandDistributionActions($db);
     }
 
     private static function capacityTargets(PDO $db): void
@@ -502,6 +503,108 @@ class RecommendationEngine
                 'priority_score' => max(65, (int)$win['relationship_value_score']),
                 'trigger_detail' => 'Win condition: ' . $win['win_type'] . '.',
                 'why_it_matters' => 'Relationship wins convert influence into work, capacity, intelligence, or access.',
+            ]);
+        }
+    }
+
+    private static function demandDistributionActions(PDO $db): void
+    {
+        if (!$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'channels'")->fetchColumn()) {
+            return;
+        }
+        (new \App\Services\DemandDistributionService())->rebuild();
+
+        $drafts = $db->query("SELECT cd.*, co.title, co.region_id, co.audience, r.owner FROM content_drafts cd JOIN content_opportunities co ON co.id = cd.content_opportunity_id LEFT JOIN regions r ON r.id = co.region_id WHERE cd.review_status IN ('Draft','Review Needed')")->fetchAll();
+        foreach ($drafts as $draft) {
+            self::insert($db, [
+                'title' => 'Review content draft: ' . $draft['draft_title'],
+                'category' => 'Content',
+                'priority' => 'High',
+                'region_id' => $draft['region_id'],
+                'reason' => 'Content draft is waiting for human review.',
+                'recommended_next_action' => 'Review accuracy, compliance, audience fit, and CTA before approving any distribution.',
+                'assigned_owner' => $draft['owner'] ?: 'Admin',
+                'source_type' => 'content_draft',
+                'source_id' => $draft['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => 76,
+                'trigger_detail' => 'Human review required before publication.',
+                'why_it_matters' => 'Demand generation should create relationships, capacity, and opportunities without bypassing human review.',
+            ]);
+        }
+
+        $plans = $db->query("SELECT dp.*, co.title content_title, co.region_id, ch.channel_name, ch.quality_category, r.owner FROM distribution_plans dp JOIN content_opportunities co ON co.id = dp.content_id JOIN channels ch ON ch.id = dp.channel_id LEFT JOIN regions r ON r.id = co.region_id WHERE dp.status = 'Planned' AND dp.audience_match_score >= 70")->fetchAll();
+        foreach ($plans as $plan) {
+            self::insert($db, [
+                'title' => 'Approve distribution plan: ' . $plan['content_title'],
+                'category' => 'Outreach',
+                'priority' => $plan['priority'],
+                'region_id' => $plan['region_id'],
+                'reason' => 'High audience match distribution opportunity exists for ' . $plan['channel_name'] . '.',
+                'recommended_next_action' => 'Review the content and distribution plan. Approve, schedule, skip, or revise. Do not auto-publish.',
+                'assigned_owner' => $plan['owner'] ?: 'Admin',
+                'source_type' => 'distribution_plan',
+                'source_id' => $plan['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => (int)$plan['audience_match_score'],
+                'trigger_detail' => 'Audience match score ' . (int)$plan['audience_match_score'] . '.',
+                'why_it_matters' => 'The right distribution channel can create relationship, subcontractor, and opportunity signals.',
+            ]);
+        }
+
+        $channels = $db->query("SELECT ch.*, r.owner FROM channels ch LEFT JOIN regions r ON r.id = ch.region_id WHERE ch.status IN ('Active','Testing')")->fetchAll();
+        foreach ($channels as $channel) {
+            if (in_array($channel['quality_category'], ['Elite','High Value'], true)) {
+                self::insert($db, [
+                    'title' => 'Participate in high-value channel: ' . $channel['channel_name'],
+                    'category' => 'Outreach',
+                    'priority' => $channel['quality_category'] === 'Elite' ? 'High' : 'Medium',
+                    'region_id' => $channel['region_id'],
+                    'reason' => 'Channel quality score indicates strong acquisition potential.',
+                    'recommended_next_action' => 'Plan LinkedIn engagement, forum participation, conference follow-up, commentary, or thought leadership for this channel. Human action only.',
+                    'assigned_owner' => $channel['owner'] ?: 'Admin',
+                    'source_type' => 'channel',
+                    'source_id' => $channel['id'],
+                    'recommendation_type' => 'Follow Up Relationship',
+                    'priority_score' => (int)$channel['quality_score'],
+                    'trigger_detail' => 'Channel quality category ' . $channel['quality_category'] . '.',
+                    'why_it_matters' => 'The same channels that produce intelligence can become distribution channels that create more acquisition signals.',
+                ]);
+            } elseif ($channel['quality_category'] === 'Noise') {
+                self::insert($db, [
+                    'title' => 'Review noisy channel: ' . $channel['channel_name'],
+                    'category' => 'Market',
+                    'priority' => 'Low',
+                    'region_id' => $channel['region_id'],
+                    'reason' => 'Channel has low acquisition quality.',
+                    'recommended_next_action' => 'Pause, retire, or redefine the audience before investing more effort.',
+                    'assigned_owner' => $channel['owner'] ?: 'Admin',
+                    'source_type' => 'channel',
+                    'source_id' => $channel['id'],
+                    'recommendation_type' => 'Avoid Opportunity Risk',
+                    'priority_score' => 28,
+                    'trigger_detail' => 'Channel categorized as Noise.',
+                    'why_it_matters' => 'Low-value channels consume attention without creating relationships, capacity, or opportunities.',
+                ]);
+            }
+        }
+
+        $signals = $db->query("SELECT ds.*, r.owner FROM demand_signals ds LEFT JOIN regions r ON r.id = ds.region_id WHERE ds.demand_score >= 80 AND ds.trend_direction = 'Rising'")->fetchAll();
+        foreach ($signals as $signal) {
+            self::insert($db, [
+                'title' => 'Create content for rising demand: ' . $signal['topic'],
+                'category' => 'SEO',
+                'priority' => 'High',
+                'region_id' => $signal['region_id'],
+                'reason' => 'Demand signal is rising and has high acquisition score.',
+                'recommended_next_action' => $signal['suggested_content'] ?: 'Create a content opportunity and distribution plan for this demand signal.',
+                'assigned_owner' => $signal['owner'] ?: 'Admin',
+                'source_type' => 'demand_signal',
+                'source_id' => $signal['id'],
+                'recommendation_type' => 'Review Pursuit',
+                'priority_score' => (int)$signal['demand_score'],
+                'trigger_detail' => 'Demand score ' . (int)$signal['demand_score'] . ', trend ' . $signal['trend_direction'] . '.',
+                'why_it_matters' => 'SEO and content should be judged by relationship, capacity, and opportunity creation, not rankings alone.',
             ]);
         }
     }

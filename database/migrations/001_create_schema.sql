@@ -775,6 +775,102 @@ CREATE TABLE IF NOT EXISTS relationship_creation_signals (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS channels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_name TEXT NOT NULL,
+  channel_type TEXT NOT NULL,
+  audience_type TEXT NOT NULL,
+  region_id INTEGER,
+  quality_score INTEGER DEFAULT 0,
+  relationship_generation_score INTEGER DEFAULT 0,
+  capacity_generation_score INTEGER DEFAULT 0,
+  opportunity_generation_score INTEGER DEFAULT 0,
+  quality_category TEXT DEFAULT 'Noise',
+  status TEXT DEFAULT 'Testing',
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS content_opportunities (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  audience TEXT,
+  region_id INTEGER,
+  source_signal_id INTEGER,
+  source_type TEXT,
+  strategic_value INTEGER DEFAULT 0,
+  expected_capacity_impact INTEGER DEFAULT 0,
+  expected_relationship_impact INTEGER DEFAULT 0,
+  expected_opportunity_impact INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'Idea',
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id),
+  FOREIGN KEY(source_signal_id) REFERENCES signals(id)
+);
+
+CREATE TABLE IF NOT EXISTS content_drafts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_opportunity_id INTEGER NOT NULL,
+  draft_title TEXT NOT NULL,
+  draft_body TEXT,
+  draft_summary TEXT,
+  draft_keywords TEXT,
+  draft_cta TEXT,
+  review_status TEXT DEFAULT 'Draft',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(content_opportunity_id) REFERENCES content_opportunities(id)
+);
+
+CREATE TABLE IF NOT EXISTS distribution_plans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id INTEGER NOT NULL,
+  channel_id INTEGER NOT NULL,
+  distribution_reason TEXT,
+  audience_match_score INTEGER DEFAULT 0,
+  priority TEXT DEFAULT 'Medium',
+  status TEXT DEFAULT 'Planned',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(content_id) REFERENCES content_opportunities(id),
+  FOREIGN KEY(channel_id) REFERENCES channels(id)
+);
+
+CREATE TABLE IF NOT EXISTS demand_signals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topic TEXT NOT NULL,
+  demand_score INTEGER DEFAULT 0,
+  trend_direction TEXT DEFAULT 'Stable',
+  region_id INTEGER,
+  audience TEXT,
+  suggested_content TEXT,
+  suggested_distribution TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS content_attributions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id INTEGER NOT NULL,
+  channel_id INTEGER,
+  signals_created INTEGER DEFAULT 0,
+  targets_created INTEGER DEFAULT 0,
+  relationships_created INTEGER DEFAULT 0,
+  subcontractors_created INTEGER DEFAULT 0,
+  opportunities_created INTEGER DEFAULT 0,
+  attribution_notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(content_id) REFERENCES content_opportunities(id),
+  FOREIGN KEY(channel_id) REFERENCES channels(id)
+);
+
 CREATE TABLE IF NOT EXISTS recommended_actions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

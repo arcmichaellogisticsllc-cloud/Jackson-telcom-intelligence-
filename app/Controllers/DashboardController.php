@@ -7,6 +7,7 @@ use App\Core\CapacityService;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\OpportunityScoring;
+use App\Services\DemandDistributionService;
 use App\Services\RelationshipIntelligenceService;
 
 class DashboardController extends Controller
@@ -25,6 +26,8 @@ class DashboardController extends Controller
         $subcontractorWidgets = $this->subcontractorWidgets();
         $relationshipWidgets = $this->relationshipWidgets();
         $topRelationships = $this->topRelationships();
+        $demandWidgets = $this->demandWidgets();
+        $topDemandContent = $this->topDemandContent();
         $targetWidgets = $this->targetWidgets();
         $topTargets = $this->topTargets();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
@@ -43,6 +46,8 @@ class DashboardController extends Controller
             'subcontractorWidgets' => $subcontractorWidgets,
             'relationshipWidgets' => $relationshipWidgets,
             'topRelationships' => $topRelationships,
+            'demandWidgets' => $demandWidgets,
+            'topDemandContent' => $topDemandContent,
             'targetWidgets' => $targetWidgets,
             'topTargets' => $topTargets,
             'topSignals' => $topSignals,
@@ -165,6 +170,8 @@ class DashboardController extends Controller
         $subcontractorWidgets = $this->subcontractorWidgets($regionId);
         $relationshipWidgets = $this->relationshipWidgets($regionId);
         $topRelationships = $this->topRelationships($regionId, 6);
+        $demandWidgets = $this->demandWidgets($regionId);
+        $topDemandContent = $this->topDemandContent($regionId, 6);
         $targetWidgets = $this->targetWidgets($regionId);
         $topTargets = $this->topTargets($regionId, 6);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
@@ -178,7 +185,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'targetWidgets', 'topTargets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'demandWidgets', 'topDemandContent', 'targetWidgets', 'topTargets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void
@@ -350,6 +357,33 @@ class DashboardController extends Controller
             $sql .= ' AND at.region_id = ' . (int)$regionId;
         }
         $sql .= ' ORDER BY CASE at.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, at.acquisition_score DESC, at.urgency_score DESC LIMIT ' . (int)$limit;
+        return Database::connection()->query($sql)->fetchAll();
+    }
+
+    private function demandWidgets(?int $regionId = null): array
+    {
+        (new DemandDistributionService())->rebuild();
+        $db = Database::connection();
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $contentWhere = $regionId ? 'WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $planJoin = $regionId ? 'JOIN content_opportunities co ON co.id = dp.content_id WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $channelWhere = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        return [
+            'opportunities' => (int)$db->query("SELECT COUNT(*) FROM content_opportunities {$where}status NOT IN ('Published','Archived')")->fetchColumn(),
+            'distribution_queue' => (int)$db->query("SELECT COUNT(*) FROM distribution_plans dp {$planJoin}dp.status IN ('Planned','Approved','Scheduled')")->fetchColumn(),
+            'channel_performance' => (int)$db->query("SELECT COALESCE(AVG(quality_score),0) FROM channels {$channelWhere}status IN ('Active','Testing')")->fetchColumn(),
+            'awaiting_review' => (int)$db->query("SELECT COUNT(*) FROM content_drafts cd JOIN content_opportunities co ON co.id = cd.content_opportunity_id {$contentWhere}cd.review_status IN ('Draft','Review Needed')")->fetchColumn(),
+            'top_acquisition_content' => (int)$db->query("SELECT COUNT(*) FROM content_opportunities {$where}strategic_value >= 75")->fetchColumn(),
+        ];
+    }
+
+    private function topDemandContent(?int $regionId = null, int $limit = 8): array
+    {
+        $sql = 'SELECT co.*, r.name region_name FROM content_opportunities co LEFT JOIN regions r ON r.id = co.region_id WHERE co.status NOT IN ("Published","Archived")';
+        if ($regionId) {
+            $sql .= ' AND co.region_id = ' . (int)$regionId;
+        }
+        $sql .= ' ORDER BY co.strategic_value DESC, co.expected_relationship_impact DESC, co.expected_capacity_impact DESC LIMIT ' . (int)$limit;
         return Database::connection()->query($sql)->fetchAll();
     }
 }

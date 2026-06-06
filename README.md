@@ -34,6 +34,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Capacity Radar
 - Subcontractor Acquisition Engine
 - Relationship & Influence Intelligence Engine
+- Demand & Distribution Intelligence Engine
 - Traffic Engine records: Keywords, Content Ideas, Outreach Targets, Outreach Sequences
 - Capacity Acquisition
 - Relationship Intelligence
@@ -58,6 +59,7 @@ Jackson Intelligence Platform
 ├── Capacity Radar
 ├── Subcontractor Acquisition Engine
 ├── Relationship & Influence Intelligence Engine
+├── Demand & Distribution Intelligence Engine
 ├── Capacity Acquisition
 ├── Relationship Intelligence
 ├── Opportunity Intelligence
@@ -137,6 +139,7 @@ Users:
 - Capacity Radar
 - Subcontractor Acquisition Engine
 - Relationship & Influence Intelligence Engine
+- Demand & Distribution Intelligence Engine
 - Capacity Acquisition
 - Relationship Intelligence
 - Opportunity Intelligence
@@ -473,6 +476,75 @@ Aggressive Relationship Creation Signals capture non-passive relationship genera
 The Daily Intelligence Briefing now surfaces top relationships to strengthen today, project managers to contact, utility access contacts, prime access contacts, relationship risks, and aggressive relationship creation actions. The goal is action, not raw contact volume.
 
 This feeds Decision Support Layer V2 by generating recommendations for high-value relationships, project manager discoveries, missing objectives, missing actions, stale utility/prime access, single-point-of-failure risk, and relationships that can open work, capacity, or market intelligence.
+
+## Demand & Distribution Intelligence Engine
+
+The Demand & Distribution Engine turns JAS from a pure intelligence collector into a controlled ecosystem participant. The same places Jackson harvests intelligence can become distribution channels, but nothing is auto-published.
+
+Closed-loop acquisition flywheel:
+
+```text
+Traffic
+↓
+Signals
+↓
+Intelligence
+↓
+Content
+↓
+Distribution
+↓
+Relationships
+↓
+Capacity
+↓
+Opportunities
+↓
+More Signals
+```
+
+Channel Registry tracks where Jackson can participate:
+
+- Website
+- LinkedIn
+- Facebook Group
+- Industry Forum
+- Email Newsletter
+- YouTube
+- Conference
+- Industry Publication
+- Reddit
+- Other
+
+Channels are scored by relationship generation, capacity generation, opportunity generation, engagement, and downstream attribution. Quality categories are:
+
+- Elite
+- High Value
+- Moderate
+- Low Value
+- Noise
+
+The system prioritizes Elite and High Value channels for owner attention. Low-value or noisy channels generate review or pause recommendations.
+
+Content Opportunities are generated from signals, escalations, watchlists, capacity gaps, relationship trends, broadband grants, prime awards, utility expansion, and demand trends. Each opportunity tracks audience, region, strategic value, expected capacity impact, expected relationship impact, expected opportunity impact, and review status.
+
+Content Drafts are review-only. Draft statuses are Draft, Review Needed, Approved, Rejected, and Published. The platform does not auto-publish content. Human review is always required before publication or distribution.
+
+Distribution Plans answer where a content asset should go. They connect content to channels with audience match score, priority, distribution reason, and status. Statuses are Planned, Approved, Scheduled, Published, and Skipped. Moving a plan forward is still a human workflow.
+
+Demand Signals track topics, search intent, regional demand, trend direction, audience, suggested content, and suggested distribution. The SEO foundation focuses on relationship creation, capacity creation, and opportunity creation instead of rankings alone.
+
+Acquisition Flywheel Attribution tracks whether reviewed/published assets created:
+
+- signals
+- targets
+- relationships
+- subcontractors
+- opportunities
+
+Relationship Distribution recommends who should see content: utility content routes toward utility contacts, prime content toward prime contacts, subcontractor content toward the capacity network, and workforce content toward recruiting audiences.
+
+The Daily Demand Briefing shows top content opportunities, top demand signals, top channels, distribution opportunities, content needing review, and recommended publication/participation actions. Recommendations include LinkedIn engagement, forum participation, Facebook group participation, conference follow-up, industry commentary, and thought leadership opportunities. These are recommendations only.
 
 ## Acquisition Hunt Engine
 
