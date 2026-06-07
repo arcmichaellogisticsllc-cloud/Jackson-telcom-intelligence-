@@ -93,6 +93,20 @@ Open:
 
 `http://localhost:8088`
 
+## V1 Release Gate
+
+Run the complete V1 hardening check before operator use:
+
+```bash
+php scripts/release_check.php
+```
+
+This runs migrations, seed, acquisition cycle, data integrity checks, route smoke tests, backup, operating export, and PHP lint.
+
+Operator readiness, security basics, backup/export guidance, and the first 30-day operating plan are documented in:
+
+`docs/v1-operator-readiness.md`
+
 ## Seed Policy
 
 The seeder creates acquisition operating data for local validation and development. It includes:
@@ -110,6 +124,14 @@ The seeder creates acquisition operating data for local validation and developme
 - system-generated recommendations based on the seeded acquisition records
 
 Seeded records are realistic sample operating data for exercising the workflow. Before production use, replace seeded sample records with verified Jackson Telcom source files, imports, or app-entered records.
+
+For a minimal production baseline:
+
+```bash
+JIP_SEED_MODE=production php scripts/seed.php
+```
+
+Production mode seeds only regions, users, and capacity targets. Change seeded passwords before live use.
 
 ## Seeded Login
 

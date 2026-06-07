@@ -1,5 +1,6 @@
 .DS_Store
 storage/*.sqlite
 storage/*.sqlite-*
+storage/backups/
+storage/exports/
 *.log
-

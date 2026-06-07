@@ -20,10 +20,11 @@ class AuthController extends Controller
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($_POST['password'] ?? '', $user['password_hash'])) {
-            $this->view('auth/login', ['error' => 'Invalid login. Use seeded credentials from the README.']);
+            $this->view('auth/login', ['error' => 'Invalid login.']);
             return;
         }
 
+        session_regenerate_id(true);
         Auth::login($user);
         $this->redirect('/');
     }
@@ -34,4 +35,3 @@ class AuthController extends Controller
         $this->redirect('/login');
     }
 }
-

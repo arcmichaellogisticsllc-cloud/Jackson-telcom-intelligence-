@@ -11,8 +11,18 @@
   <aside class="sidebar">
     <div class="brand">Jackson<br><span>Intelligence Platform</span></div>
     <nav>
-      <?php foreach (['/operating-view' => 'Executive Operating View','/acquisition-command' => 'Acquisition Command Center','/market-intelligence' => 'Market Intelligence','/syncerp-integration' => 'SyncERP Integration','/platform-review' => 'Platform Review','/operator-modes' => 'Operator Modes','/' => 'National Command Center','/regions' => 'Regional Command Centers','/daily-brief' => 'Executive Daily Brief','/decision-support' => 'Decision Support','/warehouse' => 'Intelligence Warehouse','/pursuits' => 'Pursuit Board','/preconstruction' => 'Preconstruction','/outreach' => 'Outreach Intelligence','/harvesters' => 'Acquisition Harvesters','/signals' => 'Signal Center','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/targets' => 'Acquisition Targets','/hunting-lists' => 'Hunting Lists','/hunts' => 'Hunts','/playbooks' => 'Playbooks','/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Acquisition','/relationship-graph' => 'Relationship Graph','/demand' => 'Demand Engine','/traffic' => 'Traffic Engine','/organizations' => 'Organizations','/contacts' => 'Contacts','/opportunities' => 'Opportunities','/recommendations' => 'Recommendations','/activities' => 'Activities','/settings' => 'Settings'] as $href => $label): ?>
-        <a href="<?= $href ?>" class="<?= parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) === $href ? 'active' : '' ?>"><?= $label ?></a>
+      <?php $navGroups = [
+        'Operate' => ['/operating-view' => 'Executive Operating View','/daily-brief' => 'Executive Daily Brief','/decision-support' => 'Decision Support','/platform-review' => 'Platform Review','/operator-modes' => 'Operator Modes'],
+        'Command' => ['/acquisition-command' => 'Acquisition Command Center','/' => 'National Command Center','/regions' => 'Regional Command Centers','/market-intelligence' => 'Market Intelligence','/warehouse' => 'Intelligence Warehouse'],
+        'Acquire' => ['/harvesters' => 'Acquisition Harvesters','/signals' => 'Signal Center','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/targets' => 'Acquisition Targets','/hunting-lists' => 'Hunting Lists','/hunts' => 'Hunts','/playbooks' => 'Playbooks','/outreach' => 'Outreach Intelligence'],
+        'Capacity & Work' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Acquisition','/relationship-graph' => 'Relationship Graph','/demand' => 'Demand Engine','/traffic' => 'Traffic Engine','/pursuits' => 'Pursuit Board','/preconstruction' => 'Preconstruction','/syncerp-integration' => 'SyncERP Integration'],
+        'Records' => ['/organizations' => 'Organizations','/contacts' => 'Contacts','/opportunities' => 'Opportunities','/recommendations' => 'Recommendations','/activities' => 'Activities','/settings' => 'Settings'],
+      ]; ?>
+      <?php foreach ($navGroups as $group => $links): ?>
+        <div class="nav-group"><?= htmlspecialchars($group) ?></div>
+        <?php foreach ($links as $href => $label): ?>
+          <a href="<?= $href ?>" class="<?= parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) === $href ? 'active' : '' ?>"><?= $label ?></a>
+        <?php endforeach; ?>
       <?php endforeach; ?>
     </nav>
   </aside>
