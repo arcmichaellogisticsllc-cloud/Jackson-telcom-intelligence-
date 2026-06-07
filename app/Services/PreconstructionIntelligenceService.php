@@ -87,19 +87,32 @@ class PreconstructionIntelligenceService
 
     private function clearGenerated(PDO $db): void
     {
-        foreach (['scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles'] as $table) {
+        foreach (['integration_statuses','preconstruction_snapshots','relationship_context_snapshots','capacity_allocation_snapshots','erp_readiness_profiles','project_packages','scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
         }
         $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Preconstruction Intelligence Engine'");
+        $db->exec("DELETE FROM recommended_actions WHERE source_module = 'SyncERP Integration Layer'");
     }
 
     private function clearProfile(PDO $db, int $profileId): void
     {
+        $packageIds = [];
+        if ($db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'project_packages'")->fetchColumn()) {
+            $packageIds = array_map('intval', array_column($db->query("SELECT id FROM project_packages WHERE preconstruction_profile_id = {$profileId}")->fetchAll(), 'id'));
+        }
+        if ($packageIds) {
+            $ids = implode(',', $packageIds);
+            foreach (['integration_statuses','preconstruction_snapshots','relationship_context_snapshots','capacity_allocation_snapshots','erp_readiness_profiles'] as $table) {
+                $db->exec("DELETE FROM {$table} WHERE project_package_id IN ({$ids})");
+            }
+            $db->exec("DELETE FROM project_packages WHERE id IN ({$ids})");
+        }
         foreach (['scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions'] as $table) {
             $db->exec("DELETE FROM {$table} WHERE preconstruction_profile_id = {$profileId}");
         }
         $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Preconstruction Intelligence Engine' AND source_type = 'preconstruction_profile' AND source_id = {$profileId}");
+        $db->exec("DELETE FROM recommended_actions WHERE source_module = 'SyncERP Integration Layer'");
     }
 
     private function rebuildProfile(PDO $db, int $profileId, array $opportunity): int

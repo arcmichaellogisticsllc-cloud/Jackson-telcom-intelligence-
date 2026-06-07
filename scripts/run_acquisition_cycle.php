@@ -12,6 +12,7 @@ use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
 use App\Services\PlatformReviewService;
 use App\Services\PreconstructionIntelligenceService;
+use App\Services\ProjectPackageAssemblyService;
 
 echo "Jackson Intelligence Platform acquisition cycle\n";
 echo "SQLite mode: running database-writing jobs sequentially. Do not run these jobs in parallel.\n\n";
@@ -44,6 +45,7 @@ RecommendationEngine::regenerate();
 (new AcquisitionCommandService())->rebuild();
 (new MarketIntelligenceService())->rebuild();
 (new PlatformReviewService())->rebuild();
+(new ProjectPackageAssemblyService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

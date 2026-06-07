@@ -49,7 +49,7 @@ class OpportunityPursuitService
 
     private function clearGenerated(PDO $db): void
     {
-        foreach (['scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles'] as $table) {
+        foreach (['integration_statuses','preconstruction_snapshots','relationship_context_snapshots','capacity_allocation_snapshots','erp_readiness_profiles','project_packages','scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles'] as $table) {
             if ($db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $db->quote($table))->fetchColumn()) {
                 $db->exec("DELETE FROM {$table}");
                 $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
@@ -61,6 +61,7 @@ class OpportunityPursuitService
         }
         $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Opportunity Pursuit Engine'");
         $db->exec("DELETE FROM recommended_actions WHERE source_module = 'Preconstruction Intelligence Engine'");
+        $db->exec("DELETE FROM recommended_actions WHERE source_module = 'SyncERP Integration Layer'");
     }
 
     private function opportunities(PDO $db): array

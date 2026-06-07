@@ -473,6 +473,98 @@ CREATE TABLE IF NOT EXISTS scenario_plans (
   FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id)
 );
 
+CREATE TABLE IF NOT EXISTS project_packages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  opportunity_id INTEGER NOT NULL UNIQUE,
+  pursuit_decision_id INTEGER,
+  preconstruction_profile_id INTEGER,
+  region_id INTEGER,
+  package_name TEXT NOT NULL,
+  customer_name TEXT,
+  market TEXT,
+  state TEXT,
+  estimated_value REAL DEFAULT 0,
+  estimated_margin REAL DEFAULT 0,
+  package_status TEXT DEFAULT 'Draft' CHECK(package_status IN ('Draft','Review','Ready For SyncERP','Exported','Imported','In Execution','Closed')),
+  package_owner TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(opportunity_id) REFERENCES opportunities(id),
+  FOREIGN KEY(pursuit_decision_id) REFERENCES opportunity_pursuit_decisions(id),
+  FOREIGN KEY(preconstruction_profile_id) REFERENCES preconstruction_profiles(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS erp_readiness_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_package_id INTEGER NOT NULL UNIQUE,
+  opportunity_approved INTEGER DEFAULT 0,
+  pursuit_approved INTEGER DEFAULT 0,
+  preconstruction_complete INTEGER DEFAULT 0,
+  capacity_assigned INTEGER DEFAULT 0,
+  subcontractor_plan_complete INTEGER DEFAULT 0,
+  margin_forecast_complete INTEGER DEFAULT 0,
+  risk_review_complete INTEGER DEFAULT 0,
+  readiness_score INTEGER DEFAULT 0,
+  readiness_category TEXT DEFAULT 'Not Ready' CHECK(readiness_category IN ('Not Ready','Needs Review','Ready','Ready Now')),
+  blockers TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_package_id) REFERENCES project_packages(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_allocation_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_package_id INTEGER NOT NULL UNIQUE,
+  crews_assigned INTEGER DEFAULT 0,
+  subcontractors_selected TEXT,
+  disciplines_required TEXT,
+  mobilization_assumptions TEXT,
+  snapshot_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_package_id) REFERENCES project_packages(id)
+);
+
+CREATE TABLE IF NOT EXISTS relationship_context_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_package_id INTEGER NOT NULL UNIQUE,
+  key_contacts TEXT,
+  project_managers TEXT,
+  utility_contacts TEXT,
+  prime_contacts TEXT,
+  relationship_objectives TEXT,
+  relationship_scores TEXT,
+  relationship_notes TEXT,
+  snapshot_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_package_id) REFERENCES project_packages(id)
+);
+
+CREATE TABLE IF NOT EXISTS preconstruction_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_package_id INTEGER NOT NULL UNIQUE,
+  bid_decision TEXT,
+  margin_forecast TEXT,
+  scenario TEXT,
+  risk_assessment TEXT,
+  capacity_forecast TEXT,
+  snapshot_json TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_package_id) REFERENCES project_packages(id)
+);
+
+CREATE TABLE IF NOT EXISTS integration_statuses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_package_id INTEGER NOT NULL UNIQUE,
+  status TEXT DEFAULT 'Draft' CHECK(status IN ('Draft','Ready','Exported','Imported','Executing','Closed')),
+  exported_at TEXT,
+  imported_at TEXT,
+  execution_started_at TEXT,
+  notes TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(project_package_id) REFERENCES project_packages(id)
+);
+
 CREATE TABLE IF NOT EXISTS outcome_records (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   source_module TEXT NOT NULL CHECK(source_module IN ('Signal','Target','Hunt','Relationship','Capacity','Subcontractor','Demand','Outreach','Pursuit','Preconstruction')),

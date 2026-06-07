@@ -1285,6 +1285,53 @@ Market Readiness Score combines relationship strength, capacity strength, opport
 
 The goal is early positioning: know where fiber backbone work is forming before it becomes an RFP.
 
+## SyncERP Integration Layer
+
+The SyncERP Integration Layer is the bridge between Acquisition, Decision Support, Preconstruction, and the future SyncERP execution platform.
+
+This phase does not build SyncERP. It does not build project execution, billing, labor tracking, equipment tracking, or production reporting.
+
+It creates Project Packages for opportunities that are ready for execution handoff. A Project Package preserves:
+
+- opportunity context
+- pursuit decision
+- relationship intelligence
+- capacity consumption plan
+- subcontractor fit plan
+- margin forecast
+- risk assessment
+- scenario plan
+- decision support history
+- growth blockers
+- learning insights
+
+ERP Readiness Profiles answer whether the package is ready for execution handoff:
+
+- opportunity approved
+- pursuit approved
+- preconstruction complete
+- capacity assigned
+- subcontractor plan complete
+- margin forecast complete
+- risk review complete
+
+Readiness categories are:
+
+- Not Ready
+- Needs Review
+- Ready
+- Ready Now
+
+Snapshots preserve handoff context at package assembly time:
+
+- Capacity Allocation Snapshot
+- Relationship Context Snapshot
+- Preconstruction Snapshot
+
+Integration Status tracks Draft, Ready, Exported, Imported, Executing, and Closed. These statuses are handoff tracking only; they do not create execution workflows.
+
+The Executive Handoff Brief shows ready packages, blocked packages, missing capacity, missing risk review, and packages awaiting import. The ERP Integration Contract is documented in `docs/erp-integration-contract.md` and defines the future fields SyncERP will receive.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.
