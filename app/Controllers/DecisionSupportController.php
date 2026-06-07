@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
+use App\Services\AcquisitionCommandService;
 use App\Services\DecisionSupportService;
 
 class DecisionSupportController extends Controller
@@ -39,14 +40,18 @@ class DecisionSupportController extends Controller
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll();
         $briefs = [];
+        $commandBriefs = [];
         $allowed = $this->allowedBriefRegions();
+        $commandService = new AcquisitionCommandService();
+        $commandService->rebuild();
         foreach ($regions as $region) {
             if ($allowed && !in_array($region['name'], $allowed, true)) {
                 continue;
             }
             $briefs[$region['name']] = $service->dashboardData((int)$region['id']);
+            $commandBriefs[$region['name']] = $commandService->dashboardData((int)$region['id']);
         }
-        $this->view('decision/brief', compact('briefs', 'regions'));
+        $this->view('decision/brief', compact('briefs', 'commandBriefs', 'regions'));
     }
 
     public function completeAction(): void

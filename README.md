@@ -1170,6 +1170,44 @@ Decision Support consumes warehouse insights by creating recommended actions for
 
 The warehouse exists before SyncERP because Jackson needs acquisition memory first: what created capacity, what created work, what wasted attention, and what should be repeated.
 
+## Acquisition Command Center
+
+The Acquisition Command Center is the highest-level operating screen for the acquisition platform.
+
+The doctrine is simple:
+
+- Who has work?
+- Who has capacity?
+- Who needs work?
+- Who influences who gets work?
+
+Every major module ultimately feeds one or more of these four hunting categories.
+
+Who Has Work identifies utilities, prime contractors, municipalities, engineering firms, broadband authorities, and other organizations tied to active, upcoming, rumored, awarded, or expanding work. Work Intelligence scores readiness from opportunity value, confidence, strategic fit, relationship strength, required capacity, and source signal count.
+
+Who Has Capacity identifies internal capacity, approved subcontractors, preferred subcontractors, strategic partners, vendors, specialty providers, and equipment providers that can perform work. Capacity Intelligence scores deployable capacity from available crews, disciplines, mobilization readiness, trust score, and capacity contribution.
+
+Who Needs Work identifies underutilized contractors, idle crews, recently available capacity, distressed contractors, and contractors seeking work. Need Intelligence scores urgency from workload status, available crews, estimated idle crews, and confidence.
+
+Who Influences Work identifies project managers, construction managers, OSP managers, program managers, directors, procurement contacts, engineers, field supervisors, and subcontractor coordinators who influence who gets work. Influence Intelligence scores decision authority, influence, access, trust, strategic value, and role leverage. Project managers and field construction leaders receive additional weight because they can create direct work access.
+
+The doctrine engine creates:
+
+- Work Intelligence
+- Capacity Intelligence
+- Need Intelligence
+- Influence Intelligence
+- Acquisition Classifications
+- Acquisition Scores
+- Work Watchlist
+- Capacity Watchlist
+- Need Watchlist
+- Influence Watchlist
+
+Acquisition Scores allow multi-category assignment. A company can be both Capacity and Need. A prime contractor can be Work and Influence. A project manager can be Influence tied to Work.
+
+The Executive Daily Brief now leads with the four doctrine categories so operators see the highest-value work, capacity, need, and influence assets before reviewing general daily actions. Decision Support receives Acquisition Command Center recommendations, and the Learning Engine receives acquisition doctrine insights so the platform can learn which categories create opportunities, capacity, relationships, and wins.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

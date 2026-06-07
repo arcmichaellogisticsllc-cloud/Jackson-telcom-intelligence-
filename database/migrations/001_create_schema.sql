@@ -605,6 +605,124 @@ CREATE TABLE IF NOT EXISTS learning_insights (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS work_intelligence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  organization_id INTEGER,
+  region_id INTEGER,
+  market TEXT,
+  work_type TEXT,
+  work_status TEXT DEFAULT 'Rumored' CHECK(work_status IN ('Active','Upcoming','Rumored','Awarded','Expanding')),
+  estimated_value REAL DEFAULT 0,
+  confidence_score INTEGER DEFAULT 0,
+  strategic_value_score INTEGER DEFAULT 0,
+  relationship_strength TEXT,
+  capacity_required INTEGER DEFAULT 0,
+  source_signal_count INTEGER DEFAULT 0,
+  work_readiness_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(organization_id, region_id, work_type),
+  FOREIGN KEY(organization_id) REFERENCES organizations(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS capacity_intelligence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  capacity_profile_id INTEGER,
+  region_id INTEGER,
+  disciplines TEXT,
+  available_crews INTEGER DEFAULT 0,
+  mobilization_readiness TEXT,
+  trust_score INTEGER DEFAULT 0,
+  capacity_contribution_score INTEGER DEFAULT 0,
+  deployable_capacity_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(capacity_profile_id),
+  FOREIGN KEY(capacity_profile_id) REFERENCES capacity_profiles(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS need_intelligence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  organization_id INTEGER,
+  region_id INTEGER,
+  workload_status TEXT DEFAULT 'Unknown' CHECK(workload_status IN ('Overloaded','Balanced','Available Capacity','Seeking Work','Distressed','Unknown')),
+  confidence_score INTEGER DEFAULT 0,
+  capacity_available INTEGER DEFAULT 0,
+  estimated_idle_crews INTEGER DEFAULT 0,
+  urgency TEXT DEFAULT 'Medium',
+  need_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(organization_id, region_id),
+  FOREIGN KEY(organization_id) REFERENCES organizations(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS influence_intelligence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  relationship_profile_id INTEGER,
+  region_id INTEGER,
+  influence_role TEXT,
+  decision_authority INTEGER DEFAULT 0,
+  influence_score INTEGER DEFAULT 0,
+  access_score INTEGER DEFAULT 0,
+  trust_score INTEGER DEFAULT 0,
+  strategic_value_score INTEGER DEFAULT 0,
+  final_influence_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(relationship_profile_id),
+  FOREIGN KEY(relationship_profile_id) REFERENCES relationship_intelligence_profiles(id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS acquisition_classifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('Work','Capacity','Need','Influence')),
+  region_id INTEGER,
+  reason TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(entity_type, entity_id, category),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS acquisition_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  region_id INTEGER,
+  work_score INTEGER DEFAULT 0,
+  capacity_score INTEGER DEFAULT 0,
+  need_score INTEGER DEFAULT 0,
+  influence_score INTEGER DEFAULT 0,
+  acquisition_priority_score INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(entity_type, entity_id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS acquisition_watchlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  watchlist_type TEXT NOT NULL CHECK(watchlist_type IN ('Work','Capacity','Need','Influence')),
+  entity_type TEXT NOT NULL,
+  entity_id INTEGER NOT NULL,
+  region_id INTEGER,
+  recent_change TEXT,
+  escalation_level TEXT DEFAULT 'Medium' CHECK(escalation_level IN ('Low','Medium','High','Critical')),
+  recommended_action TEXT,
+  status TEXT DEFAULT 'Monitoring' CHECK(status IN ('Monitoring','Escalated','Archived')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(watchlist_type, entity_type, entity_id),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

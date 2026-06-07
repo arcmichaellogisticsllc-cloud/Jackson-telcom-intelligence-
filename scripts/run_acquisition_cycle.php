@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor_autoload.php';
 
 use App\Core\RecommendationEngine;
+use App\Services\AcquisitionCommandService;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
 use App\Services\IntelligenceWarehouseService;
@@ -38,6 +39,7 @@ RecommendationEngine::regenerate();
 (new OpportunityPursuitService())->rebuild();
 (new PreconstructionIntelligenceService())->rebuild();
 (new IntelligenceWarehouseService())->rebuild();
+(new AcquisitionCommandService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

@@ -13,6 +13,10 @@ $_SESSION['user'] = [
 
 $router = require __DIR__ . '/../routes/web.php';
 $routes = [
+    '/acquisition-command',
+    '/acquisition-command/southeast',
+    '/acquisition-command/great-lakes',
+    '/acquisition-command/southwest',
     '/',
     '/briefing',
     '/decision-support',

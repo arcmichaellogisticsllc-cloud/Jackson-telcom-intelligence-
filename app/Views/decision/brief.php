@@ -26,6 +26,21 @@
         <p><strong>Focus:</strong> <?= htmlspecialchars($brief['scorecard']['recommended_focus']) ?></p>
         <p><strong>Blocker:</strong> <?= htmlspecialchars($brief['scorecard']['top_blocker']) ?></p>
       <?php endif; ?>
+      <?php $command = $commandBriefs[$regionName] ?? null; ?>
+      <?php if ($command): ?>
+        <div class="mini-metrics">
+          <div><span>Who Has Work</span><strong><?= (int)$command['metrics']['work'] ?></strong></div>
+          <div><span>Who Has Capacity</span><strong><?= (int)$command['metrics']['capacity'] ?></strong></div>
+          <div><span>Who Needs Work</span><strong><?= (int)$command['metrics']['need'] ?></strong></div>
+          <div><span>Who Influences Work</span><strong><?= (int)$command['metrics']['influence'] ?></strong></div>
+        </div>
+        <div class="action-stack">
+          <?php if ($command['work']): ?><div><span class="priority high">Who Has Work</span><h3><?= htmlspecialchars($command['work'][0]['organization_name'] ?? 'Work signal') ?></h3><p>Validate scope, decision makers, timing, and capacity requirements.</p></div><?php endif; ?>
+          <?php if ($command['capacity']): ?><div><span class="priority high">Who Has Capacity</span><h3><?= htmlspecialchars($command['capacity'][0]['profile_name'] ?? 'Capacity provider') ?></h3><p><?= (int)$command['capacity'][0]['available_crews'] ?> available crews. Match against pursuits and capacity gaps.</p></div><?php endif; ?>
+          <?php if ($command['need']): ?><div><span class="priority medium">Who Needs Work</span><h3><?= htmlspecialchars($command['need'][0]['organization_name'] ?? 'Need signal') ?></h3><p><?= htmlspecialchars($command['need'][0]['workload_status']) ?>. Call to determine availability and fit.</p></div><?php endif; ?>
+          <?php if ($command['influence']): ?><div><span class="priority high">Who Influences Work</span><h3><?= htmlspecialchars(trim(($command['influence'][0]['first_name'] ?? '') . ' ' . ($command['influence'][0]['last_name'] ?? ''))) ?></h3><p><?= htmlspecialchars($command['influence'][0]['influence_role'] ?: 'Influence contact') ?>. Strengthen access and ask for intelligence.</p></div><?php endif; ?>
+        </div>
+      <?php endif; ?>
       <div class="action-stack">
         <?php foreach ($brief['topActions'] as $action): ?>
           <div>

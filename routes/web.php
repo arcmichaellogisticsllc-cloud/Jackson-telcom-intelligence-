@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\ActivityController;
+use App\Controllers\AcquisitionCommandController;
 use App\Controllers\AcquisitionTargetController;
 use App\Controllers\AuthController;
 use App\Controllers\CapacityRadarController;
@@ -27,6 +28,11 @@ $router = new Router();
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
 $router->post('/logout', [AuthController::class, 'logout']);
+$router->get('/acquisition-command', [AcquisitionCommandController::class, 'index']);
+$router->get('/acquisition-command/southeast', [AcquisitionCommandController::class, 'southeast']);
+$router->get('/acquisition-command/great-lakes', [AcquisitionCommandController::class, 'greatLakes']);
+$router->get('/acquisition-command/southwest', [AcquisitionCommandController::class, 'southwest']);
+$router->post('/acquisition-command/rebuild', [AcquisitionCommandController::class, 'rebuild']);
 $router->get('/', [DashboardController::class, 'index']);
 $router->get('/regions', [DashboardController::class, 'regions']);
 $router->get('/command/southeast', [DashboardController::class, 'southeast']);
