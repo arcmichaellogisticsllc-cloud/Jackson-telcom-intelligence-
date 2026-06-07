@@ -7,8 +7,10 @@ use App\Services\AcquisitionCommandService;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
 use App\Services\IntelligenceWarehouseService;
+use App\Services\MarketIntelligenceService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
+use App\Services\PlatformReviewService;
 use App\Services\PreconstructionIntelligenceService;
 
 echo "Jackson Intelligence Platform acquisition cycle\n";
@@ -40,6 +42,8 @@ RecommendationEngine::regenerate();
 (new PreconstructionIntelligenceService())->rebuild();
 (new IntelligenceWarehouseService())->rebuild();
 (new AcquisitionCommandService())->rebuild();
+(new MarketIntelligenceService())->rebuild();
+(new PlatformReviewService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

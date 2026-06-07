@@ -723,6 +723,85 @@ CREATE TABLE IF NOT EXISTS acquisition_watchlists (
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
 
+CREATE TABLE IF NOT EXISTS platform_health_checks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module_name TEXT NOT NULL,
+  check_type TEXT NOT NULL CHECK(check_type IN ('Data Freshness','Broken Relationships','Duplicate Records','Stale Actions','Orphaned Records','Complexity')),
+  status TEXT DEFAULT 'Pass' CHECK(status IN ('Pass','Warn','Fail')),
+  issue_count INTEGER DEFAULT 0,
+  summary TEXT,
+  recommended_action TEXT,
+  checked_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS operator_modes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  mode_name TEXT NOT NULL UNIQUE,
+  objective TEXT,
+  primary_screen TEXT,
+  focus_categories TEXT,
+  top_metrics TEXT,
+  recommended_workflow TEXT,
+  active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS market_intelligence_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_name TEXT NOT NULL,
+  source_type TEXT NOT NULL CHECK(source_type IN ('Engineering Intelligence','Utility Intelligence','Municipal Intelligence','Funding Intelligence','Prime Contractor Intelligence','Public Filing Intelligence','Infrastructure Growth Intelligence')),
+  region_id INTEGER,
+  state TEXT,
+  market TEXT,
+  collection_method TEXT,
+  signal_yield INTEGER DEFAULT 0,
+  opportunity_yield INTEGER DEFAULT 0,
+  relationship_yield INTEGER DEFAULT 0,
+  noise_level INTEGER DEFAULT 0,
+  quality_score INTEGER DEFAULT 0,
+  last_reviewed TEXT,
+  next_review TEXT,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS market_intelligence_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region_id INTEGER,
+  market TEXT,
+  active_utilities TEXT,
+  active_primes TEXT,
+  engineering_firms TEXT,
+  municipalities TEXT,
+  broadband_programs TEXT,
+  known_contacts TEXT,
+  upcoming_opportunities TEXT,
+  confidence_score INTEGER DEFAULT 0,
+  strategic_priority TEXT DEFAULT 'Medium' CHECK(strategic_priority IN ('Low','Medium','High','Critical')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(region_id, market),
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS market_readiness_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  market_profile_id INTEGER NOT NULL UNIQUE,
+  relationship_strength INTEGER DEFAULT 0,
+  capacity_strength INTEGER DEFAULT 0,
+  opportunity_activity INTEGER DEFAULT 0,
+  funding_activity INTEGER DEFAULT 0,
+  demand_visibility INTEGER DEFAULT 0,
+  competition_level INTEGER DEFAULT 0,
+  market_readiness_score INTEGER DEFAULT 0,
+  readiness_category TEXT DEFAULT 'Developing' CHECK(readiness_category IN ('Weak','Developing','Ready','Priority','Critical')),
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(market_profile_id) REFERENCES market_intelligence_profiles(id)
+);
+
 CREATE TABLE IF NOT EXISTS signals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,

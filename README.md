@@ -1208,6 +1208,83 @@ Acquisition Scores allow multi-category assignment. A company can be both Capaci
 
 The Executive Daily Brief now leads with the four doctrine categories so operators see the highest-value work, capacity, need, and influence assets before reviewing general daily actions. Decision Support receives Acquisition Command Center recommendations, and the Learning Engine receives acquisition doctrine insights so the platform can learn which categories create opportunities, capacity, relationships, and wins.
 
+## Platform Review & Simplification
+
+The platform now includes many acquisition modules, but operators should not have to inspect every module every day.
+
+The simplified operating doctrine is:
+
+1. Open Executive Operating View.
+2. Review Who Has Work.
+3. Review Who Has Capacity.
+4. Review Who Needs Work.
+5. Review Who Influences Work.
+6. Complete the top five next actions.
+
+Platform Review keeps the system navigable by auditing duplicated concepts:
+
+- Recommendations are system findings.
+- Daily Actions are promoted operator priorities.
+- Growth Blockers are structural issues preventing growth.
+- Escalations are high-value signals that need attention.
+- Targets are entities worth hunting.
+- Hunts are structured pursuit campaigns.
+- Watchlists are monitored future movement.
+
+Module health checks track:
+
+- data freshness
+- broken relationships
+- duplicate records
+- stale actions
+- orphaned records
+- complexity/noise
+
+Operator modes reduce overload:
+
+- Executive Mode
+- Regional Owner Mode
+- Hunting Mode
+- Capacity Mode
+- Preconstruction Mode
+
+Each mode maps one intent to one primary screen, one workflow, and a small set of metrics.
+
+## Regional Market Intelligence Network
+
+Market Intelligence looks 12-24 months ahead for fiber backbone work.
+
+It monitors:
+
+- engineering firms
+- electric cooperatives
+- municipalities
+- broadband offices
+- public utility commissions
+- prime contractors
+- utility programs
+- broadband funding sources
+- public meeting agendas
+- bid portals
+- economic development announcements
+- data center expansion signals
+
+Source categories include:
+
+- Engineering Intelligence
+- Utility Intelligence
+- Municipal Intelligence
+- Funding Intelligence
+- Prime Contractor Intelligence
+- Public Filing Intelligence
+- Infrastructure Growth Intelligence
+
+Each source tracks signal yield, opportunity yield, relationship yield, noise level, quality score, last review, and next review. Market profiles track active utilities, primes, engineering firms, municipalities, broadband programs, known contacts, upcoming opportunities, confidence score, and strategic priority.
+
+Market Readiness Score combines relationship strength, capacity strength, opportunity activity, funding activity, demand visibility, and competition level. Market Intelligence recommendations feed Decision Support, Acquisition Command Center, Relationship Graph, Demand Engine, Signal Center, and the Pursuit Engine.
+
+The goal is early positioning: know where fiber backbone work is forming before it becomes an RFP.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.
