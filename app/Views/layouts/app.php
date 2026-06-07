@@ -9,14 +9,22 @@
 <body>
 <?php if ($user): ?>
   <aside class="sidebar">
-    <div class="brand">Jackson<br><span>Intelligence Platform</span></div>
+    <?php $brand = $app['brand'] ?? []; ?>
+    <a class="brand" href="/">
+      <span class="brand-mark"><?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?></span>
+      <strong><?= htmlspecialchars($brand['company_name'] ?? 'Jackson Telcom LLC') ?></strong>
+      <em><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></em>
+    </a>
     <nav>
       <?php $navGroups = [
-        'Operate' => ['/operating-view' => 'Executive Operating View','/daily-brief' => 'Executive Daily Brief','/decision-support' => 'Decision Support','/platform-review' => 'Platform Review','/operator-modes' => 'Operator Modes'],
-        'Command' => ['/acquisition-command' => 'Acquisition Command Center','/' => 'National Command Center','/regions' => 'Regional Command Centers','/market-intelligence' => 'Market Intelligence','/warehouse' => 'Intelligence Warehouse'],
-        'Acquire' => ['/harvesters' => 'Acquisition Harvesters','/signals' => 'Signal Center','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/targets' => 'Acquisition Targets','/hunting-lists' => 'Hunting Lists','/hunts' => 'Hunts','/playbooks' => 'Playbooks','/outreach' => 'Outreach Intelligence'],
-        'Capacity & Work' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Acquisition','/relationship-graph' => 'Relationship Graph','/demand' => 'Demand Engine','/traffic' => 'Traffic Engine','/pursuits' => 'Pursuit Board','/preconstruction' => 'Preconstruction','/syncerp-integration' => 'SyncERP Integration'],
-        'Records' => ['/organizations' => 'Organizations','/contacts' => 'Contacts','/opportunities' => 'Opportunities','/recommendations' => 'Recommendations','/activities' => 'Activities','/settings' => 'Settings'],
+        'COMMAND' => ['/' => 'Command Center','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support'],
+        'WORK' => ['/acquisition-command' => 'Work Intelligence','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
+        'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners'],
+        'RELATIONSHIPS' => ['/relationship-graph' => 'Relationship Graph','/relationships' => 'Influence Network','/contacts' => 'Contacts'],
+        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/harvesters' => 'Acquisition Harvesters'],
+        'GROWTH' => ['/demand' => 'Demand Engine','/traffic' => 'Content','/outreach' => 'Distribution'],
+        'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration'],
+        'SETTINGS' => ['/settings' => 'Settings','/platform-review' => 'Administration','/operator-modes' => 'Operator Modes','/organizations' => 'Organizations','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],
       ]; ?>
       <?php foreach ($navGroups as $group => $links): ?>
         <div class="nav-group"><?= htmlspecialchars($group) ?></div>

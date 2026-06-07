@@ -51,11 +51,11 @@ class PlatformReviewService
     {
         $stmt = $db->prepare('INSERT INTO operator_modes (mode_name, objective, primary_screen, focus_categories, top_metrics, recommended_workflow) VALUES (?, ?, ?, ?, ?, ?)');
         $rows = [
-            ['Executive Mode', 'See the five things that matter today.', '/operating-view', 'Work, Capacity, Need, Influence, Next Action', 'Top Actions, Growth Blockers, Acquisition Priority, Market Readiness', 'Open Executive Operating View, decide priorities, assign owners, dismiss noise.'],
-            ['Regional Owner Mode', 'Let Mike and Ron work their theaters without national clutter.', '/acquisition-command', 'Regional Work, Regional Capacity, Regional Need, Regional Influence', 'Regional readiness, watchlists, top relationships, gaps', 'Review regional command, call priority contacts, update outcomes.'],
-            ['Hunting Mode', 'Turn targets into qualified conversations.', '/hunt-actions', 'Targets, Hunts, Playbooks, Outreach Prep', 'Today actions, overdue tasks, converted targets', 'Work Today’s Hunt Actions and record outcomes.'],
-            ['Capacity Mode', 'Find and approve deployable crews.', '/capacity-radar', 'Capacity Gaps, Subcontractor Candidates, Compliance', 'Available crews, trust score, compliance issues', 'Review gaps, call high-need contractors, request documents.'],
-            ['Preconstruction Mode', 'Decide whether Jackson can bid, execute, and make money.', '/preconstruction', 'Bid/No-Bid, Capacity Consumption, Margin, Risk', 'Bid score, capacity blocking bids, margin risk', 'Review ready-for-bid opportunities and close blockers.'],
+            ['Executive Mode', 'See the five things that matter today across Jackson Telcom.', '/', 'Work, Capacity, Need, Influence, Today Priorities', 'Top Actions, Growth Blockers, Ready for SyncERP, Platform Health', 'Open Jackson Telcom Command Center, decide priorities, assign owners, and dismiss noise.'],
+            ['Mike Mode', 'Let Mike work Southeast plus shared Southwest and national priorities.', '/command/southeast', 'Southeast Work, Capacity, Need, Influence, Actions', 'Capacity gaps, top relationships, work-ready organizations, SyncERP handoffs', 'Open Southeast Command Center, complete top actions, and record outcomes.'],
+            ['Ron Mode', 'Let Ron work Great Lakes plus shared Southwest and national priorities.', '/command/great-lakes', 'Great Lakes Work, Capacity, Need, Influence, Actions', 'Capacity gaps, top relationships, work-ready organizations, SyncERP handoffs', 'Open Great Lakes Command Center, complete top actions, and record outcomes.'],
+            ['Regional Owner Mode', 'Use the matching theater command center without national clutter.', '/regions', 'Theater Work, Theater Capacity, Theater Need, Theater Influence', 'Regional readiness, watchlists, relationship risk, capacity gaps', 'Choose the theater, work the priorities panel, and update linked records.'],
+            ['Admin Mode', 'Maintain system reliability, health, seed mode, backups, and operator readiness.', '/platform-review', 'Health, Integrity, Navigation, Seeds, Backup, Security', 'Health checks, integrity warnings, stale actions, release gate', 'Run release checks, review warnings, and keep operator screens clean.'],
         ];
         foreach ($rows as $row) {
             $stmt->execute($row);

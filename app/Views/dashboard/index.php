@@ -1,188 +1,150 @@
-<section class="page-header">
-  <p class="eyebrow">National Command Center</p>
-  <h1>Focused theaters. National footprint.</h1>
-  <p>Traffic, signals, capacity, relationships, opportunities, and decision support for telecom construction growth. SyncERP remains the final integration layer only.</p>
+<?php
+$brand = $app['brand'] ?? [];
+$command = $commandData ?? ['metrics' => [], 'work' => [], 'capacity' => [], 'need' => [], 'influence' => []];
+$widgets = [
+    [
+        'eyebrow' => 'Work Ready',
+        'title' => 'Who has work?',
+        'score' => $command['metrics']['work'] ?? 0,
+        'summary' => 'Utilities, primes, municipalities, and programs with active or future fiber backbone work.',
+        'href' => '/acquisition-command',
+        'cta' => 'Open Work Intelligence',
+        'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Work signal', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['work_readiness_score'] ?? 0)], $command['work'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Capacity Available',
+        'title' => 'Who can perform work?',
+        'score' => $command['metrics']['capacity'] ?? 0,
+        'summary' => 'Approved, preferred, strategic, and internal deployable capacity that can support pursuit decisions.',
+        'href' => '/capacity-radar',
+        'cta' => 'Open Capacity Radar',
+        'items' => array_map(fn($row) => ['title' => $row['profile_name'] ?? 'Capacity provider', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . (int)($row['available_crews'] ?? 0) . ' crews'], $command['capacity'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Capacity Seeking Work',
+        'title' => 'Who needs work?',
+        'score' => $command['metrics']['need'] ?? 0,
+        'summary' => 'Underutilized contractors and crews that may become fast capacity wins for Jackson Telcom.',
+        'href' => '/hunting-lists',
+        'cta' => 'Open Hunting Lists',
+        'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Need signal', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['workload_status'] ?? 'Unknown')], $command['need'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Influence Network',
+        'title' => 'Who influences work?',
+        'score' => $command['metrics']['influence'] ?? 0,
+        'summary' => 'Project managers, construction leaders, utility contacts, and prime contacts who can create access.',
+        'href' => '/relationship-graph',
+        'cta' => 'Open Influence Network',
+        'items' => array_map(fn($row) => ['title' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: 'Influence contact', 'meta' => ($row['region_name'] ?? 'National') . ' · influence ' . (int)($row['final_influence_score'] ?? 0)], $command['influence'] ?? []),
+    ],
+];
+$supportWidgets = [
+    [
+        'eyebrow' => 'Pursuits',
+        'title' => 'Top Fiber Backbone Pursuits',
+        'score' => $pursuitWidgets['metrics']['top_pursuits'] ?? 0,
+        'summary' => 'Pursue work that advances fiber backbone construction, expansion, maintenance, and restoration.',
+        'href' => '/pursuits',
+        'cta' => 'Open Pursuit Board',
+        'items' => array_map(fn($row) => ['title' => $row['name'] ?? 'Pursuit', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['recommended_decision'] ?? '')], $pursuitWidgets['topPursuits'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Growth Blockers',
+        'title' => 'What is blocking growth?',
+        'score' => $decisionWidgets['metrics']['critical_blockers'] ?? 0,
+        'summary' => 'Structural blockers that prevent Jackson from converting intelligence into capacity, relationships, or work.',
+        'href' => '/decision-support',
+        'cta' => 'Open Decision Support',
+        'items' => array_map(fn($row) => ['title' => $row['blocker_title'] ?? 'Growth blocker', 'meta' => ($row['severity'] ?? 'Medium') . ' · ' . ($row['region_name'] ?? 'National')], $decisionWidgets['blockers'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Ready For SyncERP',
+        'title' => 'What is ready for handoff?',
+        'score' => $syncWidgets['metrics']['ready'] ?? 0,
+        'summary' => 'Execution packages that preserve pursuit, relationship, capacity, preconstruction, and risk context.',
+        'href' => '/syncerp-integration',
+        'cta' => 'Open Handoff Queue',
+        'items' => array_map(fn($row) => ['title' => $row['package_name'] ?? 'Project package', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['readiness_score'] ?? 0)], $syncWidgets['ready'] ?? []),
+    ],
+    [
+        'eyebrow' => 'Market Intelligence',
+        'title' => 'Where will work come from?',
+        'score' => $marketWidgets['metrics']['avg_readiness'] ?? 0,
+        'summary' => 'Engineering, utility, municipal, funding, and prime intelligence that points 12-24 months ahead.',
+        'href' => '/market-intelligence',
+        'cta' => 'Open Market Intel',
+        'items' => array_map(fn($row) => ['title' => $row['market'] ?? 'Market profile', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['market_readiness_score'] ?? 0)], $marketWidgets['profiles'] ?? []),
+    ],
+];
+?>
+<section class="command-hero">
+  <div class="command-mark"><?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?></div>
+  <div>
+    <p class="eyebrow"><?= htmlspecialchars($brand['platform_name'] ?? 'Jackson Intelligence Platform') ?></p>
+    <h1><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></h1>
+    <p>The operating brain for who has work, who has capacity, who needs work, who influences work, and what Jackson Telcom should do next.</p>
+  </div>
 </section>
 
 <nav class="dash-tabs">
-  <a class="active" href="/">National Overview</a>
-  <a href="/regions">Regional Command Centers</a>
-  <a href="/command/southeast">Southeast Command Center</a>
-  <a href="/command/great-lakes">Great Lakes Command Center</a>
-  <a href="/command/southwest">Southwest Command Center</a>
+  <a class="active" href="/">Command Center</a>
+  <a href="/daily-brief">Executive Brief</a>
+  <a href="/command/southeast">Mike Mode</a>
+  <a href="/command/great-lakes">Ron Mode</a>
+  <a href="/command/southwest">Shared Southwest</a>
+  <a href="/operator-modes">Operator Modes</a>
 </nav>
 
-<section class="metrics">
-  <div><span>Total approved subcontractors</span><strong><?= $totals['approved_subcontractors'] ?></strong></div>
-  <div><span>Total available crews</span><strong><?= $totals['available_crews'] ?></strong></div>
-  <div><span>Total open opportunities</span><strong><?= $totals['open_opportunities'] ?></strong></div>
-  <div><span>Total pipeline value</span><strong>$<?= number_format($totals['pipeline_value']) ?></strong></div>
-  <div><span>Critical recommendations</span><strong><?= $totals['critical_recommendations'] ?></strong></div>
-</section>
+<?php
+$why = 'This is the first screen after login. It collapses the platform into the five decisions that matter today.';
+$recommended = 'Work from Today\'s Priorities first, then inspect Work, Capacity, Need, and Influence only where action is required.';
+$next = 'Pick one priority, contact the owner or target, and record the outcome before moving to the next action.';
+require __DIR__ . '/../components/action_first.php';
+?>
 
-<section class="metrics">
-  <div><span>Escalations</span><strong><?= $qualityWidgets['escalations'] ?></strong></div>
-  <div><span>Hunts</span><strong><?= $qualityWidgets['active_hunts'] ?></strong></div>
-  <div><span>Watchlist Activity</span><strong><?= $qualityWidgets['watchlist_activity'] ?></strong></div>
-  <div><span>Signal Quality</span><strong><?= $qualityWidgets['signal_quality'] ?></strong></div>
-  <div><span>Hunt Signals</span><strong><?= $qualityWidgets['hunt_signals'] ?></strong></div>
-</section>
+<?php $priorityActions = $decisionWidgets['topActions'] ?? []; require __DIR__ . '/../components/todays_priorities.php'; ?>
 
-<section class="metrics">
-  <div><span>New Targets This Week</span><strong><?= $targetWidgets['new_week'] ?></strong></div>
-  <div><span>Critical Targets</span><strong><?= $targetWidgets['critical'] ?></strong></div>
-  <div><span>Ready for Outreach</span><strong><?= $targetWidgets['ready'] ?></strong></div>
-  <div><span>No Next Action</span><strong><?= $targetWidgets['no_next'] ?></strong></div>
-  <div><span>Converted This Month</span><strong><?= $targetWidgets['converted_month'] ?></strong></div>
-</section>
+<?php $widgets = $widgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 
-<section class="metrics">
-  <div><span>New Subcontractor Candidates</span><strong><?= $subcontractorWidgets['new_candidates'] ?></strong></div>
-  <div><span>Compliance Issues</span><strong><?= $subcontractorWidgets['compliance_issues'] ?></strong></div>
-  <div><span>Capacity Added</span><strong><?= $subcontractorWidgets['capacity_added'] ?></strong></div>
-  <div><span>Strategic Partner Candidates</span><strong><?= $subcontractorWidgets['strategic_candidates'] ?></strong></div>
-  <div><span>Preferred Network Growth</span><strong><?= $subcontractorWidgets['preferred_growth'] ?></strong></div>
-</section>
-
-<section class="metrics">
-  <div><span>Critical Relationships</span><strong><?= $relationshipWidgets['critical'] ?></strong></div>
-  <div><span>Strategic Relationships</span><strong><?= $relationshipWidgets['strategic'] ?></strong></div>
-  <div><span>Project Managers</span><strong><?= $relationshipWidgets['project_managers'] ?></strong></div>
-  <div><span>Relationship Risks</span><strong><?= $relationshipWidgets['open_risks'] ?></strong></div>
-  <div><span>Relationship Actions</span><strong><?= $relationshipWidgets['open_actions'] ?></strong></div>
-</section>
-
-<section class="metrics">
-  <div><span>Demand Opportunities</span><strong><?= $demandWidgets['opportunities'] ?></strong></div>
-  <div><span>Distribution Queue</span><strong><?= $demandWidgets['distribution_queue'] ?></strong></div>
-  <div><span>Channel Performance</span><strong><?= (int)$demandWidgets['channel_performance'] ?></strong></div>
-  <div><span>Content Awaiting Review</span><strong><?= $demandWidgets['awaiting_review'] ?></strong></div>
-  <div><span>Top Acquisition Content</span><strong><?= $demandWidgets['top_acquisition_content'] ?></strong></div>
-</section>
-
-<section class="metrics">
-  <div><span>Top Daily Actions</span><strong><?= (int)$decisionWidgets['metrics']['top_actions'] ?></strong></div>
-  <div><span>Growth Blockers</span><strong><?= (int)$decisionWidgets['metrics']['critical_blockers'] ?></strong></div>
-  <div><span>Pursue</span><strong><?= (int)$decisionWidgets['metrics']['pursue'] ?></strong></div>
-  <div><span>Avoid</span><strong><?= (int)$decisionWidgets['metrics']['avoid'] ?></strong></div>
-  <div><span>Capacity to Recruit</span><strong><?= (int)$decisionWidgets['metrics']['recruitment_needs'] ?></strong></div>
-</section>
-
-<section class="metrics">
-  <div><span>Top Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['top_pursuits'] ?></strong></div>
-  <div><span>Fiber Backbone Opps</span><strong><?= (int)$pursuitWidgets['metrics']['fiber_backbone'] ?></strong></div>
-  <div><span>Opportunities To Avoid</span><strong><?= (int)$pursuitWidgets['metrics']['avoid'] ?></strong></div>
-  <div><span>Capacity Blocking Pursuits</span><strong><?= (int)$pursuitWidgets['metrics']['capacity_blocked'] ?></strong></div>
-  <div><span>Relationship Gaps</span><strong><?= (int)$pursuitWidgets['metrics']['relationship_blocked'] ?></strong></div>
-</section>
-
-<section class="metrics">
-  <div><span>Intelligence Score</span><strong><?= (int)$warehouseWidgets['metrics']['intelligence_score'] ?></strong></div>
-  <div><span>Learning Insights</span><strong><?= (int)$warehouseWidgets['metrics']['insights'] ?></strong></div>
-  <div><span>Outcome Records</span><strong><?= (int)$warehouseWidgets['metrics']['outcomes'] ?></strong></div>
-  <div><span>Lessons Learned</span><strong><?= (int)$warehouseWidgets['metrics']['lessons'] ?></strong></div>
-  <div><span>High Impact Lessons</span><strong><?= (int)$warehouseWidgets['metrics']['high_impact'] ?></strong></div>
-</section>
-
-<section class="region-grid">
-  <?php foreach ($regions as $region): ?>
-    <article class="panel">
-      <div class="panel-title">
-        <div><p class="eyebrow"><?= htmlspecialchars($region['owner']) ?></p><h2><?= htmlspecialchars($region['name']) ?></h2></div>
-        <span class="score <?= strtolower($region['capacity_score']['category']) ?>"><?= $region['capacity_score']['category'] ?> <?= $region['capacity_score']['score'] ?></span>
-      </div>
-      <p><?= htmlspecialchars($region['states']) ?></p>
-      <div class="mini-metrics">
-        <div><span>Coverage Score</span><strong><?= (int)($region['coverage_score'] ?? 0) ?></strong></div>
-        <div><span>Capacity Score</span><strong><?= (int)($region['capacity_score_value'] ?? 0) ?></strong></div>
-        <div><span>Relationship Score</span><strong><?= (int)($region['relationship_score'] ?? 0) ?></strong></div>
-        <div><span>Traffic Score</span><strong><?= (int)($region['traffic_score'] ?? 0) ?></strong></div>
-      </div>
-      <div class="mini-metrics">
-        <div><span>Approved Network</span><strong><?= (int)$region['approved_subcontractors'] ?></strong></div>
-        <div><span>Available Crews</span><strong><?= (int)$region['approved_crews'] ?></strong></div>
-        <div><span>Open Opps</span><strong><?= (int)$region['open_opportunities'] ?></strong></div>
-        <div><span>Opportunity Score</span><strong><?= (int)($region['opportunity_score'] ?? 0) ?></strong></div>
-      </div>
-      <h3>Capacity Gap</h3>
-      <div class="gap-list">
-        <?php foreach ($region['gaps'] as $service => $gap): ?>
-          <div><span><?= htmlspecialchars($service) ?></span><strong><?= $gap['current'] ?>/<?= $gap['target'] ?></strong></div>
-        <?php endforeach; ?>
-      </div>
-    </article>
-  <?php endforeach; ?>
-</section>
-
-<section class="grid two">
-  <div class="panel">
-    <div class="panel-title"><h2>Top Daily Actions</h2><a class="btn secondary" href="/decision-support">Decision Support</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Action Required</th><th>Owner</th><th>Decision Score</th></tr></thead><tbody><?php foreach ($decisionWidgets['topActions'] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['action_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_next_step']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?></td><td><?= (int)$item['decision_score'] ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Growth Blockers</h2><a class="btn secondary" href="/daily-brief">Executive Brief</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Severity</th><th>Blocker</th><th>Resolution</th></tr></thead><tbody><?php foreach ($decisionWidgets['blockers'] as $item): ?><tr><td><span class="priority <?= strtolower($item['severity']) ?>"><?= htmlspecialchars($item['severity']) ?></span></td><td><?= htmlspecialchars($item['blocker_title']) ?></td><td><?= htmlspecialchars($item['recommended_resolution']) ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Acquisition Targets</h2><a class="btn secondary" href="/targets/hunting">Hunting Lists</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Target</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topTargets as $target): ?><tr><td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td><td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars($target['target_type']) ?></small></td><td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td><td><?= (int)$target['acquisition_score'] ?></td><td><?= htmlspecialchars($target['recommended_next_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Fiber Backbone Pursuits</h2><a class="btn secondary" href="/pursuits">Pursuit Board</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Decision</th><th>Opportunity</th><th>Theater</th><th>Score</th><th>Next Action</th></tr></thead><tbody><?php foreach ($pursuitWidgets['topPursuits'] as $opp): ?><tr><td><span class="priority high"><?= htmlspecialchars($opp['recommended_decision']) ?></span></td><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><strong><?= htmlspecialchars($opp['name']) ?></strong></a><br><small><?= htmlspecialchars($opp['classification']) ?> · <?= htmlspecialchars($opp['category']) ?></small></td><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= (int)$opp['pursuit_score'] ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Learning Insights</h2><a class="btn secondary" href="/warehouse">Warehouse</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Insight</th><th>Theater</th><th>Action</th></tr></thead><tbody><?php foreach ($warehouseWidgets['insights'] as $insight): ?><tr><td><span class="priority <?= strtolower($insight['priority']) ?>"><?= htmlspecialchars($insight['priority']) ?></span></td><td><strong><?= htmlspecialchars($insight['title']) ?></strong><br><small><?= htmlspecialchars($insight['insight']) ?></small></td><td><?= htmlspecialchars($insight['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($insight['recommended_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Opportunities To Avoid</h2><a class="btn secondary" href="/pursuits">Pursue / Avoid</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Theater</th><th>Reason</th></tr></thead><tbody><?php foreach ($pursuitWidgets['avoid'] as $opp): ?><tr><td><a href="/pursuits/detail?id=<?= (int)$opp['id'] ?>"><?= htmlspecialchars($opp['name']) ?></a></td><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($opp['next_best_action']) ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Sources</h2><a class="btn secondary" href="/escalations">Escalations</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Source</th><th>Theater</th><th>Quality</th><th>Output</th></tr></thead><tbody><?php foreach ($topSources as $source): ?><tr><td><strong><?= htmlspecialchars($source['source_name']) ?></strong><br><small><?= htmlspecialchars($source['source_type']) ?></small></td><td><?= htmlspecialchars($source['region_name'] ?? 'National') ?></td><td><?= (int)$source['source_quality_score'] ?></td><td><?= (int)$source['escalated_signals'] ?> escalate · <?= (int)$source['hunt_signals'] ?> hunt</td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Capacity Needs</h2><a class="btn secondary" href="/recommendations">Recommended Actions</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Theater</th><th>Capacity Recruitment</th></tr></thead><tbody><?php foreach ($topCapacityNeeds as $need): ?><tr><td><span class="priority <?= strtolower($need['priority']) ?>"><?= htmlspecialchars($need['priority']) ?></span></td><td><?= htmlspecialchars($need['region_name'] ?? 'National') ?></td><td><strong><?= htmlspecialchars($need['title']) ?></strong><br><small><?= htmlspecialchars($need['recommended_next_action']) ?></small></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Influence Assets</h2><a class="btn secondary" href="/relationship-graph">Relationship Graph</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Contact</th><th>Organization</th><th>Role</th><th>Influence Value</th><th>Next Best Action</th></tr></thead><tbody><?php foreach ($topRelationships as $rel): ?><tr><td><a href="/contacts/detail?id=<?= (int)$rel['contact_id'] ?>"><?= htmlspecialchars(trim(($rel['first_name'] ?? '') . ' ' . ($rel['last_name'] ?? ''))) ?></a></td><td><?= htmlspecialchars($rel['organization_name'] ?? '') ?><br><small><?= htmlspecialchars($rel['region_name'] ?? '') ?></small></td><td><?= htmlspecialchars($rel['influence_role'] ?? 'Unknown') ?></td><td><?= (int)$rel['relationship_value_score'] ?><br><small><?= htmlspecialchars($rel['relationship_priority']) ?></small></td><td><?= htmlspecialchars($rel['next_best_action'] ?? '') ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Top Acquisition Content</h2><a class="btn secondary" href="/demand">Demand Engine</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Content</th><th>Audience</th><th>Theater</th><th>Strategic</th><th>Expected Impact</th></tr></thead><tbody><?php foreach ($topDemandContent as $item): ?><tr><td><?= htmlspecialchars($item['title']) ?><br><small><?= htmlspecialchars($item['content_type']) ?></small></td><td><?= htmlspecialchars($item['audience']) ?></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td><?= (int)$item['strategic_value'] ?></td><td>C <?= (int)$item['expected_capacity_impact'] ?> · R <?= (int)$item['expected_relationship_impact'] ?> · O <?= (int)$item['expected_opportunity_impact'] ?></td></tr><?php endforeach; ?></tbody></table></div>
-  </div>
+<section class="metrics command-metrics">
+  <div><span>Approved Network</span><strong><?= (int)$totals['approved_subcontractors'] ?></strong></div>
+  <div><span>Available Crews</span><strong><?= (int)$totals['available_crews'] ?></strong></div>
+  <div><span>Open Opportunities</span><strong><?= (int)$totals['open_opportunities'] ?></strong></div>
+  <div><span>Pipeline Value</span><strong>$<?= number_format((float)$totals['pipeline_value']) ?></strong></div>
+  <div><span>Critical Actions</span><strong><?= (int)$totals['critical_recommendations'] ?></strong></div>
 </section>
 
 <section class="panel">
-  <div class="panel-title"><h2>Top Opportunities</h2><a class="btn secondary" href="/opportunities">Opportunity Intelligence</a></div>
-  <div class="table-wrap"><table><thead><tr><th>Theater</th><th>Opportunity</th><th>Stage</th><th>Value</th><th>Next Action</th></tr></thead><tbody><?php foreach ($topOpportunities as $opp): ?><tr><td><?= htmlspecialchars($opp['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($opp['name']) ?></td><td><?= htmlspecialchars($opp['stage']) ?></td><td>$<?= number_format((float)$opp['estimated_value']) ?></td><td><?= htmlspecialchars($opp['next_action']) ?></td></tr><?php endforeach; ?><?php if (!$topOpportunities): ?><tr><td colspan="5">No converted opportunities yet. Signal Center and Traffic Engine are feeding the acquisition layer.</td></tr><?php endif; ?></tbody></table></div>
+  <div class="panel-title">
+    <div>
+      <p class="eyebrow">Regional Command</p>
+      <h2>Theater readiness</h2>
+    </div>
+    <a class="btn secondary" href="/regions">Regional Command Centers</a>
+  </div>
+  <div class="region-strip">
+    <?php foreach ($regions as $region): ?>
+      <?php if ($region['name'] === 'National') { continue; } ?>
+      <a href="/command/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">
+        <strong><?= htmlspecialchars($region['name']) ?></strong>
+        <span><?= htmlspecialchars($region['owner']) ?> · <?= (int)($region['capacity_score_value'] ?? 0) ?> capacity · <?= (int)($region['relationship_score'] ?? 0) ?> relationship</span>
+      </a>
+    <?php endforeach; ?>
+  </div>
 </section>
+
+<?php $widgets = $supportWidgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 
 <section class="grid two">
   <div class="panel">
-    <h2>Opportunities by Stage</h2>
-    <div class="table-wrap"><table><thead><tr><th>Stage</th><th>Count</th></tr></thead><tbody><?php foreach ($stageCounts as $stage): ?><tr><td><?= htmlspecialchars($stage['stage'] ?: 'Unstaged') ?></td><td><?= (int)$stage['count'] ?></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="panel-title"><h2>Demand Opportunities</h2><a class="btn secondary" href="/demand">Demand Engine</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Audience</th><th>Theater</th><th>Impact</th></tr></thead><tbody><?php foreach ($topDemandContent as $item): ?><tr><td><?= htmlspecialchars($item['title']) ?><br><small><?= htmlspecialchars($item['content_type']) ?></small></td><td><?= htmlspecialchars($item['audience']) ?></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td>C <?= (int)$item['expected_capacity_impact'] ?> · R <?= (int)$item['expected_relationship_impact'] ?> · O <?= (int)$item['expected_opportunity_impact'] ?></td></tr><?php endforeach; ?><?php if (!$topDemandContent): ?><tr><td colspan="4">No demand opportunities waiting for review.</td></tr><?php endif; ?></tbody></table></div>
   </div>
   <div class="panel">
-    <h2>Recent Activity</h2>
+    <div class="panel-title"><h2>Recent Activity</h2><a class="btn secondary" href="/activities">Activities</a></div>
     <div class="activity-list"><?php foreach ($recentActivities as $activity): ?><div><strong><?= htmlspecialchars($activity['title']) ?></strong><span><?= htmlspecialchars(substr($activity['activity_date'],0,10)) ?> · <?= htmlspecialchars($activity['activity_type']) ?> · <?= htmlspecialchars($activity['owner']) ?></span></div><?php endforeach; ?><?php if (!$recentActivities): ?><p>No activity recorded yet.</p><?php endif; ?></div>
   </div>
 </section>
 
-<section class="panel">
-  <div class="panel-title"><h2>Recommended Actions</h2><a class="btn secondary" href="/recommendations">View All</a></div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Priority</th><th>Type</th><th>Region</th><th>Recommended Action</th><th>Owner</th></tr></thead>
-      <tbody>
-      <?php foreach ($actions as $action): ?>
-        <tr><td><span class="priority <?= strtolower($action['priority']) ?>"><?= htmlspecialchars($action['priority']) ?></span></td><td><?= htmlspecialchars($action['recommendation_type']) ?></td><td><?= htmlspecialchars($action['region_name'] ?? 'All') ?></td><td><strong><?= htmlspecialchars($action['title']) ?></strong><br><small><?= htmlspecialchars($action['why_it_matters']) ?></small><br><small><?= htmlspecialchars($action['recommended_next_action']) ?></small></td><td><?= htmlspecialchars($action['assigned_owner']) ?></td></tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
-</section>
+<?php $healthChecks = $platformData['health'] ?? []; require __DIR__ . '/../components/platform_health.php'; ?>

@@ -2,6 +2,14 @@
 
 Phase 1 acquisition system and decision support layer for Jackson Telcom.
 
+The primary operator experience is now the **Jackson Telcom Command Center**. Operators should not think in modules first. They should start with five questions:
+
+1. Who has work?
+2. Who has capacity?
+3. Who needs work?
+4. Who influences work?
+5. What should we do next?
+
 This app does **not** build SyncERP, billing, production, labor, or ERP workflows. Jackson Intelligence Platform presents Jackson Telcom with a national footprint while focusing daily action through three operating theaters. Phase 1 focuses on:
 
 - traffic acquisition
@@ -17,6 +25,10 @@ This app does **not** build SyncERP, billing, production, labor, or ERP workflow
 
 Jackson Intelligence Platform is structured as an acquisition intelligence system:
 
+- Jackson Telcom Command Center
+- Executive Brief
+- Daily Brief
+- Operator Modes
 - National Command Center
 - Regions / Theaters
 - Acquisition Harvesters
@@ -41,6 +53,72 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Opportunity Intelligence
 - Decision Support Layer
 - SyncERP as the last integration layer only
+
+## Jackson Telcom Command Center
+
+After login, operators land on the Jackson Telcom Command Center.
+
+The Command Center replaces module-first navigation with an action-first operating screen:
+
+- Work Ready: who has active or future work.
+- Capacity Available: who can perform work.
+- Capacity Seeking Work: who needs work and may become capacity.
+- Influence Network: who influences who gets work.
+- Today's Priorities: the top five actions to move now.
+
+The platform still includes detailed modules, but they support the Command Center. They should not become the daily starting point.
+
+## Operator Modes
+
+Operator modes map each operator to the right default view and priorities:
+
+- Executive Mode: national Jackson Telcom Command Center and top five actions.
+- Mike Mode: Southeast Command Center plus shared Southwest and national actions.
+- Ron Mode: Great Lakes Command Center plus shared Southwest and national actions.
+- Regional Owner Mode: theater-specific work, capacity, need, influence, and actions.
+- Admin Mode: platform health, seed mode, backups, data integrity, navigation, and release readiness.
+
+## Executive View
+
+The Executive Brief is a one-screen operating brief. It answers:
+
+- Who has work?
+- Who has capacity?
+- Who needs work?
+- Who influences work?
+- What should we do today?
+
+It intentionally avoids raw signal counts and CSV-style review. The brief is for decisions and action.
+
+## Regional Command Centers
+
+Regional Command Centers are built for daily theater ownership:
+
+- Southeast: Mike
+- Great Lakes: Ron
+- Southwest: Mike / Ron shared until a future Southwest owner exists
+
+Each regional command center shows work, capacity, need, influence, actions, growth blockers, capacity gaps, market intelligence, and SyncERP handoff readiness for that theater.
+
+## Action-First Philosophy
+
+Major operating screens include:
+
+- Why It Matters
+- Recommended Action
+- Next Step
+
+This keeps the system focused on movement, not browsing. Recommendations are system findings. Daily Actions are the highest-priority operator moves promoted from those findings.
+
+## Acquisition Doctrine
+
+The acquisition doctrine is simple:
+
+- Work creates opportunity.
+- Capacity determines whether Jackson can execute.
+- Need identifies contractors and crews that may be available.
+- Influence opens access to work, capacity, market intelligence, and decision makers.
+- Today’s Priorities decide what moves now.
 
 ```text
 Jackson Intelligence Platform
@@ -106,6 +184,10 @@ This runs migrations, seed, acquisition cycle, data integrity checks, route smok
 Operator readiness, security basics, backup/export guidance, and the first 30-day operating plan are documented in:
 
 `docs/v1-operator-readiness.md`
+
+The detailed first 30-day command center operating cadence is documented in:
+
+`docs/first-30-days-operating-plan.md`
 
 ## Seed Policy
 
