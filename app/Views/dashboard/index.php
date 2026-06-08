@@ -68,6 +68,22 @@ require __DIR__ . '/../components/action_first.php';
 
 <?php $priorityActions = $decisionWidgets['topActions'] ?? []; require __DIR__ . '/../components/todays_priorities.php'; ?>
 
+<section class="panel command-priorities">
+  <div class="panel-title"><h2>Decision Visuals</h2><a class="btn secondary" href="/decision-visuals">Open Visual Hub</a></div>
+  <div class="priority-list">
+    <?php foreach (array_slice($visualWidgets['alerts'] ?? [], 0, 3) as $alert): ?>
+      <article>
+        <span class="priority high">Visual Alert · <?= (int)$alert['score'] ?></span>
+        <h3><?= htmlspecialchars($alert['title']) ?></h3>
+        <p><?= htmlspecialchars($alert['why']) ?></p>
+        <small><?= htmlspecialchars($alert['action']) ?></small>
+        <p><a class="btn secondary" href="<?= htmlspecialchars($alert['href']) ?>">Open</a></p>
+      </article>
+    <?php endforeach; ?>
+    <?php if (empty($visualWidgets['alerts'])): ?><article><h3>No visual alerts</h3><p>Decision visuals have no critical alerts for this operator view.</p></article><?php endif; ?>
+  </div>
+</section>
+
 <?php $widgets = $widgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 
 <?php require __DIR__ . '/../components/recent_conversations.php'; ?>

@@ -19,7 +19,7 @@
       <?php
       $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
       $navGroups = [
-        'COMMAND' => ['/' => 'Command Center','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages'],
+        'COMMAND' => ['/' => 'Command Center','/decision-visuals' => 'Decision Visuals','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages'],
         'WORK' => ['/acquisition-command' => 'Work Intelligence','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
         'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/workforce-intelligence' => 'Workforce Intelligence','/targets' => 'Strategic Partners'],
         'RELATIONSHIPS' => ['/contacts' => 'Contacts','/organizations' => 'Organizations','/strategic-account-intelligence' => 'Strategic Accounts','/communications' => 'Communications','/relationship-graph' => 'Relationship Graph'],
@@ -30,7 +30,7 @@
       ];
       ?>
       <?php foreach ($navGroups as $group => $links): ?>
-        <?php $isOpen = in_array($currentPath, array_keys($links), true) || ($group === 'COMMAND' && $currentPath === '/'); ?>
+        <?php $isOpen = in_array($currentPath, array_keys($links), true) || ($group === 'COMMAND' && ($currentPath === '/' || str_starts_with($currentPath, '/decision-visuals'))); ?>
         <details class="workspace-nav" <?= $isOpen ? 'open' : '' ?>>
           <summary><?= htmlspecialchars($group) ?></summary>
           <div>

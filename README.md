@@ -1877,6 +1877,44 @@ Operational maturity outputs feed existing executive surfaces:
 
 This phase does not add a new acquisition module. It creates accountability, prediction, and review discipline around the intelligence already in the platform.
 
+## Executive Visual Decision Layer
+
+The Executive Visual Decision Layer is an executive drill-down layer at `/decision-visuals`. It does not replace the Command Center and does not add new acquisition modules. It turns existing intelligence into visual decision tools.
+
+Every visual must answer at least one executive question:
+
+- Where should we invest?
+- Who should we recruit?
+- What should we pursue?
+- Which relationships should we strengthen?
+- What should we avoid?
+
+The doctrine is documented in `docs/visual-decision-doctrine.md`:
+
+- Visuals must support a decision.
+- Lists are operational; visuals are executive.
+- Tables are drill-down, not command center.
+- Every visual includes why it matters.
+- Every visual includes a recommended action.
+- No decorative charts.
+- No raw analytics without action.
+- Every visual should move money, capacity, relationships, or opportunities.
+
+Decision visuals include:
+
+- Regional Dominance
+- Work vs Capacity Matrix
+- Strategic Account Health
+- Ecosystem Maps
+- Capacity Heat Map
+- Workforce Heat Map
+- Competitive Pressure
+- Forecasts
+- Opportunity Flow / Leakage
+- Executive Scorecards
+
+Each visual drills down to a supporting workspace, package, record, recommendation, or action path. Visuals respect operator-mode filtering: Mike sees Southeast plus shared Southwest/National, Ron sees Great Lakes plus shared Southwest/National, and Admin/Executive sees all.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

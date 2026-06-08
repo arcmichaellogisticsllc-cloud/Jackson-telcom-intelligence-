@@ -9,6 +9,7 @@ use App\Core\Database;
 use App\Core\OpportunityScoring;
 use App\Services\AcquisitionCommandService;
 use App\Services\DecisionSupportService;
+use App\Services\DecisionVisualService;
 use App\Services\DemandDistributionService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\IntelligenceWarehouseService;
@@ -51,6 +52,7 @@ class DashboardController extends Controller
         $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
         $maturityWidgets = (new OperationalMaturityService())->dashboardData();
         $allowedRegionIds = $this->allowedRegionIds();
+        $visualWidgets = (new DecisionVisualService())->visualData($allowedRegionIds);
         $decisionWidgets = $this->filterDecisionWidgets($decisionWidgets, $allowedRegionIds);
         $commandData = $this->filterCommandData($commandData, $allowedRegionIds);
         $maturityWidgets = $this->filterMaturityData($maturityWidgets, $allowedRegionIds);
@@ -86,6 +88,7 @@ class DashboardController extends Controller
             'executiveWidgets' => $executiveWidgets,
             'strategicIntel' => $strategicIntel,
             'maturityWidgets' => $maturityWidgets,
+            'visualWidgets' => $visualWidgets,
             'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
