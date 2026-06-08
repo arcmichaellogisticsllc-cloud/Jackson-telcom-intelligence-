@@ -20,6 +20,7 @@ $routes = [
     '/operating-rhythm/southeast',
     '/operating-rhythm/great-lakes',
     '/operating-rhythm/southwest',
+    '/production-readiness',
     '/decision-visuals',
     '/decision-visuals/regional-dominance',
     '/decision-visuals/work-vs-capacity',

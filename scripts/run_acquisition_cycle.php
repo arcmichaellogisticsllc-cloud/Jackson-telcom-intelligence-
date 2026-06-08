@@ -16,6 +16,7 @@ use App\Services\OperationalMaturityService;
 use App\Services\PlatformReviewService;
 use App\Services\PreconstructionIntelligenceService;
 use App\Services\ProjectPackageAssemblyService;
+use App\Services\ProductionReadinessService;
 use App\Services\StrategicWorkforceCompetitiveService;
 
 echo "Jackson Intelligence Platform acquisition cycle\n";
@@ -55,6 +56,7 @@ RecommendationEngine::regenerate();
 (new ExecutivePackagingService())->rebuild();
 (new DecisionSupportService())->rebuild();
 (new OperationalMaturityService())->rebuild();
+(new ProductionReadinessService())->rebuildReviewQueue();
 echo "PASS Decision Support rebuilt\n\n";
 
 echo "== Rebuild Outreach Intelligence ==\n";

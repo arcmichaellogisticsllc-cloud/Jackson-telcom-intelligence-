@@ -1915,6 +1915,39 @@ Decision visuals include:
 
 Each visual drills down to a supporting workspace, package, record, recommendation, or action path. Visuals respect operator-mode filtering: Mike sees Southeast plus shared Southwest/National, Ron sees Great Lakes plus shared Southwest/National, and Admin/Executive sees all.
 
+## Operator Pilot Production Readiness
+
+The production readiness sprint moves the platform from architecturally complete to pilot-ready and production-safe. The control page is `/production-readiness`.
+
+Focus order:
+
+1. Authorization
+2. Security hardening
+3. Data review queue
+4. First real connector
+5. Operator pilot feedback loop
+6. Recommendation/action tuning
+7. Deployment readiness
+8. SyncERP contract validation
+
+Implemented readiness controls:
+
+- CSRF validation for authenticated POST routes.
+- Automatic CSRF token injection into rendered POST forms.
+- Session timeout enforcement and CSRF token rotation on login.
+- Security headers for frame protection, content type, referrer policy, and CSP.
+- Region access helpers for Mike, Ron, Southwest, and Admin.
+- POST `region_id` authorization checks before controller execution.
+- Data Review Queue for questionable raw signals, classification conflicts, and noisy recommendations.
+- Operator Pilot Feedback capture.
+- Recommendation/Daily Action tuning rule records.
+- Opt-in RSS connector for safe feed ingestion into Raw Signal Items.
+- SyncERP contract validation checklist.
+
+The first real connector is RSS only. It runs only for Signal Sources with `collection_method = RSS` and a non-empty `source_url`. It does not scrape pages, does not send outreach, and does not auto-convert records.
+
+Detailed guidance: `docs/operator-pilot-production-readiness.md`.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

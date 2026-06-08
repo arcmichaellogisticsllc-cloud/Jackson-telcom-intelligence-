@@ -12,6 +12,7 @@ use App\Services\Harvesters\JobBoardHarvester;
 use App\Services\Harvesters\ManualPhysicalTrafficHarvester;
 use App\Services\Harvesters\MockHarvester;
 use App\Services\Harvesters\PrimeAwardHarvester;
+use App\Services\Harvesters\RssFeedHarvester;
 use App\Services\Harvesters\SecretaryOfStateHarvester;
 use PDO;
 
@@ -76,7 +77,7 @@ class HarvesterService
                 ]);
                 $recordsCreated++;
             }
-            $summary = "Completed mock harvest for {$source['name']}.";
+            $summary = "Completed harvest for {$source['name']}.";
             $status = 'Completed';
         } catch (\Throwable $error) {
             $errors = 1;
@@ -85,7 +86,7 @@ class HarvesterService
         }
 
         $db->prepare('UPDATE harvester_runs SET finished_at = CURRENT_TIMESTAMP, status = ?, records_found = ?, records_created = ?, errors_count = ?, summary = ?, raw_payload_text = ? WHERE id = ?')
-            ->execute([$status, $recordsFound, $recordsCreated, $errors, $summary, json_encode(['source' => $source['name'], 'mock' => true]), $runId]);
+            ->execute([$status, $recordsFound, $recordsCreated, $errors, $summary, json_encode(['source' => $source['name'], 'collection_method' => $source['collection_method'] ?? '']), $runId]);
         $db->prepare('UPDATE signal_sources SET last_run_at = CURRENT_TIMESTAMP, next_run_at = ?, records_found_last_run = ?, records_created_last_run = ?, status = ? WHERE id = ?')
             ->execute([$this->nextRun($source['frequency']), $recordsFound, $recordsCreated, $status === 'Failed' ? 'Failed' : $source['status'], $source['id']]);
 
@@ -125,6 +126,10 @@ class HarvesterService
 
     private function adapter(array $source): HarvesterInterface
     {
+        if (($source['collection_method'] ?? '') === 'RSS' && !empty($source['source_url'])) {
+            return new RssFeedHarvester();
+        }
+
         return match ($source['source_type']) {
             'Google Search' => new GoogleSearchHarvester(),
             'Secretary of State', 'New Business Filing' => new SecretaryOfStateHarvester(),
