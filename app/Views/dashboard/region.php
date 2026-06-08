@@ -55,6 +55,8 @@ $widgets = [
   <a href="/daily-brief">Executive Brief</a>
 </nav>
 
+<?php require __DIR__ . '/../components/executive_doctrine.php'; ?>
+
 <?php
 $why = $region['name'] . ' is an operating theater. The page should tell ' . $ownerLabel . ' where work, capacity, need, and influence are moving.';
 $recommended = 'Work the highest decision-score actions first, then inspect capacity gaps and relationship blockers.';

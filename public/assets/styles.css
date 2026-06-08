@@ -179,13 +179,25 @@ textarea { min-height: 90px; resize: vertical; }
 .status.pass { background: #e8f7ef; color: #147a3d; }
 .status.warn { background: #fff4e5; color: #9a4c00; }
 .status.fail { background: #fff0ed; color: #b42318; }
+.doctrine-panel { border: 1px solid var(--line); background: #fff; padding: 18px; margin-bottom: 18px; border-top: 5px solid var(--blue); }
+.doctrine-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.doctrine-strip article { background: var(--bg); border: 1px solid var(--line); padding: 12px; min-height: 150px; }
+.doctrine-strip span { display: block; color: var(--blue-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.doctrine-strip strong { display: block; margin: 5px 0 7px; color: var(--ink); line-height: 1.1; }
+.doctrine-strip p { margin: 0; color: var(--muted); font-size: 13px; }
+.doctrine-health { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.doctrine-health.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.doctrine-health div { border: 1px solid var(--line); background: var(--bg); padding: 10px; }
+.doctrine-health span { display: block; color: var(--muted); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.doctrine-health strong { display: block; color: var(--blue-dark); }
+.score.dominant { background: #063f25; }
 
 @media (max-width: 1000px) {
   .sidebar { position: static; width: auto; }
   .main { margin-left: 0; }
   .topbar { display: grid; gap: 12px; }
   .global-search, .record-actions { min-width: 0; width: 100%; }
-  .metrics, .region-grid, .grid.two, .form-grid, .signal-metrics, .convert-grid, .module-grid, .action-first, .priority-list, .command-widget-grid.cols-4, .command-widget-grid.cols-3, .region-strip, .health-grid, .command-hero, .record-header, .list-toolbar, .list-controls, .workspace-link-grid { grid-template-columns: 1fr; }
+  .metrics, .region-grid, .grid.two, .form-grid, .signal-metrics, .convert-grid, .module-grid, .action-first, .priority-list, .command-widget-grid.cols-4, .command-widget-grid.cols-3, .region-strip, .health-grid, .command-hero, .record-header, .list-toolbar, .list-controls, .workspace-link-grid, .doctrine-strip, .doctrine-health, .doctrine-health.five { grid-template-columns: 1fr; }
   .command-widget-grid .command-widget:nth-child(n+4), .metrics.command-metrics, .platform-health { display: none; }
   .command-mark { width: 64px; height: 64px; font-size: 26px; }
 }

@@ -10,6 +10,7 @@ use App\Core\OpportunityScoring;
 use App\Services\AcquisitionCommandService;
 use App\Services\DecisionSupportService;
 use App\Services\DemandDistributionService;
+use App\Services\DoctrineEvaluationService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
@@ -48,6 +49,7 @@ class DashboardController extends Controller
         $marketWidgets = (new MarketIntelligenceService())->dashboardData();
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData();
         $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
+        $doctrineData = (new DoctrineEvaluationService())->doctrineSummary();
         $recentConversations = $db->query('SELECT cr.*, r.name region_name FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id ORDER BY cr.communication_date DESC LIMIT 6')->fetchAll();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
         $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
@@ -78,6 +80,7 @@ class DashboardController extends Controller
             'marketWidgets' => $marketWidgets,
             'executiveWidgets' => $executiveWidgets,
             'strategicIntel' => $strategicIntel,
+            'doctrineData' => $doctrineData,
             'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
@@ -211,6 +214,7 @@ class DashboardController extends Controller
         $syncWidgets = (new ProjectPackageAssemblyService())->dashboardData($regionId);
         $marketWidgets = (new MarketIntelligenceService())->dashboardData($regionId);
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData($regionId);
+        $doctrineData = (new DoctrineEvaluationService())->doctrineSummary($regionId);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
         $relationships->execute([$regionId]);
         $compliance = $db->prepare("SELECT s.*, o.name organization_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id WHERE s.region_id = ? AND (s.insurance_status != 'Approved' OR s.w9_status != 'Approved') ORDER BY o.name LIMIT 8");
@@ -222,7 +226,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'demandWidgets', 'topDemandContent', 'targetWidgets', 'topTargets', 'decisionWidgets', 'commandData', 'pursuitWidgets', 'warehouseWidgets', 'platformData', 'syncWidgets', 'marketWidgets', 'executiveWidgets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'demandWidgets', 'topDemandContent', 'targetWidgets', 'topTargets', 'decisionWidgets', 'commandData', 'pursuitWidgets', 'warehouseWidgets', 'platformData', 'syncWidgets', 'marketWidgets', 'executiveWidgets', 'doctrineData'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void

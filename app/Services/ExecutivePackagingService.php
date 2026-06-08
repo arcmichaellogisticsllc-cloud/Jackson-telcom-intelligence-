@@ -20,6 +20,7 @@ class ExecutivePackagingService
         $this->buildWorkforcePackages($db);
         $this->buildCompetitorThreatPackages($db);
         $this->buildBriefs($db);
+        (new DoctrineEvaluationService())->rebuild();
     }
 
     public function dashboardData(?int $regionId = null): array
@@ -56,6 +57,7 @@ class ExecutivePackagingService
         $package['decision'] = $this->one($db, 'decision_packages', $id);
         $package['timeline'] = $this->rows($db, 'SELECT * FROM package_timeline_events WHERE executive_package_id = ? ORDER BY event_date DESC, id DESC', [$id]);
         $package['actions'] = $this->rows($db, 'SELECT * FROM package_actions WHERE executive_package_id = ? ORDER BY id', [$id]);
+        $package['doctrine'] = (new DoctrineEvaluationService())->packageEvaluation($id);
         return $package;
     }
 

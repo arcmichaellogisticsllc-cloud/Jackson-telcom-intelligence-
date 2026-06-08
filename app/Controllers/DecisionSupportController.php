@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Services\AcquisitionCommandService;
 use App\Services\DecisionSupportService;
+use App\Services\DoctrineEvaluationService;
 
 class DecisionSupportController extends Controller
 {
@@ -35,6 +36,7 @@ class DecisionSupportController extends Controller
     {
         Auth::requireLogin();
         RecommendationEngine::regenerate();
+        (new DoctrineEvaluationService())->rebuild();
         $service = new DecisionSupportService();
         $service->rebuild();
         $db = Database::connection();
@@ -51,7 +53,8 @@ class DecisionSupportController extends Controller
             $briefs[$region['name']] = $service->dashboardData((int)$region['id']);
             $commandBriefs[$region['name']] = $commandService->dashboardData((int)$region['id']);
         }
-        $this->view('decision/brief', compact('briefs', 'commandBriefs', 'regions'));
+        $doctrineData = (new DoctrineEvaluationService())->doctrineSummary();
+        $this->view('decision/brief', compact('briefs', 'commandBriefs', 'regions', 'doctrineData'));
     }
 
     public function completeAction(): void
@@ -97,6 +100,7 @@ class DecisionSupportController extends Controller
     {
         Auth::requireLogin();
         RecommendationEngine::regenerate();
+        (new DoctrineEvaluationService())->rebuild();
         $service = new DecisionSupportService();
         $service->rebuild();
         $data = $service->dashboardData($regionId);

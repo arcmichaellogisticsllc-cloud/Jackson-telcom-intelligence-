@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
+use App\Services\DoctrineEvaluationService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\ExecutivePackagingService;
 
@@ -101,6 +102,7 @@ class ExecutiveOperatingController extends Controller
         $packaging = new ExecutivePackagingService();
         $packaging->rebuild();
         $packageData = $packaging->dashboardData($regionId);
-        $this->view('executive/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'viewMode', 'packageData')));
+        $doctrineData = (new DoctrineEvaluationService())->doctrineSummary($regionId);
+        $this->view('executive/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'viewMode', 'packageData', 'doctrineData')));
     }
 }

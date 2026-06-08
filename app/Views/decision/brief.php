@@ -31,6 +31,8 @@ foreach ($commandBriefs as $regionName => $command) {
   <a href="/command/southwest">Shared Southwest</a>
 </nav>
 
+<?php require __DIR__ . '/../components/executive_doctrine.php'; ?>
+
 <?php
 $why = 'The executive brief prevents operators from drowning in modules by showing only the doctrine categories and top actions.';
 $recommended = 'Use this page at the start of every operating day before opening module-specific screens.';
@@ -39,6 +41,17 @@ require __DIR__ . '/../components/action_first.php';
 ?>
 
 <?php $priorityActions = $allActions; require __DIR__ . '/../components/todays_priorities.php'; ?>
+
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Doctrine Review</h2><span class="status">Action Filter</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Theater</th><th>Score</th><th>Strongest</th><th>Weakest</th><th>Improve</th></tr></thead><tbody><?php foreach (($doctrineData['health'] ?? []) as $row): ?><tr><td><?= htmlspecialchars($row['region_name'] ?? 'National') ?></td><td><span class="score <?= strtolower($row['doctrine_category']) ?>"><?= (int)$row['doctrine_compliance_score'] ?></span></td><td><?= htmlspecialchars($row['strongest_alignment']) ?></td><td><?= htmlspecialchars($row['weakest_alignment']) ?></td><td><?= htmlspecialchars($row['top_improvement_area']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Weak Alignment</h2><span class="status">Review Or Archive</span></div>
+    <div class="activity-list"><?php foreach (($doctrineData['weak'] ?? []) as $row): ?><div><strong><?= htmlspecialchars($row['entity_type']) ?> #<?= (int)$row['entity_id'] ?> · <?= (int)$row['overall_doctrine_alignment_score'] ?></strong><span><?= htmlspecialchars($row['region_name'] ?? 'National') ?> · <?= htmlspecialchars($row['owner']) ?></span><small><?= htmlspecialchars($row['recommended_action']) ?></small></div><?php endforeach; ?><?php if (empty($doctrineData['weak'])): ?><p>No weak doctrine items are active.</p><?php endif; ?></div>
+  </div>
+</section>
 
 <section class="command-widget-grid cols-4">
   <article class="command-widget">

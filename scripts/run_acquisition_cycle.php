@@ -6,6 +6,7 @@ use App\Core\RecommendationEngine;
 use App\Services\AcquisitionCommandService;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
+use App\Services\DoctrineEvaluationService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\ExecutivePackagingService;
 use App\Services\IntelligenceWarehouseService;
@@ -52,6 +53,7 @@ RecommendationEngine::regenerate();
 (new ExecutiveOperatingService())->rebuild();
 (new StrategicWorkforceCompetitiveService())->rebuild();
 (new ExecutivePackagingService())->rebuild();
+(new DoctrineEvaluationService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

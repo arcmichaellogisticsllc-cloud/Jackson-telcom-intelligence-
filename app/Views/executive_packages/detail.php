@@ -26,6 +26,26 @@
   <div><span>Owner</span><strong><?= htmlspecialchars($package['owner']) ?></strong></div>
 </section>
 
+<?php if (!empty($package['doctrine'])): ?>
+  <section class="panel">
+    <div class="panel-title">
+      <div>
+        <p class="eyebrow">Doctrine Alignment</p>
+        <h2>Does this decision fit Jackson doctrine?</h2>
+      </div>
+      <span class="score <?= strtolower($package['doctrine']['overall_doctrine_alignment_score'] >= 74 ? 'strong' : ($package['doctrine']['overall_doctrine_alignment_score'] >= 58 ? 'stable' : 'weak')) ?>"><?= (int)$package['doctrine']['overall_doctrine_alignment_score'] ?></span>
+    </div>
+    <div class="doctrine-health five">
+      <div><span>Rule 1 Status</span><strong><?= htmlspecialchars($package['doctrine']['work_status']) ?></strong><small>Work <?= (int)$package['doctrine']['work_alignment_score'] ?></small></div>
+      <div><span>Rule 2 Status</span><strong><?= htmlspecialchars($package['doctrine']['capacity_status']) ?></strong><small>Capacity <?= (int)$package['doctrine']['capacity_alignment_score'] ?></small></div>
+      <div><span>Rule 3 Status</span><strong><?= htmlspecialchars($package['doctrine']['relationship_status']) ?></strong><small>Relationship <?= (int)$package['doctrine']['relationship_alignment_score'] ?></small></div>
+      <div><span>Rule 4 Status</span><strong><?= htmlspecialchars($package['doctrine']['flow_status']) ?></strong><small>Flow <?= (int)$package['doctrine']['flow_alignment_score'] ?></small></div>
+      <div><span>Rule 5 Status</span><strong><?= htmlspecialchars($package['doctrine']['action_status']) ?></strong><small>Action <?= (int)$package['doctrine']['action_alignment_score'] ?></small></div>
+    </div>
+    <p><strong>Doctrine reason:</strong> <?= htmlspecialchars($package['doctrine']['reason_for_score']) ?></p>
+  </section>
+<?php endif; ?>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>One-Click Actions</h2><span class="status">No Automated Sending</span></div>

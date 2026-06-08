@@ -66,6 +66,8 @@ $strategicWidgets = [
   <a class="<?= $viewMode === 'review' ? 'active' : '' ?>" href="/strategic-review">Strategic Review</a>
 </nav>
 
+<?php require __DIR__ . '/../components/executive_doctrine.php'; ?>
+
 <?php
 $why = 'This layer gives leadership visibility across communication, network influence, forecasts, ownership, accounts, dominance, and strategic recommendations.';
 $recommended = 'Use strategic recommendations and forecasts to decide where to invest relationship time, capacity recruiting, and pursuit attention.';
@@ -134,6 +136,28 @@ require __DIR__ . '/../components/action_first.php';
 <?php endif; ?>
 
 <?php if ($viewMode === 'review'): ?>
+  <section class="panel">
+    <div class="panel-title">
+      <div>
+        <p class="eyebrow">Doctrine Review</p>
+        <h2>Monthly executive questions</h2>
+      </div>
+      <span class="status">Doctrine Enforced</span>
+    </div>
+    <div class="module-grid">
+      <article><h3>Rule 1: Work Beats Everything</h3><p>How much fiber backbone work did Jackson create, protect, or move closer to award?</p></article>
+      <article><h3>Rule 2: Capacity Wins Work</h3><p>Did approved and preferred capacity grow faster than opportunity demand?</p></article>
+      <article><h3>Rule 3: Relationships &gt; Transactions</h3><p>Which relationships created opportunities, capacity, market intelligence, or account access?</p></article>
+      <article><h3>Rule 4: Follow The Flow Of Work</h3><p>Which utility, engineering, prime, subcontractor, and influencer ecosystems are strongest?</p></article>
+      <article><h3>Rule 5: Action Or Noise</h3><p>Which actions produced results, and which signals/packages should be archived as noise?</p></article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><h2>Quarterly Executive Review</h2><span class="status">Generated</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Theater</th><th>Quarter</th><th>Work</th><th>Capacity</th><th>Relationships</th><th>Doctrine</th><th>Focus</th></tr></thead><tbody><?php foreach (($doctrineData['quarterly'] ?? []) as $row): ?><tr><td><?= htmlspecialchars($row['region_name'] ?? 'National') ?></td><td><?= htmlspecialchars($row['review_quarter']) ?></td><td><?= (int)$row['work_created'] ?></td><td><?= (int)$row['capacity_added'] ?></td><td><?= (int)$row['relationships_strengthened'] ?></td><td><?= (int)$row['doctrine_alignment'] ?></td><td><?= htmlspecialchars($row['recommended_focus']) ?></td></tr><?php endforeach; ?></tbody></table></div>
+  </section>
+
   <section class="panel">
     <div class="panel-title">
       <div>

@@ -123,6 +123,8 @@ $supportWidgets = [
   <a href="/operator-modes">Operator Modes</a>
 </nav>
 
+<?php require __DIR__ . '/../components/executive_doctrine.php'; ?>
+
 <?php
 $why = 'This is the first screen after login. It collapses the platform into the five decisions that matter today.';
 $recommended = 'Work from Today\'s Priorities first, then inspect Work, Capacity, Need, and Influence only where action is required.';

@@ -1751,6 +1751,48 @@ The Unified Intelligence Timeline summarizes what happened, why it matters, the 
 
 The UX intentionally hides internal scoring and engine complexity behind workspace and record views.
 
+## Executive Doctrine Engine
+
+Jackson's executive doctrine is embedded as an operating filter, not a separate acquisition module.
+
+The five rules are:
+
+- Work Beats Everything
+- Capacity Wins Work
+- Relationships > Transactions
+- Follow The Flow Of Work
+- If It Doesn't Produce Action, It's Noise
+
+Doctrine evaluations are generated for opportunities, pursuits, relationships, strategic accounts, capacity decisions, executive packages, and decision packages. Each evaluation scores:
+
+- Work Alignment
+- Capacity Alignment
+- Relationship Alignment
+- Flow Alignment
+- Action Alignment
+
+The weighted result becomes the Doctrine Alignment Score. Weak alignment creates recommendations such as reviewing non-backbone pursuits, assigning next actions, strengthening strategic relationships, or archiving noise.
+
+Executive packages now show Rule 1 through Rule 5 status and the overall alignment score. The Command Center, Executive OS, Executive Brief, and Strategic Review display the doctrine strip so operators keep the five operating questions visible:
+
+- Who has work?
+- Who has capacity?
+- Who needs work?
+- Who influences work?
+- What should we do next?
+
+Quarterly Reviews summarize work created, capacity added, relationships strengthened, influence growth, opportunities won, pursuits lost, doctrine alignment, and recommended focus by theater.
+
+Executive Health Scores produce a Doctrine Compliance Score:
+
+- Critical
+- Weak
+- Stable
+- Strong
+- Dominant
+
+This layer exists to enforce leadership thinking. If intelligence does not support work, capacity, relationships, flow visibility, or action, it should be reviewed, converted into action, or treated as noise.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.
