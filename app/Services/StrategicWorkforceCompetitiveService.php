@@ -32,6 +32,10 @@ class StrategicWorkforceCompetitiveService
 
     private function clearGenerated(PDO $db): void
     {
+        foreach (['workforce_influence_relationships','workforce_forecasts','workforce_movements','competitor_forecasts','competitive_pressure_indexes','competitor_movements','win_loss_intelligence'] as $table) {
+            $db->exec("DELETE FROM {$table}");
+            $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
+        }
         foreach (['workforce_profiles','competitor_profiles','strategic_accounts'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");

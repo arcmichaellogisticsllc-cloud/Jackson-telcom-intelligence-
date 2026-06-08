@@ -83,4 +83,27 @@ require __DIR__ . '/../components/action_first.php';
   </div>
 </section>
 
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Operating Rhythm</h2><a class="btn secondary" href="/operating-rhythm">Open Rhythm</a></div>
+    <div class="mini-metrics">
+      <div><span>Rhythm Score</span><strong><?= (int)($maturityWidgets['metrics']['avg_score'] ?? 0) ?></strong></div>
+      <div><span>Due Today</span><strong><?= (int)($maturityWidgets['metrics']['due_today'] ?? 0) ?></strong></div>
+      <div><span>Overdue</span><strong><?= (int)($maturityWidgets['metrics']['overdue'] ?? 0) ?></strong></div>
+      <div><span>Pressure Spikes</span><strong><?= (int)($maturityWidgets['metrics']['pressure_spikes'] ?? 0) ?></strong></div>
+    </div>
+    <div class="command-items">
+      <?php foreach (array_slice($maturityWidgets['overdue'] ?? [], 0, 3) as $review): ?><div><strong><?= htmlspecialchars($review['rhythm_name']) ?></strong><span><?= htmlspecialchars($review['owner']) ?> · <?= htmlspecialchars($review['region_name'] ?? 'National') ?> · <?= htmlspecialchars($review['status']) ?></span></div><?php endforeach; ?>
+      <?php if (empty($maturityWidgets['overdue'])): ?><div><strong>No overdue reviews</strong><span>Cadence is current for this operator view.</span></div><?php endif; ?>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Workforce / Competitive Watch</h2><a class="btn secondary" href="/strategic-account-intelligence">Open Intel</a></div>
+    <div class="command-items">
+      <?php foreach (array_slice($maturityWidgets['workforceMovers'] ?? [], 0, 2) as $mover): ?><div><strong><?= htmlspecialchars($mover['name']) ?></strong><span><?= htmlspecialchars($mover['movement_type']) ?> · recruitability <?= (int)$mover['recruitability_score'] ?></span></div><?php endforeach; ?>
+      <?php foreach (array_slice($maturityWidgets['pressureSpikes'] ?? [], 0, 2) as $spike): ?><div><strong><?= htmlspecialchars($spike['competitor_name']) ?></strong><span><?= htmlspecialchars($spike['market']) ?> · <?= htmlspecialchars($spike['threat_level']) ?> · <?= (int)$spike['competitive_pressure_score'] ?></span></div><?php endforeach; ?>
+    </div>
+  </div>
+</section>
+
 <?php $healthChecks = $platformData['health'] ?? []; require __DIR__ . '/../components/platform_health.php'; ?>

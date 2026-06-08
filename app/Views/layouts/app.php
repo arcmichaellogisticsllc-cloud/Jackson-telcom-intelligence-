@@ -26,7 +26,7 @@
         'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence'],
         'GROWTH' => ['/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
         'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness'],
-        'SYSTEM' => ['/settings' => 'Settings','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
+        'SYSTEM' => ['/settings' => 'Settings','/operating-rhythm' => 'Operating Rhythm','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
       ];
       ?>
       <?php foreach ($navGroups as $group => $links): ?>

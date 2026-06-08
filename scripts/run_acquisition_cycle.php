@@ -12,6 +12,7 @@ use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
+use App\Services\OperationalMaturityService;
 use App\Services\PlatformReviewService;
 use App\Services\PreconstructionIntelligenceService;
 use App\Services\ProjectPackageAssemblyService;
@@ -53,6 +54,7 @@ RecommendationEngine::regenerate();
 (new StrategicWorkforceCompetitiveService())->rebuild();
 (new ExecutivePackagingService())->rebuild();
 (new DecisionSupportService())->rebuild();
+(new OperationalMaturityService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 
 echo "== Rebuild Outreach Intelligence ==\n";

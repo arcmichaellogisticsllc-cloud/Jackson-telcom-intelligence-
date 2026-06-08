@@ -1829,6 +1829,54 @@ The navigation is grouped into expandable workspaces:
 
 Modules still exist underneath, but operators work from workspace homes, record workspaces, timelines, conversations, and action panels. The platform should feel like an executive operating environment, not a list of internal services.
 
+## Operational Maturity Engine
+
+The Operational Maturity Engine turns the command center into a disciplined operating system. It enforces a cadence for:
+
+- Daily execution
+- Weekly review
+- Monthly strategic review
+- Quarterly dominance review
+
+Operating Rhythms define the required review name, cadence, owner, theater, sections, due day, and due time. Review Instances track the live review period, status, completion notes, decisions made, blockers identified, follow-up actions, and score.
+
+Review completion is an operating workflow:
+
+1. Start the review.
+2. Record summary and decisions.
+3. Identify blockers.
+4. Create follow-up actions.
+5. Write activity history.
+6. Feed outcomes into the intelligence warehouse.
+
+Rhythm Compliance Scores measure completion rate, overdue reviews, follow-up completion, and operating rhythm score by owner, theater, and cadence. Categories are Critical, Weak, Stable, Strong, and Dominant.
+
+Workforce Intelligence refinement adds:
+
+- Workforce movement tracking for job changes, promotions, new markets, new companies, new roles, exits, and returned-to-market signals.
+- Recruitability scoring from role importance, market fit, skill fit, relationship strength, availability, movement signals, and influence.
+- Workforce influence mapping for worked-with, reports-to, influenced-by, influences, and prior-company relationships.
+- Workforce forecasts for likely movers, emerging leaders, high-value recruits, and market talent gaps.
+
+Competitive Intelligence refinement adds:
+
+- Competitor movement tracking for hiring spikes, awards, market entry, office openings, subcontractor recruiting, capacity expansion, contraction, and equipment acquisition.
+- Competitive Pressure Index by theater, market, strategic account, and discipline.
+- Competitor forecasts for likely expansion, pursuit activity, capacity growth, and market risk.
+- Win/loss intelligence that records why Jackson won, lost, or avoided opportunities and feeds lessons learned.
+
+Operational maturity outputs feed existing executive surfaces:
+
+- Command Center rhythm widgets
+- Operating Rhythm dashboard
+- Daily Actions
+- Recommendations
+- Executive Packages
+- Activities
+- Intelligence Warehouse lessons
+
+This phase does not add a new acquisition module. It creates accountability, prediction, and review discipline around the intelligence already in the platform.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.
