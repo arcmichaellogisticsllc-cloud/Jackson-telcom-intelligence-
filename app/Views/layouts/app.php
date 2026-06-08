@@ -19,14 +19,14 @@
       <?php
       $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
       $navGroups = [
-        'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/executive-packages' => 'Decision Packages','/executive-briefs' => 'Executive Briefs','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support','/strategic-review' => 'Strategic Review'],
-        'WORK' => ['/workspace/work' => 'Workspace Home','/acquisition-command' => 'Work Intelligence','/strategic-account-intelligence' => 'Strategic Accounts','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
-        'CAPACITY' => ['/workspace/capacity' => 'Workspace Home','/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners','/workforce-intelligence' => 'Workforce Intelligence'],
-        'RELATIONSHIPS' => ['/workspace/relationships' => 'Workspace Home','/communications' => 'Communications','/contacts' => 'Contacts','/organizations' => 'Organizations','/relationship-graph' => 'Relationship Graph','/network-intelligence' => 'Network Intelligence','/relationships' => 'Influence Network'],
-        'MARKET' => ['/workspace/market' => 'Workspace Home','/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence','/harvesters' => 'Acquisition Harvesters'],
-        'GROWTH' => ['/workspace/growth' => 'Workspace Home','/demand' => 'Demand Engine','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
-        'OPERATIONS' => ['/workspace/operations' => 'Workspace Home','/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness','/syncerp-handoff-brief' => 'Handoff Brief'],
-        'SYSTEM' => ['/workspace/system' => 'Workspace Home','/settings' => 'Settings','/platform-review' => 'Administration','/operator-modes' => 'Operator Modes','/ownership-matrix' => 'Ownership Matrix','/forecasts' => 'Forecasts','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],
+        'COMMAND' => ['/' => 'Command Center','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages'],
+        'WORK' => ['/acquisition-command' => 'Work Intelligence','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
+        'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/workforce-intelligence' => 'Workforce Intelligence','/targets' => 'Strategic Partners'],
+        'RELATIONSHIPS' => ['/contacts' => 'Contacts','/organizations' => 'Organizations','/strategic-account-intelligence' => 'Strategic Accounts','/communications' => 'Communications','/relationship-graph' => 'Relationship Graph'],
+        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence'],
+        'GROWTH' => ['/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
+        'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness'],
+        'SYSTEM' => ['/settings' => 'Settings','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
       ];
       ?>
       <?php foreach ($navGroups as $group => $links): ?>

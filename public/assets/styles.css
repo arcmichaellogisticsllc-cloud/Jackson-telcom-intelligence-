@@ -149,7 +149,7 @@ textarea { min-height: 90px; resize: vertical; }
 .workspace-link { border: 1px solid var(--line); background: #fff; padding: 15px; border-left: 4px solid var(--blue); }
 .workspace-link strong, .workspace-link span { display: block; }
 .workspace-link span { color: var(--muted); font-size: 12px; font-weight: 800; margin-top: 4px; }
-.action-first { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.action-first { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
 .action-first div { border: 1px solid var(--line); background: #fff; padding: 16px; }
 .action-first span { display: block; color: var(--blue-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 .action-first p { margin: 6px 0 0; color: var(--muted); }
@@ -186,6 +186,7 @@ textarea { min-height: 90px; resize: vertical; }
   .topbar { display: grid; gap: 12px; }
   .global-search, .record-actions { min-width: 0; width: 100%; }
   .metrics, .region-grid, .grid.two, .form-grid, .signal-metrics, .convert-grid, .module-grid, .action-first, .priority-list, .command-widget-grid.cols-4, .command-widget-grid.cols-3, .region-strip, .health-grid, .command-hero, .record-header, .list-toolbar, .list-controls, .workspace-link-grid { grid-template-columns: 1fr; }
-  .command-widget-grid .command-widget:nth-child(n+4), .metrics.command-metrics, .platform-health { display: none; }
+  .command-widget-grid .command-widget:nth-child(n+3), .metrics.command-metrics { display: none; }
+  .recent-conversations .timeline-list article:nth-child(n+4), .priority-list article:nth-child(n+4) { display: none; }
   .command-mark { width: 64px; height: 64px; font-size: 26px; }
 }

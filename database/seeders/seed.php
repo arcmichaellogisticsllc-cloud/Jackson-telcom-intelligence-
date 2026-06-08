@@ -26,6 +26,7 @@ use App\Services\SubcontractorAcquisitionService;
 use App\Services\RelationshipIntelligenceService;
 
 $db = Database::connection();
+$db->exec('PRAGMA foreign_keys = OFF');
 $db->beginTransaction();
 $seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
 
@@ -33,6 +34,9 @@ foreach (['activities','package_actions','executive_briefs','package_timeline_ev
     $db->exec("DELETE FROM {$table}");
     $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
 }
+$db->commit();
+$db->exec('PRAGMA foreign_keys = ON');
+$db->beginTransaction();
 
 $regionStmt = $db->prepare('INSERT INTO regions (name, owner, owner_name, owner_email, hub_city, hub_state, states, states_covered, priority_tier, operating_status, strategic_notes, coverage_score, capacity_score, relationship_score, opportunity_score, traffic_score, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)');
 $regionRows = [

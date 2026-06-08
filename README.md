@@ -1751,6 +1751,52 @@ The Unified Intelligence Timeline summarizes what happened, why it matters, the 
 
 The UX intentionally hides internal scoring and engine complexity behind workspace and record views.
 
+## Executive Workspace & Action System
+
+The default operator experience is the Jackson Telcom Command Center. Mike and Ron should not have to navigate backend engines to decide what to do next.
+
+The Command Center is intentionally limited to:
+
+- Who Has Work
+- Who Has Capacity
+- Who Needs Work
+- Who Influences Work
+- Top 5 Actions
+- Recent Conversations
+- Top Risks
+- Top Opportunities
+- Platform Health
+
+Every major screen follows the action-first rule:
+
+- Why It Matters
+- Recommended Action
+- Next Step
+- Risk of Inaction
+
+Top 5 Actions are promoted from Decision Support and link back to the most relevant record or package when possible. The intent is to reduce the gap between seeing a priority and acting on it.
+
+Recent Conversations show calls, notes, meetings, email drafts, follow-ups, outcomes, owner, date, and next action. Conversations appear on the Command Center and major record workspaces so relationship context is visible without searching through modules.
+
+Operator mode filtering keeps the primary screens focused:
+
+- Mike Mode: Southeast, shared Southwest, and shared National work.
+- Ron Mode: Great Lakes, shared Southwest, and shared National work.
+- Admin / Executive: all regions.
+
+The navigation is grouped into expandable workspaces:
+
+- COMMAND
+- WORK
+- CAPACITY
+- RELATIONSHIPS
+- MARKET
+- GROWTH
+- OPERATIONS
+- SYSTEM
+
+Modules still exist underneath, but operators work from workspace homes, record workspaces, timelines, conversations, and action panels. The platform should feel like an executive operating environment, not a list of internal services.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

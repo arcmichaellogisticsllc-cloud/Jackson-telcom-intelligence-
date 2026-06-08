@@ -127,6 +127,7 @@ $supportWidgets = [
 $why = 'This is the first screen after login. It collapses the platform into the five decisions that matter today.';
 $recommended = 'Work from Today\'s Priorities first, then inspect Work, Capacity, Need, and Influence only where action is required.';
 $next = 'Pick one priority, contact the owner or target, and record the outcome before moving to the next action.';
+$risk = 'If this screen gets ignored, high-value work, capacity, and relationship actions can sit while competitors move first.';
 require __DIR__ . '/../components/action_first.php';
 ?>
 
@@ -136,47 +137,14 @@ require __DIR__ . '/../components/action_first.php';
 
 <?php require __DIR__ . '/../components/recent_conversations.php'; ?>
 
-<section class="metrics command-metrics">
-  <div><span>Approved Network</span><strong><?= (int)$totals['approved_subcontractors'] ?></strong></div>
-  <div><span>Available Crews</span><strong><?= (int)$totals['available_crews'] ?></strong></div>
-  <div><span>Open Opportunities</span><strong><?= (int)$totals['open_opportunities'] ?></strong></div>
-  <div><span>Pipeline Value</span><strong>$<?= number_format((float)$totals['pipeline_value']) ?></strong></div>
-  <div><span>Critical Actions</span><strong><?= (int)$totals['critical_recommendations'] ?></strong></div>
-</section>
-
-<section class="panel">
-  <div class="panel-title">
-    <div>
-      <p class="eyebrow">Regional Command</p>
-      <h2>Theater readiness</h2>
-    </div>
-    <a class="btn secondary" href="/regions">Regional Command Centers</a>
-  </div>
-  <div class="region-strip">
-    <?php foreach ($regions as $region): ?>
-      <?php if ($region['name'] === 'National') { continue; } ?>
-      <a href="/command/<?= strtolower(str_replace(' ', '-', $region['name'])) ?>">
-        <strong><?= htmlspecialchars($region['name']) ?></strong>
-        <span><?= htmlspecialchars($region['owner']) ?> · <?= (int)($region['capacity_score_value'] ?? 0) ?> capacity · <?= (int)($region['relationship_score'] ?? 0) ?> relationship</span>
-      </a>
-    <?php endforeach; ?>
-  </div>
-</section>
-
-<?php $widgets = $supportWidgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
-
 <section class="grid two">
   <div class="panel">
-    <div class="panel-title"><h2>Demand Opportunities</h2><a class="btn secondary" href="/demand">Demand Engine</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Audience</th><th>Theater</th><th>Impact</th></tr></thead><tbody><?php foreach ($topDemandContent as $item): ?><tr><td><?= htmlspecialchars($item['title']) ?><br><small><?= htmlspecialchars($item['content_type']) ?></small></td><td><?= htmlspecialchars($item['audience']) ?></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td>C <?= (int)$item['expected_capacity_impact'] ?> · R <?= (int)$item['expected_relationship_impact'] ?> · O <?= (int)$item['expected_opportunity_impact'] ?></td></tr><?php endforeach; ?><?php if (!$topDemandContent): ?><tr><td colspan="4">No demand opportunities waiting for review.</td></tr><?php endif; ?></tbody></table></div>
+    <div class="panel-title"><h2>Top Risks</h2><a class="btn secondary" href="/decision-support">Review Risks</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Risk</th><th>Theater</th><th>Severity</th><th>Next Step</th></tr></thead><tbody><?php foreach (array_slice($decisionWidgets['blockers'] ?? [], 0, 5) as $item): ?><tr><td><strong><?= htmlspecialchars($item['blocker_title'] ?? 'Growth blocker') ?></strong><br><small><?= htmlspecialchars($item['reason'] ?? '') ?></small></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td><span class="priority <?= strtolower($item['severity'] ?? 'medium') ?>"><?= htmlspecialchars($item['severity'] ?? 'Medium') ?></span></td><td><?= htmlspecialchars($item['recommended_resolution'] ?? 'Assign owner and next action.') ?></td></tr><?php endforeach; ?><?php if (empty($decisionWidgets['blockers'])): ?><tr><td colspan="4">No critical risks are active.</td></tr><?php endif; ?></tbody></table></div>
   </div>
   <div class="panel">
-    <div class="panel-title"><h2>Top Strategic Recommendations</h2><a class="btn secondary" href="/executive-os">Executive OS</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Impact</th></tr></thead><tbody><?php foreach ($executiveWidgets['recommendations'] ?? [] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['recommendation_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_action']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?><br><small><?= htmlspecialchars($item['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($item['expected_impact']) ?></td></tr><?php endforeach; ?><?php if (empty($executiveWidgets['recommendations'])): ?><tr><td colspan="4">No strategic recommendations waiting for review.</td></tr><?php endif; ?></tbody></table></div>
-  </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Recent Activity</h2><a class="btn secondary" href="/activities">Activities</a></div>
-    <div class="activity-list"><?php foreach ($recentActivities as $activity): ?><div><strong><?= htmlspecialchars($activity['title']) ?></strong><span><?= htmlspecialchars(substr($activity['activity_date'],0,10)) ?> · <?= htmlspecialchars($activity['activity_type']) ?> · <?= htmlspecialchars($activity['owner']) ?></span></div><?php endforeach; ?><?php if (!$recentActivities): ?><p>No activity recorded yet.</p><?php endif; ?></div>
+    <div class="panel-title"><h2>Top Opportunities</h2><a class="btn secondary" href="/opportunities">Open Opportunities</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Theater</th><th>Value</th><th>Next Action</th></tr></thead><tbody><?php foreach (array_slice($topOpportunities, 0, 5) as $item): ?><tr><td><strong><?= htmlspecialchars($item['name']) ?></strong><br><small><?= htmlspecialchars($item['market'] ?? '') ?></small></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td>$<?= number_format((float)$item['estimated_value']) ?></td><td><?= htmlspecialchars($item['next_action'] ?: 'Assign next action.') ?></td></tr><?php endforeach; ?><?php if (!$topOpportunities): ?><tr><td colspan="4">No open opportunities are active.</td></tr><?php endif; ?></tbody></table></div>
   </div>
 </section>
 
