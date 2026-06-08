@@ -210,6 +210,7 @@ $router->post('/recommendations', [RecommendationController::class, 'update']);
 $router->post('/recommendations/regenerate', [RecommendationController::class, 'regenerate']);
 $router->get('/activities', [ActivityController::class, 'index']);
 $router->post('/activities', [ActivityController::class, 'save']);
+$router->post('/record-actions', [ActivityController::class, 'recordAction']);
 $router->get('/settings', [DashboardController::class, 'settings']);
 $router->post('/settings/targets', [DashboardController::class, 'saveTargets']);
 $router->get('/record', [ActivityController::class, 'record']);

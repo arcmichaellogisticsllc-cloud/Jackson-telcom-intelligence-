@@ -73,6 +73,51 @@ class PursuitController extends Controller
     private function render(?int $regionId, string $label): void
     {
         $data = $this->service->dashboardData($regionId);
+        $data = $this->filterDashboardData($data);
         $this->view('pursuits/index', ['data' => $data, 'label' => $label]);
+    }
+
+    private function filterDashboardData(array $data): array
+    {
+        $query = strtolower(trim((string)($_GET['q'] ?? '')));
+        $owner = trim((string)($_GET['owner'] ?? ''));
+        $region = trim((string)($_GET['region'] ?? ''));
+        $status = trim((string)($_GET['status'] ?? ''));
+        $allowed = match (Auth::user()['role'] ?? 'Admin') {
+            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
+        $filter = function (array $row) use ($query, $owner, $region, $status, $allowed): bool {
+            $rowRegion = (string)($row['region_name'] ?? 'National');
+            if ($allowed && !in_array($rowRegion, $allowed, true)) {
+                return false;
+            }
+            if ($region !== '' && $rowRegion !== $region) {
+                return false;
+            }
+            $rowOwner = (string)($row['owner'] ?? $row['assigned_owner'] ?? '');
+            if ($owner !== '' && $rowOwner !== $owner) {
+                return false;
+            }
+            $rowStatus = (string)($row['stage'] ?? $row['status'] ?? $row['recommended_decision'] ?? '');
+            if ($status !== '' && $rowStatus !== $status) {
+                return false;
+            }
+            if ($query === '') {
+                return true;
+            }
+            $haystack = strtolower(implode(' ', array_map(fn($value) => is_scalar($value) ? (string)$value : '', $row)));
+            return str_contains($haystack, $query);
+        };
+
+        foreach (['topPursuits', 'fiberBackbone', 'avoid', 'capacityBlocked', 'relationshipBlocked', 'watchlist', 'recommendations'] as $key) {
+            $data[$key] = array_values(array_filter($data[$key] ?? [], $filter));
+        }
+        foreach ($data['board'] ?? [] as $stage => $items) {
+            $data['board'][$stage] = array_values(array_filter($items, $filter));
+        }
+        return $data;
     }
 }

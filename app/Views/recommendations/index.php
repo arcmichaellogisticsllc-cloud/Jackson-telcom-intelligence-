@@ -1,5 +1,11 @@
 <section class="page-header"><p class="eyebrow">Decision Support Layer v1</p><h1>Recommended Actions</h1><p>Rules prioritize capacity acquisition, relationship follow-up, compliance, and opportunity discipline.</p></section>
 <form method="post" action="/recommendations/regenerate" class="toolbar"><button class="btn secondary">Regenerate Recommendations</button></form>
+<?php
+$listEyebrow = 'System Findings';
+$listTitle = 'Recommendations';
+$listStatuses = ['Open','In Progress','Completed','Dismissed'];
+require __DIR__ . '/../components/list_toolbar.php';
+?>
 <section class="panel"><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Type</th><th>Category</th><th>Region</th><th>Recommended Action</th><th>Why It Matters</th><th>Owner</th><th>Status</th></tr></thead><tbody>
 <?php foreach ($rows as $row): ?><tr>
   <td><span class="priority <?= strtolower($row['priority']) ?>"><?= htmlspecialchars($row['priority']) ?></span><br><small><?= (int)$row['priority_score'] ?></small></td>

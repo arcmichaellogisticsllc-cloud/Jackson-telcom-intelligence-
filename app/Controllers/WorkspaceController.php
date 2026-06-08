@@ -27,13 +27,14 @@ class WorkspaceController extends Controller
         }
         $db = Database::connection();
         [$title, $subtitle, $links] = $this->workspaceMeta[$key];
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
         $data = [
             'title' => $title,
             'subtitle' => $subtitle,
             'links' => $links,
             'metrics' => $this->metrics($db, $key),
-            'actions' => $db->query('SELECT da.*, r.name region_name FROM daily_actions da LEFT JOIN regions r ON r.id = da.region_id WHERE da.status IN ("Open","In Progress") ORDER BY da.decision_score DESC LIMIT 5')->fetchAll(),
-            'conversations' => $db->query('SELECT cr.*, r.name region_name FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id ORDER BY cr.communication_date DESC LIMIT 6')->fetchAll(),
+            'actions' => $this->fetch($db, 'SELECT da.*, r.name region_name FROM daily_actions da LEFT JOIN regions r ON r.id = da.region_id WHERE da.status IN ("Open","In Progress") AND ' . $regionWhere . ' ORDER BY da.decision_score DESC LIMIT 5', $regionParams),
+            'conversations' => $this->fetch($db, 'SELECT cr.*, r.name region_name FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id WHERE ' . $regionWhere . ' ORDER BY cr.communication_date DESC LIMIT 6', $regionParams),
             'records' => $this->records($db, $key),
         ];
         $this->view('workspaces/show', $data);
@@ -47,20 +48,21 @@ class WorkspaceController extends Controller
         $like = '%' . $q . '%';
         $results = ['organizations' => [], 'contacts' => [], 'opportunities' => [], 'subcontractors' => [], 'packages' => []];
         if ($q !== '') {
-            $stmt = $db->prepare('SELECT id, name title, type meta FROM organizations WHERE name LIKE ? ORDER BY name LIMIT 10');
-            $stmt->execute([$like]);
+            [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+            $stmt = $db->prepare('SELECT o.id, o.name title, o.type meta FROM organizations o LEFT JOIN regions r ON r.id = o.region_id WHERE o.name LIKE ? AND ' . $regionWhere . ' ORDER BY o.name LIMIT 10');
+            $stmt->execute(array_merge([$like], $regionParams));
             $results['organizations'] = $stmt->fetchAll();
-            $stmt = $db->prepare('SELECT id, first_name || " " || last_name title, title meta FROM contacts WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? ORDER BY last_name LIMIT 10');
-            $stmt->execute([$like, $like, $like]);
+            $stmt = $db->prepare('SELECT c.id, c.first_name || " " || c.last_name title, c.title meta FROM contacts c LEFT JOIN regions r ON r.id = c.region_id WHERE (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ?) AND ' . $regionWhere . ' ORDER BY c.last_name LIMIT 10');
+            $stmt->execute(array_merge([$like, $like, $like], $regionParams));
             $results['contacts'] = $stmt->fetchAll();
-            $stmt = $db->prepare('SELECT id, name title, stage meta FROM opportunities WHERE name LIKE ? ORDER BY estimated_value DESC LIMIT 10');
-            $stmt->execute([$like]);
+            $stmt = $db->prepare('SELECT op.id, op.name title, op.stage meta FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.name LIKE ? AND ' . $regionWhere . ' ORDER BY op.estimated_value DESC LIMIT 10');
+            $stmt->execute(array_merge([$like], $regionParams));
             $results['opportunities'] = $stmt->fetchAll();
-            $stmt = $db->prepare('SELECT s.id, COALESCE(s.company_name, o.name) title, s.approval_stage meta FROM subcontractors s JOIN organizations o ON o.id = s.organization_id WHERE COALESCE(s.company_name, o.name) LIKE ? ORDER BY s.approval_stage LIMIT 10');
-            $stmt->execute([$like]);
+            $stmt = $db->prepare('SELECT s.id, COALESCE(s.company_name, o.name) title, s.approval_stage meta FROM subcontractors s JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id WHERE COALESCE(s.company_name, o.name) LIKE ? AND ' . $regionWhere . ' ORDER BY s.approval_stage LIMIT 10');
+            $stmt->execute(array_merge([$like], $regionParams));
             $results['subcontractors'] = $stmt->fetchAll();
-            $stmt = $db->prepare('SELECT id, package_name title, package_status meta FROM project_packages WHERE package_name LIKE ? ORDER BY estimated_value DESC LIMIT 10');
-            $stmt->execute([$like]);
+            $stmt = $db->prepare('SELECT pp.id, pp.package_name title, pp.package_status meta FROM project_packages pp LEFT JOIN regions r ON r.id = pp.region_id WHERE pp.package_name LIKE ? AND ' . $regionWhere . ' ORDER BY pp.estimated_value DESC LIMIT 10');
+            $stmt->execute(array_merge([$like], $regionParams));
             $results['packages'] = $stmt->fetchAll();
         }
         $this->view('workspaces/search', compact('q', 'results'));
@@ -81,19 +83,41 @@ class WorkspaceController extends Controller
 
     private function records($db, string $key): array
     {
+        [$rWhere, $rParams] = $this->regionFilter('r.name');
         return match ($key) {
-            'work' => $db->query('SELECT package_title title, package_type type, recommended_action next_action, owner FROM executive_packages WHERE package_type IN ("Work","Pursuit","Strategic") ORDER BY impact_score DESC LIMIT 8')->fetchAll(),
-            'capacity' => $db->query('SELECT profile_name title, profile_type type, status next_action, owner FROM capacity_profiles ORDER BY status DESC LIMIT 8')->fetchAll(),
-            'relationships' => $db->query('SELECT summary title, communication_type type, next_step next_action, owner FROM communication_records ORDER BY communication_date DESC LIMIT 8')->fetchAll(),
-            'market' => $db->query('SELECT title, signal_type type, recommended_next_action next_action, owner FROM signals ORDER BY impact_score DESC LIMIT 8')->fetchAll(),
-            'growth' => $db->query('SELECT title, content_type type, status next_action, audience owner FROM content_opportunities ORDER BY strategic_value DESC LIMIT 8')->fetchAll(),
-            'operations' => $db->query('SELECT package_name title, package_status type, notes next_action, package_owner owner FROM project_packages ORDER BY estimated_value DESC LIMIT 8')->fetchAll(),
-            default => $db->query('SELECT title, category type, recommended_next_action next_action, assigned_owner owner FROM recommended_actions WHERE status = "Open" ORDER BY priority_score DESC LIMIT 8')->fetchAll(),
+            'work' => $this->fetch($db, 'SELECT ep.package_title title, ep.package_type type, ep.recommended_action next_action, ep.owner FROM executive_packages ep LEFT JOIN regions r ON r.id = ep.region_id WHERE ep.package_type IN ("Work","Pursuit","Strategic") AND ' . $rWhere . ' ORDER BY ep.impact_score DESC LIMIT 8', $rParams),
+            'capacity' => $this->fetch($db, 'SELECT cp.profile_name title, cp.profile_type type, cp.status next_action, cp.owner FROM capacity_profiles cp LEFT JOIN regions r ON r.id = cp.region_id WHERE ' . $rWhere . ' ORDER BY cp.status DESC LIMIT 8', $rParams),
+            'relationships' => $this->fetch($db, 'SELECT cr.summary title, cr.communication_type type, cr.next_step next_action, cr.owner FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id WHERE ' . $rWhere . ' ORDER BY cr.communication_date DESC LIMIT 8', $rParams),
+            'market' => $this->fetch($db, 'SELECT s.title, s.signal_type type, s.recommended_next_action next_action, s.owner FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE ' . $rWhere . ' ORDER BY s.impact_score DESC LIMIT 8', $rParams),
+            'growth' => $this->fetch($db, 'SELECT co.title, co.content_type type, co.status next_action, co.audience owner FROM content_opportunities co LEFT JOIN regions r ON r.id = co.region_id WHERE ' . $rWhere . ' ORDER BY co.strategic_value DESC LIMIT 8', $rParams),
+            'operations' => $this->fetch($db, 'SELECT pp.package_name title, pp.package_status type, pp.notes next_action, pp.package_owner owner FROM project_packages pp LEFT JOIN regions r ON r.id = pp.region_id WHERE ' . $rWhere . ' ORDER BY pp.estimated_value DESC LIMIT 8', $rParams),
+            default => $this->fetch($db, 'SELECT ra.title, ra.category type, ra.recommended_next_action next_action, ra.assigned_owner owner FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.status = "Open" AND ' . $rWhere . ' ORDER BY ra.priority_score DESC LIMIT 8', $rParams),
         };
     }
 
     private function count($db, string $table, string $where = '1=1'): int
     {
         return (int)$db->query("SELECT COUNT(*) FROM {$table} WHERE {$where}")->fetchColumn();
+    }
+
+    private function regionFilter(string $column): array
+    {
+        $regions = match (Auth::user()['role'] ?? 'Admin') {
+            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
+        if (!$regions) {
+            return ['1=1', []];
+        }
+        return [$column . ' IN (' . implode(',', array_fill(0, count($regions), '?')) . ')', $regions];
+    }
+
+    private function fetch($db, string $sql, array $params): array
+    {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 }

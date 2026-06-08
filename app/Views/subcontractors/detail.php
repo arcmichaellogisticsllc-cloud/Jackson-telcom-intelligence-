@@ -8,9 +8,20 @@ $recordStatus = $subcontractor['approval_stage'];
 $recordScore = (int)($subcontractor['capacity_contribution_score'] ?? $subcontractor['qualification_score'] ?? 0);
 $recordNextAction = $subcontractor['promotion_recommendation'] ?? 'Review qualification, compliance, and capacity fit.';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Promote Subcontractor','Mark Reviewed'];
+$recordEntityType = 'subcontractor';
+$recordEntityId = (int)$subcontractor['id'];
+$recordRegionId = (int)($subcontractor['region_id'] ?? 0);
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Conversations','Capacity','Tasks / Actions','Documents','Notes','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = 'This subcontractor can become approved, preferred, or strategic deployable capacity for fiber backbone work.';
+$recommended = $recordNextAction ?: 'Review qualification score, compliance status, and available crews.';
+$next = 'Log the next contact, request documents, or promote the subcontractor when readiness supports it.';
+$risk = 'If this candidate stalls, capacity gaps can block pursuits and slow market growth.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <section class="metrics">

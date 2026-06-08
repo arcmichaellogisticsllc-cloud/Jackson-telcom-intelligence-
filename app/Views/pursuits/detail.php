@@ -8,13 +8,27 @@ $recordStatus = $opportunity['recommended_decision'] ?? 'Monitor';
 $recordScore = (int)($opportunity['pursuit_score'] ?? 0);
 $recordNextAction = $opportunity['next_best_action'] ?? $opportunity['next_action'] ?? '';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Approve Pursuit','Create Preconstruction Profile'];
+$recordEntityType = 'opportunity';
+$recordEntityId = (int)$opportunity['id'];
+$recordRegionId = (int)($opportunity['region_id'] ?? 0);
 $timelineItems = [
   ['type' => 'Pursuit Decision', 'title' => $recordStatus, 'why' => $opportunity['decision_reason'] ?? $opportunity['reason'] ?? 'Pursuit decision affects whether Jackson spends relationship, capacity, and preconstruction attention.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $opportunity['updated_at'] ?? $opportunity['created_at'] ?? ''],
   ['type' => 'Capacity Fit', 'title' => 'Capacity fit score ' . (int)($opportunity['capacity_fit_score'] ?? 0), 'why' => $opportunity['capacity_gap'] ?: 'Capacity appears sufficient for the current pursuit stage.', 'next' => 'Review Capacity Radar before proposal commitment.', 'owner' => $recordOwner, 'date' => $opportunity['updated_at'] ?? ''],
 ];
+foreach ($recentConversations ?? [] as $conversation) {
+  $timelineItems[] = ['type' => $conversation['communication_type'], 'title' => $conversation['summary'], 'why' => $conversation['outcome'] ?: 'Conversation may affect pursuit access, risk, or next action.', 'next' => $conversation['next_step'] ?: 'Create follow-up if needed.', 'owner' => $conversation['owner'], 'date' => $conversation['communication_date']];
+}
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Contacts / People','Conversations','Opportunities / Pursuits','Capacity','Tasks / Actions','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = $opportunity['decision_reason'] ?? $opportunity['reason'] ?? 'This pursuit determines whether Jackson should spend capacity, relationship, and preconstruction attention.';
+$recommended = $recordNextAction ?: 'Review pursuit score, relationship fit, and capacity fit before advancing.';
+$next = 'Log pursuit activity or create a preconstruction profile when the decision is ready.';
+$risk = 'If the pursuit is not acted on, Jackson may miss aligned fiber backbone work or chase weak-fit work.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <nav class="dash-tabs">

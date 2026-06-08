@@ -21,6 +21,13 @@
   <div><span>Competitive Pressure</span><strong><?= (int)$metrics['avg_pressure'] ?></strong></div>
 </section>
 
+<?php
+$listEyebrow = 'Strategic Workspace';
+$listTitle = 'Filter account, workforce, and competitor intelligence';
+$listStatuses = ['Active','Testing','Monitoring','Available','Recruitable','Low','Medium','High','Critical'];
+require __DIR__ . '/../components/list_toolbar.php';
+?>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Who Has Work</h2><span class="status">Strategic Accounts</span></div>

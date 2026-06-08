@@ -1778,11 +1778,43 @@ Top 5 Actions are promoted from Decision Support and link back to the most relev
 
 Recent Conversations show calls, notes, meetings, email drafts, follow-ups, outcomes, owner, date, and next action. Conversations appear on the Command Center and major record workspaces so relationship context is visible without searching through modules.
 
+Record header actions are functional operating controls:
+
+- Add Note
+- Log Call
+- Draft Email
+- Create Follow-Up
+- Assign Owner
+- Mark Reviewed
+
+These actions open inline forms, write to `communication_records`, write to `activities`, and then appear in Recent Conversations, the Unified Intelligence Timeline, and Activities. Draft Email creates a draft only. The platform does not send real email, SMS, LinkedIn, or Facebook messages.
+
+Major record workspaces explicitly answer:
+
+- What this is
+- Why it matters
+- Next step
+- Risk of inaction
+
+List views now support working search and filters for search text, owner, theater, and status. Operators should use list filtering to narrow Contacts, Organizations, Strategic Accounts, Opportunities, Subcontractors, Pursuits, Project Packages, Daily Actions, and Recommendations instead of scanning raw system output.
+
 Operator mode filtering keeps the primary screens focused:
 
 - Mike Mode: Southeast, shared Southwest, and shared National work.
 - Ron Mode: Great Lakes, shared Southwest, and shared National work.
 - Admin / Executive: all regions.
+
+Operator mode filtering is a usability filter, not a security authorization model. It affects the Command Center, Daily Brief, Decision Support, workspace homes, global search, list views, Recent Conversations, and Top Actions so operators see the work most relevant to them first.
+
+Mobile views intentionally prioritize:
+
+- Top 5 Actions
+- Recent Conversations
+- Work Ready
+- Capacity Gaps
+- Contact/action buttons
+
+Dense dashboards and secondary summaries remain available on desktop, but mobile should help an operator act quickly rather than inspect every metric.
 
 The navigation is grouped into expandable workspaces:
 

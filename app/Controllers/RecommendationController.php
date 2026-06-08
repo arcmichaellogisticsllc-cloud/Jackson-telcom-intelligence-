@@ -12,7 +12,11 @@ class RecommendationController extends Controller
     public function index(): void
     {
         Auth::requireLogin();
-        $rows = Database::connection()->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id ORDER BY CASE priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, ra.created_at DESC')->fetchAll();
+        $db = Database::connection();
+        [$where, $params] = $this->filters();
+        $stmt = $db->prepare('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ' . $where . ' ORDER BY CASE priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, ra.created_at DESC');
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
         $this->view('recommendations/index', compact('rows'));
     }
 
@@ -42,5 +46,46 @@ class RecommendationController extends Controller
         Auth::requireLogin();
         RecommendationEngine::regenerate();
         $this->redirect('/recommendations');
+    }
+
+    private function filters(): array
+    {
+        $conditions = ['1=1'];
+        $params = [];
+        $allowed = match (Auth::user()['role'] ?? 'Admin') {
+            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
+        if ($allowed) {
+            $conditions[] = '(r.name IS NULL OR r.name IN (' . implode(',', array_fill(0, count($allowed), '?')) . '))';
+            array_push($params, ...$allowed);
+        }
+        $query = trim((string)($_GET['q'] ?? ''));
+        if ($query !== '') {
+            $conditions[] = "(COALESCE(ra.title,'') LIKE ? OR COALESCE(ra.category,'') LIKE ? OR COALESCE(ra.recommendation_type,'') LIKE ? OR COALESCE(ra.recommended_next_action,'') LIKE ? OR COALESCE(ra.assigned_owner,'') LIKE ? OR COALESCE(r.name,'') LIKE ?)";
+            array_push($params, ...array_fill(0, 6, '%' . $query . '%'));
+        }
+        $owner = trim((string)($_GET['owner'] ?? ''));
+        if ($owner !== '') {
+            $conditions[] = "COALESCE(ra.assigned_owner,'') = ?";
+            $params[] = $owner;
+        }
+        $region = trim((string)($_GET['region'] ?? ''));
+        if ($region !== '') {
+            if ($allowed && !in_array($region, $allowed, true)) {
+                $conditions[] = '1=0';
+            } else {
+                $conditions[] = 'r.name = ?';
+                $params[] = $region;
+            }
+        }
+        $status = trim((string)($_GET['status'] ?? ''));
+        if ($status !== '') {
+            $conditions[] = "COALESCE(ra.status,'') = ?";
+            $params[] = $status;
+        }
+        return [implode(' AND ', $conditions), $params];
     }
 }

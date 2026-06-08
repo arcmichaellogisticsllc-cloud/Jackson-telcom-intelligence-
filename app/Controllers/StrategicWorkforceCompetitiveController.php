@@ -77,6 +77,48 @@ class StrategicWorkforceCompetitiveController extends Controller
         $service = new StrategicWorkforceCompetitiveService();
         $service->rebuild();
         $data = $service->dashboardData($regionId);
+        $data = $this->filterDashboardData($data);
         $this->view('strategic_intelligence/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'viewMode')));
+    }
+
+    private function filterDashboardData(array $data): array
+    {
+        $allowed = match (Auth::user()['role'] ?? 'Admin') {
+            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
+        $query = strtolower(trim((string)($_GET['q'] ?? '')));
+        $owner = trim((string)($_GET['owner'] ?? ''));
+        $region = trim((string)($_GET['region'] ?? ''));
+        $status = trim((string)($_GET['status'] ?? ''));
+
+        foreach (['accounts', 'workforce', 'competitors', 'recommendations'] as $key) {
+            $data[$key] = array_values(array_filter($data[$key] ?? [], function (array $row) use ($allowed, $query, $owner, $region, $status, $key): bool {
+                $rowRegion = (string)($row['region_name'] ?? 'National');
+                if ($allowed && !in_array($rowRegion, $allowed, true)) {
+                    return false;
+                }
+                if ($region !== '' && $rowRegion !== $region) {
+                    return false;
+                }
+                $rowOwner = (string)($row['owner'] ?? $row['primary_owner'] ?? $row['assigned_owner'] ?? '');
+                if ($owner !== '' && $rowOwner !== $owner) {
+                    return false;
+                }
+                $rowStatus = (string)($row['account_status'] ?? $row['availability_status'] ?? $row['threat_level'] ?? $row['status'] ?? '');
+                if ($status !== '' && $rowStatus !== $status) {
+                    return false;
+                }
+                if ($query === '') {
+                    return true;
+                }
+                $haystack = strtolower(implode(' ', array_map(fn($value) => is_scalar($value) ? (string)$value : '', $row)));
+                return str_contains($haystack, $query);
+            }));
+        }
+
+        return $data;
     }
 }

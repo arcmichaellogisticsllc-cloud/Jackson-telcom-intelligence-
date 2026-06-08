@@ -8,13 +8,27 @@ $recordStatus = $profile['preconstruction_status'];
 $recordScore = (int)($profile['bid_score'] ?? 0);
 $recordNextAction = $profile['recommended_decision'] ?? 'Review bid, capacity, margin, and risk.';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Package for SyncERP','Mark Reviewed'];
+$recordEntityType = 'preconstruction_profile';
+$recordEntityId = (int)$profile['id'];
+$recordRegionId = (int)($profile['region_id'] ?? 0);
 $timelineItems = [
   ['type' => 'Bid Decision', 'title' => $profile['recommended_decision'] ?? 'Hold', 'why' => $profile['bid_reason'] ?? 'Bid/no-bid decision controls whether this moves toward handoff.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $profile['updated_at'] ?? $profile['created_at'] ?? ''],
   ['type' => 'Risk Review', 'title' => count($profile['risks']) . ' risks tracked', 'why' => 'Open preconstruction risks can block bid readiness or execution handoff.', 'next' => 'Resolve critical risks before handoff.', 'owner' => $recordOwner, 'date' => $profile['updated_at'] ?? ''],
 ];
+foreach ($recentConversations ?? [] as $conversation) {
+  $timelineItems[] = ['type' => $conversation['communication_type'], 'title' => $conversation['summary'], 'why' => $conversation['outcome'] ?: 'Conversation may affect bid readiness, capacity planning, or risk review.', 'next' => $conversation['next_step'] ?: 'Create follow-up if needed.', 'owner' => $conversation['owner'], 'date' => $conversation['communication_date']];
+}
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Conversations','Capacity','Tasks / Actions','Documents','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = $profile['bid_reason'] ?? 'This profile decides whether Jackson can bid, execute, make money, and control risk before award.';
+$recommended = $recordNextAction ?: 'Resolve bid, capacity, margin, and risk questions before handoff.';
+$next = 'Log preconstruction review activity or package for SyncERP when readiness is complete.';
+$risk = 'If preconstruction gaps remain unresolved, Jackson may bid work it cannot execute or hand off incomplete context.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <nav class="dash-tabs">

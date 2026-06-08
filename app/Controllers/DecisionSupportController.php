@@ -100,6 +100,7 @@ class DecisionSupportController extends Controller
         $service = new DecisionSupportService();
         $service->rebuild();
         $data = $service->dashboardData($regionId);
+        $data = $this->filterDashboardData($data);
         $regions = Database::connection()->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll();
         $this->view('decision/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'regions')));
     }
@@ -113,5 +114,25 @@ class DecisionSupportController extends Controller
             'Southwest Owner' => ['National', 'Southwest'],
             default => [],
         };
+    }
+
+    private function filterDashboardData(array $data): array
+    {
+        $allowed = $this->allowedBriefRegions();
+        if (!$allowed) {
+            return $data;
+        }
+
+        $filter = function (array $row) use ($allowed): bool {
+            return in_array((string)($row['region_name'] ?? 'National'), $allowed, true);
+        };
+
+        foreach (['topActions', 'actions', 'blockers', 'capacityGaps', 'relationshipActions', 'hunts', 'contentActions', 'opportunityDecisions'] as $key) {
+            if (isset($data[$key]) && is_array($data[$key])) {
+                $data[$key] = array_values(array_filter($data[$key], $filter));
+            }
+        }
+
+        return $data;
     }
 }

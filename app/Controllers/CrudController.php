@@ -77,9 +77,26 @@ class CrudController extends Controller
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
         $organizations = $db->query('SELECT o.*, r.name region_name FROM organizations o JOIN regions r ON r.id = o.region_id ORDER BY o.name')->fetchAll();
-        $contacts = $db->query('SELECT c.*, o.name organization_name, r.name region_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id JOIN regions r ON r.id = c.region_id ORDER BY c.last_name')->fetchAll();
-        $subcontractors = $db->query('SELECT s.*, o.name organization_name, r.name region_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id ORDER BY o.name')->fetchAll();
-        $opportunities = $db->query("SELECT op.*, o.name organization_name, r.name region_name, c.relationship_strength, sap.classification, sap.category, ps.pursuit_score, ps.relationship_fit_score, ps.capacity_fit_score, opd.recommended_decision, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred') THEN s.crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id JOIN regions r ON r.id = op.region_id LEFT JOIN subcontractors s ON s.region_id = op.region_id LEFT JOIN strategic_alignment_profiles sap ON sap.opportunity_id = op.id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id LEFT JOIN opportunity_pursuit_decisions opd ON opd.opportunity_id = op.id GROUP BY op.id ORDER BY op.created_at DESC")->fetchAll();
+
+        [$orgWhere, $orgParams] = $this->listWhere('organizations', 'r.name', ['o.name', 'o.type', 'o.state', 'o.city', 'o.phone', 'o.website', 'r.name', 'o.status'], null, 'o.status');
+        $stmt = $db->prepare("SELECT o.*, r.name region_name FROM organizations o JOIN regions r ON r.id = o.region_id WHERE {$orgWhere} ORDER BY o.name");
+        $stmt->execute($orgParams);
+        $organizations = $stmt->fetchAll();
+
+        [$contactWhere, $contactParams] = $this->listWhere('contacts', 'r.name', ['c.first_name', 'c.last_name', 'c.title', 'c.email', 'c.phone', 'o.name', 'r.name', 'c.relationship_strength', 'c.relationship_owner'], 'c.relationship_owner', 'c.relationship_strength');
+        $stmt = $db->prepare("SELECT c.*, o.name organization_name, r.name region_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id JOIN regions r ON r.id = c.region_id WHERE {$contactWhere} ORDER BY c.last_name");
+        $stmt->execute($contactParams);
+        $contacts = $stmt->fetchAll();
+
+        [$subWhere, $subParams] = $this->listWhere('subcontractors', 'r.name', ['s.company_name', 's.legal_name', 's.email', 's.phone', 's.owner_name', 's.primary_contact', 's.services_offered', 'o.name', 'r.name', 's.approval_stage'], 's.owner_name', 's.approval_stage');
+        $stmt = $db->prepare("SELECT s.*, o.name organization_name, r.name region_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id WHERE {$subWhere} ORDER BY o.name");
+        $stmt->execute($subParams);
+        $subcontractors = $stmt->fetchAll();
+
+        [$oppWhere, $oppParams] = $this->listWhere('opportunities', 'r.name', ['op.name', 'op.market', 'op.opportunity_type', 'op.customer_type', 'op.funding_source', 'op.owner', 'op.stage', 'o.name', 'r.name'], 'op.owner', 'op.stage');
+        $stmt = $db->prepare("SELECT op.*, o.name organization_name, r.name region_name, c.relationship_strength, sap.classification, sap.category, ps.pursuit_score, ps.relationship_fit_score, ps.capacity_fit_score, opd.recommended_decision, COALESCE(SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred') THEN s.crew_count ELSE 0 END),0) available_crews FROM opportunities op LEFT JOIN organizations o ON o.id = op.organization_id LEFT JOIN contacts c ON c.organization_id = op.organization_id JOIN regions r ON r.id = op.region_id LEFT JOIN subcontractors s ON s.region_id = op.region_id LEFT JOIN strategic_alignment_profiles sap ON sap.opportunity_id = op.id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id LEFT JOIN opportunity_pursuit_decisions opd ON opd.opportunity_id = op.id WHERE {$oppWhere} GROUP BY op.id ORDER BY op.created_at DESC");
+        $stmt->execute($oppParams);
+        $opportunities = $stmt->fetchAll();
         $opportunities = array_map(function (array $opportunity): array {
             $opportunity['pursuit'] = OpportunityScoring::score($opportunity);
             return $opportunity;
@@ -146,5 +163,60 @@ class CrudController extends Controller
             'customerTypes' => ['Utility','Prime Contractor','Municipality','Co-op','ISP','Enterprise','Government','Other'],
             'fundingSources' => ['Private Capital','BEAD','Broadband Grant','Utility Capital Plan','Municipal Bond','Prime Contractor Award','Maintenance Budget','Emergency Restoration','Unknown'],
         ];
+    }
+
+    private function listWhere(string $resource, string $regionColumn, array $searchColumns, ?string $ownerColumn, ?string $statusColumn): array
+    {
+        $conditions = ['1=1'];
+        $params = [];
+        $allowedRegions = $this->allowedRegionNames();
+        if ($allowedRegions) {
+            $conditions[] = $regionColumn . ' IN (' . implode(',', array_fill(0, count($allowedRegions), '?')) . ')';
+            array_push($params, ...$allowedRegions);
+        }
+
+        $region = trim((string)($_GET['region'] ?? ''));
+        if ($region !== '') {
+            if ($allowedRegions && !in_array($region, $allowedRegions, true)) {
+                $conditions[] = '1=0';
+            } else {
+                $conditions[] = $regionColumn . ' = ?';
+                $params[] = $region;
+            }
+        }
+
+        $query = trim((string)($_GET['q'] ?? ''));
+        if ($query !== '') {
+            $parts = [];
+            foreach ($searchColumns as $column) {
+                $parts[] = "COALESCE({$column}, '') LIKE ?";
+                $params[] = '%' . $query . '%';
+            }
+            $conditions[] = '(' . implode(' OR ', $parts) . ')';
+        }
+
+        $owner = trim((string)($_GET['owner'] ?? ''));
+        if ($owner !== '' && $ownerColumn) {
+            $conditions[] = "COALESCE({$ownerColumn}, '') = ?";
+            $params[] = $owner;
+        }
+
+        $status = trim((string)($_GET['status'] ?? ''));
+        if ($status !== '' && $statusColumn) {
+            $conditions[] = "COALESCE({$statusColumn}, '') = ?";
+            $params[] = $status;
+        }
+
+        return [implode(' AND ', $conditions), $params];
+    }
+
+    private function allowedRegionNames(): array
+    {
+        return match (Auth::user()['role'] ?? 'Admin') {
+            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
     }
 }

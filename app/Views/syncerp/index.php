@@ -21,6 +21,13 @@
   <div><span>Awaiting Import</span><strong><?= (int)$metrics['awaiting_import'] ?></strong></div>
 </section>
 
+<?php
+$listEyebrow = 'Handoff Workspace';
+$listTitle = 'Project packages';
+$listStatuses = ['Draft','Review','Ready For SyncERP','Exported','Imported','In Execution','Closed','Ready','Ready Now','Needs Review','Not Ready'];
+require __DIR__ . '/../components/list_toolbar.php';
+?>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Packages Ready For SyncERP</h2><span class="status">Handoff Only</span></div>

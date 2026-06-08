@@ -8,9 +8,20 @@ $recordStatus = $account['account_status'] ?? 'Active';
 $recordScore = (int)$account['strategic_score'];
 $recordNextAction = $account['recommended_action'] ?? $account['next_best_action'] ?? '';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Owner','Assign Relationship Action','Mark Reviewed'];
+$recordEntityType = 'strategic_account';
+$recordEntityId = (int)$account['id'];
+$recordRegionId = (int)($account['region_id'] ?? 0);
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Contacts / People','Conversations','Opportunities / Pursuits','Capacity','Tasks / Actions','Notes','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = $account['notes'] ?? 'This account can create work, access, demand, or capacity pressure in a Jackson theater.';
+$recommended = $recordNextAction ?: 'Strengthen account coverage and confirm the next relationship action.';
+$next = 'Log account activity or create a relationship follow-up for the next owner action.';
+$risk = 'If account coverage stays thin, competitors can control project access before Jackson is positioned.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <section class="metrics">

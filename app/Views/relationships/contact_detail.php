@@ -8,9 +8,20 @@ $recordStatus = $contact['relationship_status'] ?? $contact['relationship_streng
 $recordScore = (int)($contact['relationship_value_score'] ?? 0);
 $recordNextAction = $contact['next_best_action'] ?? $contact['next_action'] ?? '';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Relationship Action','Mark Reviewed'];
+$recordEntityType = 'contact';
+$recordEntityId = (int)$contact['id'];
+$recordRegionId = (int)($contact['region_id'] ?? 0);
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Conversations','People','Tasks / Actions','Notes','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = $contact['relationship_summary'] ?? 'This contact may create work, capacity, influence, or market intelligence.';
+$recommended = $recordNextAction ?: 'Confirm the relationship objective and create the next relationship action.';
+$next = 'Use Add Note, Log Call, Draft Email, or Create Follow-Up to move the relationship forward.';
+$risk = 'If this relationship sits without action, Jackson may lose project access, capacity access, or market intelligence.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <section class="metrics">

@@ -20,6 +20,13 @@
   <div><span>Relationship Gaps</span><strong><?= (int)$data['metrics']['relationship_blocked'] ?></strong></div>
 </section>
 
+<?php
+$listEyebrow = 'Work Workspace';
+$listTitle = 'Pursuits';
+$listStatuses = ['Intelligence','Qualified','Pursuit','Proposal','Negotiation','Awarded','Lost','Avoided','Pursue Aggressively','Pursue','Pursue Selectively','Monitor','Avoid'];
+require __DIR__ . '/../components/list_toolbar.php';
+?>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Top Pursuits</h2><span class="status">Action</span></div>

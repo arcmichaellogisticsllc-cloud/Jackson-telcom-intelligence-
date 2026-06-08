@@ -1,4 +1,15 @@
-<?php $listEyebrow = 'Clean List View'; $listTitle = ucfirst(str_replace('_', ' ', $resource)); require __DIR__ . '/../components/list_toolbar.php'; ?>
+<?php
+$listEyebrow = 'Clean List View';
+$listTitle = ucfirst(str_replace('_', ' ', $resource));
+$listStatuses = match ($resource) {
+    'contacts' => ['Cold','Developing','Warm','Strong'],
+    'organizations' => ['Active','Needs Review','Inactive'],
+    'subcontractors' => ['Prospect','Researching','Qualified','Documents Requested','Compliance Review','Approved','Preferred','Strategic Partner','Inactive','Rejected'],
+    'opportunities' => ['Intelligence','Qualified','Pursuit','Proposal','Negotiation','Awarded','Lost'],
+    default => ['Open','Active','Completed','Dismissed'],
+};
+require __DIR__ . '/../components/list_toolbar.php';
+?>
 <section class="panel">
   <div class="panel-title"><h2>Records</h2><span class="status"><?= count($rows) ?> total</span></div>
   <div class="table-wrap"><table><thead><tr><?php foreach ($columns as $label): ?><th><?= htmlspecialchars($label) ?></th><?php endforeach; ?><th>Actions</th></tr></thead><tbody>

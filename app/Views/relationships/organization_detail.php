@@ -8,9 +8,20 @@ $recordStatus = $organization['status'] ?? 'Active';
 $recordScore = count($profiles) ? max(array_map(fn($row) => (int)$row['relationship_value_score'], $profiles)) : 0;
 $recordNextAction = count($profiles) ? ($profiles[0]['next_best_action'] ?? 'Review influence map and assign next relationship action.') : 'Create first relationship profile or contact.';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Owner','Mark Reviewed'];
+$recordEntityType = 'organization';
+$recordEntityId = (int)$organization['id'];
+$recordRegionId = (int)($organization['region_id'] ?? 0);
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Contacts / People','Conversations','Opportunities / Pursuits','Tasks / Actions','Notes','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = 'This organization may hold work, capacity, influence, or relationships that affect Jackson growth.';
+$recommended = $recordNextAction ?: 'Review the influence map and assign the next owner action.';
+$next = 'Log the next conversation or create a follow-up tied to the organization.';
+$risk = 'If ownership and follow-up are unclear, influence can stay concentrated or go stale.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <section class="grid two">

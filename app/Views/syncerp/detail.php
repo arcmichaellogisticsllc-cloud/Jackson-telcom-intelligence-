@@ -8,13 +8,27 @@ $recordStatus = $package['readiness_category'] ?? $package['package_status'];
 $recordScore = (int)($package['readiness_score'] ?? 0);
 $recordNextAction = $package['blockers'] ? 'Resolve blockers: ' . $package['blockers'] : 'Review package and mark ready for SyncERP handoff.';
 $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Package for SyncERP','Mark Reviewed'];
+$recordEntityType = 'project_package';
+$recordEntityId = (int)$package['id'];
+$recordRegionId = (int)($package['region_id'] ?? 0);
 $timelineItems = [
   ['type' => 'ERP Readiness', 'title' => 'Readiness score ' . (int)$package['readiness_score'], 'why' => $package['blockers'] ?: 'Package appears ready for handoff review.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $package['updated_at'] ?? $package['created_at'] ?? ''],
   ['type' => 'Package Snapshot', 'title' => 'Capacity and relationship context preserved', 'why' => 'The handoff package prevents re-entry and protects acquisition context.', 'next' => 'Review snapshots before import.', 'owner' => $recordOwner, 'date' => $package['created_at'] ?? ''],
 ];
+foreach ($recentConversations ?? [] as $conversation) {
+  $timelineItems[] = ['type' => $conversation['communication_type'], 'title' => $conversation['summary'], 'why' => $conversation['outcome'] ?: 'Conversation may affect handoff readiness or package blockers.', 'next' => $conversation['next_step'] ?: 'Create follow-up if needed.', 'owner' => $conversation['owner'], 'date' => $conversation['communication_date']];
+}
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Contacts / People','Conversations','Capacity','Tasks / Actions','Documents','History'];
 require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$why = 'This package preserves acquisition, pursuit, relationship, capacity, preconstruction, margin, and risk context for future SyncERP handoff.';
+$recommended = $recordNextAction;
+$next = 'Resolve blockers, record the handoff review, and keep the package in review until it is ready.';
+$risk = 'If this package moves forward incomplete, execution can lose the intelligence that justified the pursuit.';
+require __DIR__ . '/../components/action_first.php';
 ?>
 
 <nav class="dash-tabs">
