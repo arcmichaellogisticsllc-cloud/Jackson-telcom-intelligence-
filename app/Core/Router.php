@@ -28,13 +28,22 @@ class Router
             return;
         }
 
-        if ($method === 'POST' && $path !== '/login' && Auth::check() && !Auth::verifyCsrf($_POST['_csrf'] ?? null)) {
+        $publicPaths = ['/login', '/password-reset', '/password-reset/confirm'];
+        if (!in_array($path, $publicPaths, true) && !Auth::check()) {
+            header('Location: /login');
+            return;
+        }
+
+        if ($method === 'POST' && !Auth::verifyCsrf($_POST['_csrf'] ?? null)) {
+            Audit::log('csrf_failed', 'route', null, 'Denied', $path);
             http_response_code(419);
             echo 'Invalid CSRF token';
             return;
         }
-        if ($method === 'POST' && Auth::check() && isset($_POST['region_id'])) {
-            Auth::requireRegionAccess($_POST['region_id']);
+        Auth::enforceRequestAuthorization($method, $path, $_GET, $_POST);
+
+        if ($method === 'POST' && Auth::check()) {
+            Audit::log('post_route_attempt', 'route', null, 'Success', $path);
         }
 
         [$class, $action] = $handler;

@@ -61,6 +61,10 @@ $columns = [
         'priority_score' => 'INTEGER DEFAULT 0',
         'trigger_detail' => 'TEXT',
         'why_it_matters' => 'TEXT',
+        'usefulness_score' => 'INTEGER DEFAULT 0',
+        'not_useful_count' => 'INTEGER DEFAULT 0',
+        'suppressed_at' => 'TEXT',
+        'suppression_reason' => 'TEXT',
     ],
     'outreach_intelligence' => [
         'due_date' => 'TEXT',
@@ -107,6 +111,64 @@ foreach ($columns as $table => $defs) {
             echo "Added {$table}.{$column}" . PHP_EOL;
         }
     }
+}
+
+$userSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'")->fetchColumn();
+if ($userSchema && !str_contains($userSchema, "'Executive'")) {
+    $db->exec('PRAGMA foreign_keys = OFF');
+    $db->beginTransaction();
+    $db->exec('ALTER TABLE users RENAME TO users_old');
+    $db->exec("CREATE TABLE users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('Admin','Executive','Mike','Ron','Regional Owner','Operator','Viewer','Southeast Owner','Great Lakes Owner','Southwest Owner')),
+      region_id INTEGER NULL,
+      FOREIGN KEY(region_id) REFERENCES regions(id)
+    )");
+    $db->exec('INSERT INTO users (id, name, email, password_hash, role, region_id) SELECT id, name, email, password_hash, role, region_id FROM users_old');
+    $db->exec('DROP TABLE users_old');
+    $db->commit();
+    $db->exec('PRAGMA foreign_keys = ON');
+    echo "Rebuilt users table for pilot role model\n";
+}
+
+$auditSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'audit_logs'")->fetchColumn();
+if ($auditSchema && (str_contains($auditSchema, 'users_old') || str_contains($auditSchema, 'REFERENCES users'))) {
+    $db->exec('DROP TABLE audit_logs');
+    $db->exec("CREATE TABLE audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      user_name TEXT,
+      role TEXT,
+      action TEXT NOT NULL,
+      record_type TEXT,
+      record_id INTEGER,
+      ip_address TEXT,
+      user_agent TEXT,
+      outcome TEXT DEFAULT 'Success',
+      details TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)');
+    echo "Rebuilt audit_logs table for pilot audit model\n";
+}
+
+$resetSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'password_reset_tokens'")->fetchColumn();
+if ($resetSchema && (str_contains($resetSchema, 'users_old') || str_contains($resetSchema, 'REFERENCES users'))) {
+    $db->exec('DROP TABLE password_reset_tokens');
+    $db->exec("CREATE TABLE password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      requested_ip TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash)');
+    echo "Rebuilt password_reset_tokens table for pilot reset model\n";
 }
 
 $signalSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'signals'")->fetchColumn();

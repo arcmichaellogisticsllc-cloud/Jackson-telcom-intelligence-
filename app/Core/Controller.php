@@ -23,9 +23,6 @@ class Controller
 
     private function injectCsrfFields(string $html): string
     {
-        if (!Auth::check()) {
-            return $html;
-        }
         return preg_replace_callback('/<form\b([^>]*)>/i', function (array $match): string {
             $attrs = $match[1] ?? '';
             if (!preg_match('/method\s*=\s*["\']?post["\']?/i', $attrs) || str_contains($attrs, 'data-csrf-injected')) {

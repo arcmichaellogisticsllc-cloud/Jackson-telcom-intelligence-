@@ -21,6 +21,11 @@ $routes = [
     '/operating-rhythm/great-lakes',
     '/operating-rhythm/southwest',
     '/production-readiness',
+    '/data-quality',
+    '/connector-runs',
+    '/audit-logs',
+    '/password-reset',
+    '/password-reset/confirm',
     '/decision-visuals',
     '/decision-visuals/regional-dominance',
     '/decision-visuals/work-vs-capacity',
@@ -159,6 +164,15 @@ foreach ($routes as $route) {
         $failed++;
         $results[] = 'FAIL 500 ' . $route . ' - ' . $e->getMessage();
     }
+}
+
+foreach (['scripts/backup_database.php','scripts/restore_database.php','scripts/validate_erp_contract.php'] as $script) {
+    if (is_file(__DIR__ . '/../' . $script)) {
+        $results[] = 'PASS script exists ' . $script;
+        continue;
+    }
+    $failed++;
+    $results[] = 'FAIL script missing ' . $script;
 }
 
 $report();

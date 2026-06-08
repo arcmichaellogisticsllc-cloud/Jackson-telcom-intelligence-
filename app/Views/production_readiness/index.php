@@ -7,7 +7,9 @@
 <nav class="dash-tabs">
   <a href="#authorization">Authorization</a>
   <a href="#data-review">Data Review</a>
+  <a href="#quality-issues">Quality Issues</a>
   <a href="#connector">Connector</a>
+  <a href="#audit">Audit</a>
   <a href="#feedback">Pilot Feedback</a>
   <a href="#tuning">Action Tuning</a>
   <a href="#deployment">Deployment</a>
@@ -25,7 +27,9 @@ require __DIR__ . '/../components/action_first.php';
 <section class="metrics">
   <div><span>Open Reviews</span><strong><?= (int)$metrics['open_reviews'] ?></strong></div>
   <div><span>Critical Reviews</span><strong><?= (int)$metrics['critical_reviews'] ?></strong></div>
+  <div><span>Quality Issues</span><strong><?= (int)$metrics['data_quality_issues'] ?></strong></div>
   <div><span>Pilot Feedback</span><strong><?= (int)$metrics['pilot_feedback'] ?></strong></div>
+  <div><span>Connector Reviews</span><strong><?= (int)$metrics['connector_runs_pending_review'] ?></strong></div>
   <div><span>Contract Pending</span><strong><?= (int)$metrics['contract_pending'] ?></strong></div>
   <div><span>CSRF / Session</span><strong>On</strong></div>
 </section>
@@ -34,8 +38,9 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel-title"><h2>Authorization / Security Hardening</h2><span class="status">Active</span></div>
   <div class="command-items">
     <div><strong>Route Protection</strong><span>Authenticated routes require login; POST routes require CSRF tokens.</span></div>
-    <div><strong>Operator Region Access</strong><span>Mike: Southeast + shared Southwest/National. Ron: Great Lakes + shared Southwest/National. Admin: all.</span></div>
-    <div><strong>Session Hardening</strong><span>Session timeout, CSRF rotation on login, secure headers, HTTP-only same-site cookies.</span></div>
+    <div><strong>Server-Side Region Access</strong><span>Direct regional URLs and mapped detail records are checked against Mike/Ron/Regional Owner scope; unauthorized attempts return 403 and write audit logs.</span></div>
+    <div><strong>Read-Only Role</strong><span>Viewer accounts are blocked from POST workflows server-side, not only hidden in the UI.</span></div>
+    <div><strong>Session Hardening</strong><span>Session timeout, CSRF rotation on login, secure headers, HTTP-only same-site cookies, login throttling, and password reset token foundation.</span></div>
   </div>
 </section>
 
@@ -54,10 +59,46 @@ require __DIR__ . '/../components/action_first.php';
   </tbody></table></div>
 </section>
 
+<section id="quality-issues" class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Data Quality Review</h2><span class="status">Operator-Owned</span></div>
+    <form method="post" action="/production-readiness/data-quality" class="form-grid compact">
+      <label>Issue Type <select name="issue_type"><option>Duplicate Entity</option><option>Missing Contact Info</option><option>Bad Import</option><option>Low Confidence Signal</option><option>Disputed Classification</option><option>Source Reliability Concern</option><option>Stale Contact</option><option>Conflicting Data</option><option>Missing Region</option><option>Missing Owner</option><option>Other</option></select></label>
+      <label>Theater <select name="region_id"><option value="">National / Shared</option><?php foreach ($regions as $region): ?><option value="<?= (int)$region['id'] ?>"><?= htmlspecialchars($region['name']) ?></option><?php endforeach; ?></select></label>
+      <label>Severity <select name="severity"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></label>
+      <label>Assigned Owner <input name="assigned_owner" value="<?= htmlspecialchars($user['name'] ?? 'Admin') ?>"></label>
+      <label>Record Type <input name="linked_record_type" placeholder="contact"></label>
+      <label>Record ID <input type="number" name="linked_record_id"></label>
+      <label class="full">Title <input name="title" required></label>
+      <label class="full">Description <textarea name="description"></textarea></label>
+      <button class="btn">Create Quality Issue</button>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Open Quality Issues</h2><span class="status">Resolve Before Trust</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Issue</th><th>Type</th><th>Theater</th><th>Action</th></tr></thead><tbody>
+      <?php foreach ($dataQualityIssues as $issue): ?><tr>
+        <td><strong><?= htmlspecialchars($issue['title']) ?></strong><br><small><?= htmlspecialchars($issue['description'] ?? '') ?></small></td>
+        <td><?= htmlspecialchars($issue['issue_type']) ?><br><span class="priority <?= strtolower($issue['severity']) ?>"><?= htmlspecialchars($issue['severity']) ?></span></td>
+        <td><?= htmlspecialchars($issue['region_name'] ?? 'National') ?></td>
+        <td><form method="post" action="/production-readiness/data-quality/update" class="inline-form"><input type="hidden" name="id" value="<?= (int)$issue['id'] ?>"><select name="status"><option>In Review</option><option>Resolved</option><option>Dismissed</option></select><input name="resolution_outcome" placeholder="Outcome"><input name="resolution_notes" placeholder="Notes"><button class="btn secondary">Update</button></form></td>
+      </tr><?php endforeach; ?>
+      <?php if (!$dataQualityIssues): ?><tr><td colspan="4">No open data quality issues.</td></tr><?php endif; ?>
+    </tbody></table></div>
+  </div>
+</section>
+
 <section id="connector" class="panel">
-  <div class="panel-title"><h2>First Real Connector</h2><span class="status">RSS / Opt-In</span></div>
-  <p>The first production-safe connector is RSS. It only runs when a Signal Source has collection method <strong>RSS</strong> and a source URL. It parses feed titles, descriptions, links, dates, and payloads into Raw Signal Items. It does not scrape pages and does not send outreach.</p>
-  <p><a class="btn secondary" href="/harvesters">Open Acquisition Harvesters</a></p>
+  <div class="panel-title"><h2>First Real Connector Path</h2><span class="status">Review-Gated</span></div>
+  <p>The connector framework supports an opt-in RSS/static-source path and a CSV/source-file fallback. Connector rows write to Raw Signal Items as <strong>Needs Review</strong> and never bypass signal quality.</p>
+  <div class="grid two">
+    <div class="table-wrap"><table><thead><tr><th>Connector</th><th>Status</th><th>Imported</th><th>Run</th></tr></thead><tbody>
+      <?php foreach ($connectors as $connector): ?><tr><td><strong><?= htmlspecialchars($connector['connector_name']) ?></strong><br><small><?= htmlspecialchars($connector['source_type']) ?> · <?= htmlspecialchars($connector['run_mode']) ?></small></td><td><?= htmlspecialchars($connector['status']) ?></td><td><?= (int)$connector['records_imported'] ?> / <?= (int)$connector['records_found'] ?></td><td><form method="post" action="/production-readiness/connectors/run"><input type="hidden" name="connector_id" value="<?= (int)$connector['id'] ?>"><button class="btn secondary">Run</button></form></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Run</th><th>Status</th><th>Review</th></tr></thead><tbody>
+      <?php foreach ($connectorRuns as $run): ?><tr><td><?= htmlspecialchars($run['connector_name']) ?><br><small><?= htmlspecialchars($run['started_at']) ?></small></td><td><?= htmlspecialchars($run['status']) ?> · imported <?= (int)$run['imported_count'] ?> · skipped <?= (int)$run['skipped_count'] ?></td><td><?= htmlspecialchars($run['review_status']) ?></td></tr><?php endforeach; ?>
+      <?php if (!$connectorRuns): ?><tr><td colspan="3">No connector runs yet.</td></tr><?php endif; ?>
+    </tbody></table></div>
+  </div>
 </section>
 
 <section id="feedback" class="grid two">
@@ -102,13 +143,35 @@ require __DIR__ . '/../components/action_first.php';
   </div>
 </section>
 
+<section id="recommendation-governance" class="panel">
+  <div class="panel-title"><h2>Noisy Recommendation Suppression</h2><span class="status">Governance</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Recommendation</th><th>Module</th><th>Score</th><th>Suppress</th></tr></thead><tbody>
+    <?php foreach ($noisyRecommendations as $rec): ?><tr>
+      <td><strong><?= htmlspecialchars($rec['title']) ?></strong><br><small><?= htmlspecialchars($rec['region_name'] ?? 'National') ?> · <?= htmlspecialchars($rec['status']) ?></small></td>
+      <td><?= htmlspecialchars($rec['source_module'] ?? '') ?><br><small><?= htmlspecialchars($rec['category']) ?></small></td>
+      <td><?= (int)$rec['priority_score'] ?></td>
+      <td><form method="post" action="/production-readiness/recommendations/not-useful" class="inline-form"><input type="hidden" name="recommendation_id" value="<?= (int)$rec['id'] ?>"><input name="reason" placeholder="Why not useful?"><button class="btn secondary">Not Useful</button></form></td>
+    </tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+
 <section id="deployment" class="panel">
   <div class="panel-title"><h2>Deployment Readiness</h2><span class="status">Checklist</span></div>
   <div class="command-items">
     <div><strong>Sequential Cycle</strong><span>Use <code>php scripts/run_acquisition_cycle.php</code>. Do not run DB-writing scripts in parallel on SQLite.</span></div>
     <div><strong>Integrity Gate</strong><span>Run migrate, seed/cycle, integrity, route smoke, PHP lint, and backup/restore checks before pilot sessions.</span></div>
-    <div><strong>Backup / Export</strong><span>Use <code>scripts/backup_database.php</code> and <code>scripts/export_operating_data.php</code>; verify restore before pilot kickoff.</span></div>
+    <div><strong>Backup / Restore / Export</strong><span>Use <code>scripts/backup_database.php</code>, <code>scripts/restore_database.php</code>, and <code>scripts/export_operating_data.php</code>; verify restore before pilot kickoff.</span></div>
+    <div><strong>Password Recovery</strong><span>Reset tokens expire after 60 minutes and are one-time use. Production must configure a mailer; local/dev logs tokens only for controlled testing.</span></div>
+    <div><strong>Error Logs</strong><span>Application errors write to <code>storage/logs/app.log</code>. Production mode hides stack traces from operators.</span></div>
   </div>
+</section>
+
+<section id="audit" class="panel">
+  <div class="panel-title"><h2>Audit Log</h2><span class="status">Admin Control</span></div>
+  <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Outcome</th></tr></thead><tbody>
+    <?php foreach ($auditLogs as $log): ?><tr><td><?= htmlspecialchars($log['created_at']) ?></td><td><?= htmlspecialchars(($log['user_name'] ?? 'System') . ' ' . ($log['role'] ? '(' . $log['role'] . ')' : '')) ?></td><td><?= htmlspecialchars($log['action']) ?><br><small><?= htmlspecialchars($log['details'] ?? '') ?></small></td><td><?= htmlspecialchars(($log['record_type'] ?? '') . ($log['record_id'] ? ' #' . $log['record_id'] : '')) ?></td><td><?= htmlspecialchars($log['outcome']) ?></td></tr><?php endforeach; ?>
+    <?php if (!$auditLogs): ?><tr><td colspan="5">No audit events yet.</td></tr><?php endif; ?>
+  </tbody></table></div>
 </section>
 
 <section id="syncerp-contract" class="panel">

@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('Admin','Southeast Owner','Great Lakes Owner','Southwest Owner')),
+  role TEXT NOT NULL CHECK(role IN ('Admin','Executive','Mike','Ron','Regional Owner','Operator','Viewer','Southeast Owner','Great Lakes Owner','Southwest Owner')),
   region_id INTEGER NULL,
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );

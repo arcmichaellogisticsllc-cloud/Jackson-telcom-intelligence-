@@ -1932,21 +1932,44 @@ Focus order:
 
 Implemented readiness controls:
 
-- CSRF validation for authenticated POST routes.
+- Server-side authorization for regional URLs, mapped detail records, POST region scope, and read-only Viewer behavior.
+- 403 responses and audit log entries for unauthorized access.
+- CSRF validation for all rendered POST forms.
 - Automatic CSRF token injection into rendered POST forms.
-- Session timeout enforcement and CSRF token rotation on login.
+- Session timeout enforcement, session regeneration on login, CSRF token rotation on login, and basic login attempt throttling.
+- Password reset token foundation with expiry and one-time use. Production requires a mailer; local/dev logs reset tokens only for controlled testing.
 - Security headers for frame protection, content type, referrer policy, and CSP.
-- Region access helpers for Mike, Ron, Southwest, and Admin.
-- POST `region_id` authorization checks before controller execution.
+- Application error logging to `storage/logs/app.log` with production-safe error output.
 - Data Review Queue for questionable raw signals, classification conflicts, and noisy recommendations.
+- Data Quality Review for duplicate entities, bad imports, missing owners/regions, stale contacts, and disputed classifications.
+- Audit Log view for login, logout, failed login, unauthorized access, record actions, connector runs, and readiness updates.
 - Operator Pilot Feedback capture.
-- Recommendation/Daily Action tuning rule records.
-- Opt-in RSS connector for safe feed ingestion into Raw Signal Items.
-- SyncERP contract validation checklist.
+- Recommendation/Daily Action tuning rules plus “not useful” recommendation suppression.
+- Connector registry and connector run logs.
+- Opt-in RSS/static-source connector path and source-file fallback that writes only to Raw Signal Items for human review.
+- Backup and restore scripts for SQLite pilot operations.
+- SyncERP contract validation checklist and validation script.
 
 The first real connector is RSS only. It runs only for Signal Sources with `collection_method = RSS` and a non-empty `source_url`. It does not scrape pages, does not send outreach, and does not auto-convert records.
 
-Detailed guidance: `docs/operator-pilot-production-readiness.md`.
+Control routes:
+
+- `/production-readiness`
+- `/data-quality`
+- `/connector-runs`
+- `/audit-logs`
+
+Operational docs:
+
+- `docs/operator-pilot-production-readiness.md`
+- `docs/deployment-readiness.md`
+- `docs/operator-pilot-guide.md`
+
+Validation scripts:
+
+- `php scripts/backup_database.php`
+- `php scripts/restore_database.php <backup> CONFIRM_RESTORE`
+- `php scripts/validate_erp_contract.php`
 
 ## SyncERP Boundary
 

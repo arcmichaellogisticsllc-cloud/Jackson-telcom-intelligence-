@@ -8,6 +8,6 @@
     <label>Password <input type="password" name="password" required value="password"></label>
     <button class="btn">Login</button>
   </form>
-  <p class="hint">Seeded users: admin@jacksontelcom.com, mike@jacksontlcom.com, ron@jacksontelcom.com. Password: password.</p>
+  <p class="hint">Seeded users: admin@jacksontelcom.com, executive@jacksontelcom.com, mike@jacksontlcom.com, ron@jacksontelcom.com, operator@jacksontelcom.com, viewer@jacksontelcom.com. Password: password.</p>
+  <p class="hint"><a href="/password-reset">Request password reset</a></p>
 </section>
-
