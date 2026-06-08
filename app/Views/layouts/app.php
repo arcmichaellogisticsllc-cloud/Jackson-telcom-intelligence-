@@ -17,14 +17,14 @@
     </a>
     <nav>
       <?php $navGroups = [
-        'COMMAND' => ['/' => 'Command Center','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support'],
+        'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support','/strategic-review' => 'Strategic Review'],
         'WORK' => ['/acquisition-command' => 'Work Intelligence','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
         'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners'],
-        'RELATIONSHIPS' => ['/relationship-graph' => 'Relationship Graph','/relationships' => 'Influence Network','/contacts' => 'Contacts'],
+        'RELATIONSHIPS' => ['/communications' => 'Communications','/relationship-graph' => 'Relationship Graph','/network-intelligence' => 'Network Intelligence','/relationships' => 'Influence Network','/contacts' => 'Contacts'],
         'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/harvesters' => 'Acquisition Harvesters'],
         'GROWTH' => ['/demand' => 'Demand Engine','/traffic' => 'Content','/outreach' => 'Distribution'],
         'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration'],
-        'SETTINGS' => ['/settings' => 'Settings','/platform-review' => 'Administration','/operator-modes' => 'Operator Modes','/organizations' => 'Organizations','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],
+        'SETTINGS' => ['/settings' => 'Settings','/platform-review' => 'Administration','/operator-modes' => 'Operator Modes','/ownership-matrix' => 'Ownership Matrix','/strategic-accounts' => 'Strategic Accounts','/forecasts' => 'Forecasts','/organizations' => 'Organizations','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],
       ]; ?>
       <?php foreach ($navGroups as $group => $links): ?>
         <div class="nav-group"><?= htmlspecialchars($group) ?></div>

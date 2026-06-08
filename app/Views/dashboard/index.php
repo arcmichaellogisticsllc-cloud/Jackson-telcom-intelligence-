@@ -76,6 +76,15 @@ $supportWidgets = [
         'cta' => 'Open Market Intel',
         'items' => array_map(fn($row) => ['title' => $row['market'] ?? 'Market profile', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['market_readiness_score'] ?? 0)], $marketWidgets['profiles'] ?? []),
     ],
+    [
+        'eyebrow' => 'Strategic Accounts',
+        'title' => 'Where should we invest?',
+        'score' => $executiveWidgets['metrics']['strategic_accounts'] ?? 0,
+        'summary' => 'Executive account coverage across telecom providers, utilities, primes, cooperatives, and municipal broadband systems.',
+        'href' => '/strategic-accounts',
+        'cta' => 'Open Accounts',
+        'items' => array_map(fn($row) => ['title' => $row['account_name'] ?? 'Strategic account', 'meta' => ($row['region_name'] ?? 'National') . ' · strategic ' . (int)($row['strategic_score'] ?? 0)], $executiveWidgets['accounts'] ?? []),
+    ],
 ];
 ?>
 <section class="command-hero">
@@ -140,6 +149,10 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel">
     <div class="panel-title"><h2>Demand Opportunities</h2><a class="btn secondary" href="/demand">Demand Engine</a></div>
     <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Audience</th><th>Theater</th><th>Impact</th></tr></thead><tbody><?php foreach ($topDemandContent as $item): ?><tr><td><?= htmlspecialchars($item['title']) ?><br><small><?= htmlspecialchars($item['content_type']) ?></small></td><td><?= htmlspecialchars($item['audience']) ?></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td>C <?= (int)$item['expected_capacity_impact'] ?> · R <?= (int)$item['expected_relationship_impact'] ?> · O <?= (int)$item['expected_opportunity_impact'] ?></td></tr><?php endforeach; ?><?php if (!$topDemandContent): ?><tr><td colspan="4">No demand opportunities waiting for review.</td></tr><?php endif; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Top Strategic Recommendations</h2><a class="btn secondary" href="/executive-os">Executive OS</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Impact</th></tr></thead><tbody><?php foreach ($executiveWidgets['recommendations'] ?? [] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['recommendation_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_action']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?><br><small><?= htmlspecialchars($item['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($item['expected_impact']) ?></td></tr><?php endforeach; ?><?php if (empty($executiveWidgets['recommendations'])): ?><tr><td colspan="4">No strategic recommendations waiting for review.</td></tr><?php endif; ?></tbody></table></div>
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Recent Activity</h2><a class="btn secondary" href="/activities">Activities</a></div>

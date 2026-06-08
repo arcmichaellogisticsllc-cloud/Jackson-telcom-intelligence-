@@ -120,6 +120,116 @@ The acquisition doctrine is simple:
 - Influence opens access to work, capacity, market intelligence, and decision makers.
 - Today’s Priorities decide what moves now.
 
+## Executive Operating System
+
+The Executive Operating System is the final visibility layer before SyncERP execution. It does not build execution, production reporting, labor tracking, billing, or automated outreach.
+
+It answers:
+
+- What is happening?
+- What is likely to happen?
+- What should we do today?
+- Where should we invest next?
+- Who has work?
+- Who has capacity?
+- Who needs work?
+- Who influences work?
+
+### Communication Workspace
+
+The Communication Workspace captures operator-controlled communication:
+
+- Add Note
+- Log Call
+- Log Meeting
+- Create Follow-Up
+- Draft Email
+- Draft LinkedIn Message
+- Draft Text Message
+
+No automated sending occurs. Drafts require human review and should be tied back to relationships, opportunities, capacity profiles, subcontractors, hunts, or acquisition targets.
+
+### Network Intelligence
+
+Network Intelligence maps how work flows through the ecosystem:
+
+- Utility to Engineering Firm
+- Engineering Firm to Prime Contractor
+- Prime Contractor to Subcontractor
+- Utility to Prime
+- Prime to Capacity Provider
+
+Each network relationship tracks strength, trust, recency, confidence, and a Network Influence Score.
+
+### Forecasting
+
+Forecasts are generated for:
+
+- Capacity
+- Opportunity
+- Relationship
+- Demand
+- Regional movement
+
+Forecast windows:
+
+- 30 Days
+- 90 Days
+- 180 Days
+- 365 Days
+
+Forecasts are strategic guidance, not production reporting.
+
+### Ownership Matrix
+
+The Ownership Matrix tracks primary and secondary owners for:
+
+- Relationships
+- Opportunities
+- Capacity Providers
+- Markets
+- Hunts
+- Strategic Accounts
+
+Ownership keeps strategic action accountable across Mike, Ron, shared Southwest, Admin, and future regional owners.
+
+### Strategic Accounts
+
+Strategic Accounts track account coverage for Comcast, Charter, Frontier, AT&T, Windstream, electric cooperatives, municipal broadband systems, primes, and other high-value ecosystem accounts.
+
+Each account scores:
+
+- relationship coverage
+- opportunity volume
+- capacity demand
+- influence coverage
+- strategic value
+
+### Regional Dominance
+
+Regional Dominance blends:
+
+- Relationship Strength
+- Capacity Strength
+- Opportunity Strength
+- Demand Strength
+- Influence Strength
+
+The output helps leadership decide whether a theater is weak, developing, competitive, strong, or dominant.
+
+### Quarterly Strategic Review
+
+Strategic Review mode asks:
+
+- What worked?
+- What failed?
+- What should we invest in?
+- What should we recruit?
+- What should we expand?
+- What should we avoid?
+
+It uses Intelligence Warehouse outcomes, forecasts, strategic accounts, regional dominance scores, and strategic recommendations to guide the next quarter.
+
 ```text
 Jackson Intelligence Platform
 ├── National Command Center

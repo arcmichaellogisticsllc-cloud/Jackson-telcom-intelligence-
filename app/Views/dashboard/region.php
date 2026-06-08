@@ -103,6 +103,14 @@ require __DIR__ . '/../components/action_first.php';
     <div class="panel-title"><h2>Market Intelligence</h2><a class="btn secondary" href="/market-intelligence/<?= $slug ?>">Market Intel</a></div>
     <div class="table-wrap"><table><thead><tr><th>Market</th><th>Readiness</th><th>Priority</th></tr></thead><tbody><?php foreach ($marketWidgets['profiles'] as $profile): ?><tr><td><?= htmlspecialchars($profile['market']) ?></td><td><?= (int)$profile['market_readiness_score'] ?></td><td><?= htmlspecialchars($profile['strategic_priority']) ?></td></tr><?php endforeach; ?><?php if (!$marketWidgets['profiles']): ?><tr><td colspan="3">No market profiles available.</td></tr><?php endif; ?></tbody></table></div>
   </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Strategic Accounts</h2><a class="btn secondary" href="/strategic-accounts">Accounts</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Account</th><th>Strategic</th><th>Owner</th><th>Next Action</th></tr></thead><tbody><?php foreach ($executiveWidgets['accounts'] ?? [] as $account): ?><tr><td><?= htmlspecialchars($account['account_name']) ?></td><td><?= (int)$account['strategic_score'] ?></td><td><?= htmlspecialchars($account['primary_owner']) ?></td><td><?= htmlspecialchars($account['next_best_action']) ?></td></tr><?php endforeach; ?><?php if (empty($executiveWidgets['accounts'])): ?><tr><td colspan="4">No strategic accounts for this theater.</td></tr><?php endif; ?></tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Strategic Recommendations</h2><a class="btn secondary" href="/executive-os">Executive OS</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Recommendation</th><th>Impact</th></tr></thead><tbody><?php foreach ($executiveWidgets['recommendations'] ?? [] as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['recommendation_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_action']) ?></small></td><td><?= htmlspecialchars($item['expected_impact']) ?></td></tr><?php endforeach; ?><?php if (empty($executiveWidgets['recommendations'])): ?><tr><td colspan="3">No strategic recommendations for this theater.</td></tr><?php endif; ?></tbody></table></div>
+  </div>
 </section>
 
 <?php $healthChecks = $platformData['health'] ?? []; require __DIR__ . '/../components/platform_health.php'; ?>
