@@ -230,6 +230,113 @@ Strategic Review mode asks:
 
 It uses Intelligence Warehouse outcomes, forecasts, strategic accounts, regional dominance scores, and strategic recommendations to guide the next quarter.
 
+## Executive Intelligence Packaging
+
+Executives should not browse raw records. The packaging engine continuously turns platform intelligence into decision packages.
+
+Inputs:
+
+- Signals
+- Relationships
+- Capacity
+- Demand
+- Pursuits
+- Preconstruction
+
+Outputs:
+
+- Work Packages
+- Capacity Packages
+- Need Packages
+- Influence Packages
+- Decision Packages
+- Risk Packages
+- Strategic Packages
+- Executive Briefs
+
+Every package answers:
+
+- What is this?
+- Why does it matter?
+- What should I do?
+- What happens if I do nothing?
+
+### Decision Packages
+
+Decision Packages are used for major choices:
+
+- Pursue Opportunity
+- Recruit Capacity
+- Promote Strategic Partner
+- Expand Market
+- Strengthen Relationship
+- Mitigate Risk
+
+Each package includes supporting evidence, supporting signals, supporting relationships, supporting capacity, risks, confidence, and a recommendation.
+
+### Executive Home Screen
+
+The executive home screen promotes packages instead of raw module data:
+
+- Work Ready
+- Capacity Available
+- Capacity Seeking Work
+- Influence Network
+- Top 5 Actions
+- Top 5 Risks
+- Top 5 Opportunities
+- Top Strategic Recommendations
+
+### Package Timeline
+
+Package timelines show:
+
+- why the package exists
+- what changed
+- what actions were taken
+- what outcomes occurred
+
+This allows leaders to see the full decision context without opening every source module.
+
+### One-Click Actions
+
+Packages expose action buttons:
+
+- Call
+- Email
+- Add Note
+- Create Follow-Up
+- Assign Hunt
+- Assign Relationship Action
+- Promote Capacity Provider
+- Approve Pursuit
+- Create Preconstruction Profile
+- Mark Complete
+
+These actions prepare or record work inside the platform. They do not send real email, SMS, LinkedIn messages, or Facebook messages.
+
+### Executive Brief Engine
+
+The platform generates display-only briefs:
+
+- Daily Brief
+- Weekly Brief
+- Monthly Brief
+- Quarterly Strategic Brief
+
+No briefs are sent automatically. Operators review them in the platform.
+
+### Strategic Review Mode
+
+Strategic Review mode uses packages and briefs to answer:
+
+- What worked?
+- What failed?
+- Where should we invest?
+- Where should we recruit?
+- Where should we expand?
+- Where should we pull back?
+
 ```text
 Jackson Intelligence Platform
 ├── National Command Center

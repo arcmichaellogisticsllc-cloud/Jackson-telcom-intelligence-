@@ -3,6 +3,15 @@ $metrics = $metrics ?? [];
 $dominanceRows = $dominance ?? [];
 $strategicWidgets = [
     [
+        'eyebrow' => 'Decision Packages',
+        'title' => 'What should we decide?',
+        'score' => $packageData['metrics']['packages'] ?? 0,
+        'summary' => 'Packaged intelligence that answers what it is, why it matters, what to do, and what happens if Jackson does nothing.',
+        'href' => '/executive-packages',
+        'cta' => 'Open Packages',
+        'items' => array_map(fn($row) => ['title' => $row['package_title'] ?? 'Decision package', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['package_type'] ?? '')], $packageData['topActions'] ?? []),
+    ],
+    [
         'eyebrow' => 'Communications',
         'title' => 'What is happening?',
         'score' => $metrics['communications'] ?? 0,
@@ -75,6 +84,10 @@ require __DIR__ . '/../components/action_first.php';
 <?php $widgets = $strategicWidgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 
 <section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Top Executive Packages</h2><a class="btn secondary" href="/executive-packages">Packages</a></div>
+    <div class="table-wrap"><table><thead><tr><th>Type</th><th>Package</th><th>Action</th><th>Risk Of Inaction</th></tr></thead><tbody><?php foreach (($packageData['topActions'] ?? []) as $package): ?><tr><td><span class="priority medium"><?= htmlspecialchars($package['package_type']) ?></span></td><td><a href="/executive-packages/detail?id=<?= (int)$package['id'] ?>"><?= htmlspecialchars($package['package_title']) ?></a><br><small><?= htmlspecialchars($package['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($package['recommended_action']) ?></td><td><?= htmlspecialchars($package['risk_of_inaction']) ?></td></tr><?php endforeach; ?><?php if (empty($packageData['topActions'])): ?><tr><td colspan="4">No executive packages generated.</td></tr><?php endif; ?></tbody></table></div>
+  </div>
   <div class="panel">
     <div class="panel-title"><h2>Top Strategic Recommendations</h2><a class="btn secondary" href="/strategic-review">Strategic Review</a></div>
     <div class="table-wrap"><table><thead><tr><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Expected Impact</th></tr></thead><tbody><?php foreach ($recommendations as $item): ?><tr><td><span class="priority <?= strtolower($item['priority']) ?>"><?= htmlspecialchars($item['priority']) ?></span></td><td><strong><?= htmlspecialchars($item['recommendation_title']) ?></strong><br><small><?= htmlspecialchars($item['recommended_action']) ?></small></td><td><?= htmlspecialchars($item['owner']) ?><br><small><?= htmlspecialchars($item['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($item['expected_impact']) ?></td></tr><?php endforeach; ?><?php if (!$recommendations): ?><tr><td colspan="4">No open strategic recommendations.</td></tr><?php endif; ?></tbody></table></div>

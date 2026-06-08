@@ -17,7 +17,7 @@
     </a>
     <nav>
       <?php $navGroups = [
-        'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support','/strategic-review' => 'Strategic Review'],
+        'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/executive-packages' => 'Decision Packages','/executive-briefs' => 'Executive Briefs','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support','/strategic-review' => 'Strategic Review'],
         'WORK' => ['/acquisition-command' => 'Work Intelligence','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
         'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners'],
         'RELATIONSHIPS' => ['/communications' => 'Communications','/relationship-graph' => 'Relationship Graph','/network-intelligence' => 'Network Intelligence','/relationships' => 'Influence Network','/contacts' => 'Contacts'],

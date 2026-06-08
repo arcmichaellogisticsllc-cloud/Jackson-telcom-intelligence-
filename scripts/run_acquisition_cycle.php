@@ -7,6 +7,7 @@ use App\Services\AcquisitionCommandService;
 use App\Services\CapacityGapService;
 use App\Services\DecisionSupportService;
 use App\Services\ExecutiveOperatingService;
+use App\Services\ExecutivePackagingService;
 use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
 use App\Services\OutreachIntelligenceService;
@@ -48,6 +49,7 @@ RecommendationEngine::regenerate();
 (new PlatformReviewService())->rebuild();
 (new ProjectPackageAssemblyService())->rebuild();
 (new ExecutiveOperatingService())->rebuild();
+(new ExecutivePackagingService())->rebuild();
 (new DecisionSupportService())->rebuild();
 echo "PASS Decision Support rebuilt\n\n";
 

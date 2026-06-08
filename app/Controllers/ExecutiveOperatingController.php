@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Services\ExecutiveOperatingService;
+use App\Services\ExecutivePackagingService;
 
 class ExecutiveOperatingController extends Controller
 {
@@ -97,6 +98,9 @@ class ExecutiveOperatingController extends Controller
         $service = new ExecutiveOperatingService();
         $service->rebuild();
         $data = $service->dashboardData($regionId);
-        $this->view('executive/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'viewMode')));
+        $packaging = new ExecutivePackagingService();
+        $packaging->rebuild();
+        $packageData = $packaging->dashboardData($regionId);
+        $this->view('executive/index', array_merge($data, compact('title', 'subtitle', 'regionId', 'viewMode', 'packageData')));
     }
 }
