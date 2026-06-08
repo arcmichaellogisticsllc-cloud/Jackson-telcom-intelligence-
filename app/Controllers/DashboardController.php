@@ -48,6 +48,7 @@ class DashboardController extends Controller
         $marketWidgets = (new MarketIntelligenceService())->dashboardData();
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData();
         $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
+        $recentConversations = $db->query('SELECT cr.*, r.name region_name FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id ORDER BY cr.communication_date DESC LIMIT 6')->fetchAll();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
         $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
         $topOpportunities = $db->query('SELECT op.*, r.name region_name FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.stage NOT IN ("Awarded","Lost") ORDER BY op.estimated_value DESC LIMIT 8')->fetchAll();
@@ -77,6 +78,7 @@ class DashboardController extends Controller
             'marketWidgets' => $marketWidgets,
             'executiveWidgets' => $executiveWidgets,
             'strategicIntel' => $strategicIntel,
+            'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
             'topOpportunities' => $topOpportunities,

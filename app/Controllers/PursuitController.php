@@ -44,7 +44,11 @@ class PursuitController extends Controller
         if (!$opportunity) {
             $this->redirect('/pursuits');
         }
-        $this->view('pursuits/detail', compact('opportunity'));
+        $db = Database::connection();
+        $stmt = $db->prepare('SELECT * FROM communication_records WHERE region_id = ? ORDER BY communication_date DESC LIMIT 8');
+        $stmt->execute([(int)($opportunity['region_id'] ?? 0)]);
+        $recentConversations = $stmt->fetchAll();
+        $this->view('pursuits/detail', compact('opportunity', 'recentConversations'));
     }
 
     public function rebuild(): void

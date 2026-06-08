@@ -25,6 +25,29 @@ class StrategicWorkforceCompetitiveController extends Controller
         $this->dashboard(null, 'Competitive Intelligence', 'Who else is chasing the work and where competitive pressure is rising.', 'competitors');
     }
 
+    public function accountDetail(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        (new StrategicWorkforceCompetitiveService())->rebuild();
+        $stmt = $db->prepare('SELECT sa.*, r.name region_name FROM strategic_accounts sa LEFT JOIN regions r ON r.id = sa.region_id WHERE sa.id = ?');
+        $stmt->execute([(int)($_GET['id'] ?? 0)]);
+        $account = $stmt->fetch();
+        if (!$account) {
+            $this->redirect('/strategic-account-intelligence');
+        }
+        $contacts = $db->prepare('SELECT c.* FROM contacts c JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (o.name LIKE ? OR c.notes LIKE ? OR c.title LIKE ?) ORDER BY c.last_contact_date DESC LIMIT 12');
+        $like = '%' . strtok($account['account_name'], ' ') . '%';
+        $contacts->execute([(int)$account['region_id'], $like, $like, '%Manager%']);
+        $opportunities = $db->prepare('SELECT op.* FROM opportunities op JOIN organizations o ON o.id = op.organization_id WHERE op.region_id = ? AND (o.name LIKE ? OR op.name LIKE ?) ORDER BY op.estimated_value DESC LIMIT 12');
+        $opportunities->execute([(int)$account['region_id'], $like, $like]);
+        $recentConversations = $db->prepare('SELECT * FROM communication_records WHERE region_id = ? ORDER BY communication_date DESC LIMIT 8');
+        $recentConversations->execute([(int)$account['region_id']]);
+        $conversationRows = $recentConversations->fetchAll();
+        $timelineItems = array_map(fn($row) => ['type' => $row['communication_type'], 'title' => $row['summary'], 'why' => $row['outcome'] ?: 'Conversation may change strategic account access.', 'next' => $row['next_step'] ?: 'Assign a follow-up if needed.', 'owner' => $row['owner'], 'date' => $row['communication_date']], $conversationRows);
+        $this->view('strategic_intelligence/detail', ['account' => $account, 'contacts' => $contacts->fetchAll(), 'opportunities' => $opportunities->fetchAll(), 'recentConversations' => $conversationRows, 'timelineItems' => $timelineItems]);
+    }
+
     public function southeast(): void { $this->regional('Southeast'); }
     public function greatLakes(): void { $this->regional('Great Lakes'); }
     public function southwest(): void { $this->regional('Southwest'); }

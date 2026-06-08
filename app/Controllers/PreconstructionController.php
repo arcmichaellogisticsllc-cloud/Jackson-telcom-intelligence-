@@ -28,7 +28,11 @@ class PreconstructionController extends Controller
         if (!$profile) {
             $this->redirect('/preconstruction');
         }
-        $this->view('preconstruction/detail', compact('profile'));
+        $db = Database::connection();
+        $stmt = $db->prepare('SELECT * FROM communication_records WHERE region_id = ? ORDER BY communication_date DESC LIMIT 8');
+        $stmt->execute([(int)($profile['region_id'] ?? 0)]);
+        $recentConversations = $stmt->fetchAll();
+        $this->view('preconstruction/detail', compact('profile', 'recentConversations'));
     }
 
     public function create(): void

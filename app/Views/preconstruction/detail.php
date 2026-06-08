@@ -1,8 +1,21 @@
-<section class="page-header">
-  <p class="eyebrow">Preconstruction Profile</p>
-  <h1><?= htmlspecialchars($profile['project_name']) ?></h1>
-  <p><?= htmlspecialchars($profile['region_name'] ?? '') ?> · <?= htmlspecialchars($profile['preconstruction_status']) ?> · <?= htmlspecialchars($profile['recommended_decision'] ?? 'Hold') ?></p>
-</section>
+<?php
+$recordEyebrow = 'Preconstruction Workspace';
+$recordName = $profile['project_name'];
+$recordType = 'Preconstruction Profile';
+$recordRegion = $profile['region_name'] ?? 'National';
+$recordOwner = $profile['owner'] ?? 'Unassigned';
+$recordStatus = $profile['preconstruction_status'];
+$recordScore = (int)($profile['bid_score'] ?? 0);
+$recordNextAction = $profile['recommended_decision'] ?? 'Review bid, capacity, margin, and risk.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Package for SyncERP','Mark Reviewed'];
+$timelineItems = [
+  ['type' => 'Bid Decision', 'title' => $profile['recommended_decision'] ?? 'Hold', 'why' => $profile['bid_reason'] ?? 'Bid/no-bid decision controls whether this moves toward handoff.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $profile['updated_at'] ?? $profile['created_at'] ?? ''],
+  ['type' => 'Risk Review', 'title' => count($profile['risks']) . ' risks tracked', 'why' => 'Open preconstruction risks can block bid readiness or execution handoff.', 'next' => 'Resolve critical risks before handoff.', 'owner' => $recordOwner, 'date' => $profile['updated_at'] ?? ''],
+];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Conversations','Capacity','Tasks / Actions','Documents','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <nav class="dash-tabs">
   <a href="/preconstruction">Preconstruction</a>
@@ -18,6 +31,9 @@
   <div><span>Margin</span><strong><?= number_format((float)($profile['estimated_margin_percent'] ?? 0), 1) ?>%</strong></div>
   <div><span>Confidence</span><strong><?= (int)($profile['confidence_score'] ?? 0) ?></strong></div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="grid two">
   <article class="panel">

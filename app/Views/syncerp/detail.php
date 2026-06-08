@@ -1,8 +1,21 @@
-<section class="page-header">
-  <p class="eyebrow">Execution Package View</p>
-  <h1><?= htmlspecialchars($package['package_name']) ?></h1>
-  <p><?= htmlspecialchars($package['customer_name']) ?> · <?= htmlspecialchars($package['region_name'] ?? '') ?> · <?= htmlspecialchars($package['readiness_category'] ?? 'Not Ready') ?></p>
-</section>
+<?php
+$recordEyebrow = 'Project Package Workspace';
+$recordName = $package['package_name'];
+$recordType = 'Project Package';
+$recordRegion = $package['region_name'] ?? 'National';
+$recordOwner = $package['package_owner'] ?? 'Unassigned';
+$recordStatus = $package['readiness_category'] ?? $package['package_status'];
+$recordScore = (int)($package['readiness_score'] ?? 0);
+$recordNextAction = $package['blockers'] ? 'Resolve blockers: ' . $package['blockers'] : 'Review package and mark ready for SyncERP handoff.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Package for SyncERP','Mark Reviewed'];
+$timelineItems = [
+  ['type' => 'ERP Readiness', 'title' => 'Readiness score ' . (int)$package['readiness_score'], 'why' => $package['blockers'] ?: 'Package appears ready for handoff review.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $package['updated_at'] ?? $package['created_at'] ?? ''],
+  ['type' => 'Package Snapshot', 'title' => 'Capacity and relationship context preserved', 'why' => 'The handoff package prevents re-entry and protects acquisition context.', 'next' => 'Review snapshots before import.', 'owner' => $recordOwner, 'date' => $package['created_at'] ?? ''],
+];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Contacts / People','Conversations','Capacity','Tasks / Actions','Documents','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <nav class="dash-tabs">
   <a href="/syncerp-integration">SyncERP Integration</a>
@@ -17,6 +30,9 @@
   <div><span>Value</span><strong>$<?= number_format((float)$package['estimated_value']) ?></strong></div>
   <div><span>Margin</span><strong><?= number_format((float)$package['estimated_margin'], 1) ?>%</strong></div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="grid two">
   <article class="panel"><h2>Opportunity Summary</h2><p><strong>Customer:</strong> <?= htmlspecialchars($package['customer_name']) ?></p><p><strong>Market:</strong> <?= htmlspecialchars($package['market']) ?></p><p><strong>State:</strong> <?= htmlspecialchars($package['state']) ?></p><p><?= htmlspecialchars($package['notes']) ?></p></article>

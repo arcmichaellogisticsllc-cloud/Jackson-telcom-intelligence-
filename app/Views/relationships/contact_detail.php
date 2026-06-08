@@ -1,8 +1,17 @@
-<section class="page-header">
-  <p class="eyebrow">Relationship Asset</p>
-  <h1><?= htmlspecialchars(trim($contact['first_name'] . ' ' . $contact['last_name'])) ?></h1>
-  <p><?= htmlspecialchars($contact['title'] ?? '') ?> · <?= htmlspecialchars($contact['organization_name'] ?? '') ?> · <?= htmlspecialchars($contact['region_name'] ?? '') ?></p>
-</section>
+<?php
+$recordEyebrow = 'Relationship Workspace';
+$recordName = trim($contact['first_name'] . ' ' . $contact['last_name']);
+$recordType = $contact['title'] ?: 'Contact';
+$recordRegion = $contact['region_name'] ?? 'National';
+$recordOwner = $contact['relationship_owner'] ?? 'Unassigned';
+$recordStatus = $contact['relationship_status'] ?? $contact['relationship_strength'] ?? 'Unknown';
+$recordScore = (int)($contact['relationship_value_score'] ?? 0);
+$recordNextAction = $contact['next_best_action'] ?? $contact['next_action'] ?? '';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Relationship Action','Mark Reviewed'];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Conversations','People','Tasks / Actions','Notes','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <section class="metrics">
   <div><span>Influence Value</span><strong><?= (int)($contact['relationship_value_score'] ?? 0) ?></strong><small><?= htmlspecialchars($contact['relationship_priority'] ?? '') ?></small></div>
@@ -11,6 +20,9 @@
   <div><span>Relationship Strength</span><strong><?= htmlspecialchars($contact['relationship_strength'] ?? '') ?></strong></div>
   <div><span>Owner</span><strong><?= htmlspecialchars($contact['relationship_owner'] ?? '') ?></strong></div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="grid two">
   <div class="panel">

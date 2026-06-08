@@ -1,8 +1,17 @@
-<section class="page-header">
-  <p class="eyebrow">Subcontractor Candidate</p>
-  <h1><?= htmlspecialchars($subcontractor['company_name'] ?: $subcontractor['organization_name']) ?></h1>
-  <p><?= htmlspecialchars($subcontractor['region_name']) ?> · <?= htmlspecialchars($subcontractor['approval_stage']) ?> · <?= (int)$subcontractor['available_crew_count'] ?> available crews</p>
-</section>
+<?php
+$recordEyebrow = 'Subcontractor Workspace';
+$recordName = $subcontractor['company_name'] ?: $subcontractor['organization_name'];
+$recordType = 'Subcontractor';
+$recordRegion = $subcontractor['region_name'];
+$recordOwner = $subcontractor['owner_name'] ?: 'Unassigned';
+$recordStatus = $subcontractor['approval_stage'];
+$recordScore = (int)($subcontractor['capacity_contribution_score'] ?? $subcontractor['qualification_score'] ?? 0);
+$recordNextAction = $subcontractor['promotion_recommendation'] ?? 'Review qualification, compliance, and capacity fit.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Promote Subcontractor','Mark Reviewed'];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Conversations','Capacity','Tasks / Actions','Documents','Notes','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <section class="metrics">
   <div><span>Qualification Score</span><strong><?= (int)($subcontractor['qualification_score'] ?? 0) ?></strong><small><?= htmlspecialchars($subcontractor['qualification_result'] ?? '') ?></small></div>
@@ -84,6 +93,9 @@
     </form>
   </div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="panel">
   <h2>Activity Timeline</h2>

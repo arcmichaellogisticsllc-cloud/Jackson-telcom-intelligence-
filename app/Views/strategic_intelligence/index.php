@@ -26,7 +26,7 @@
     <div class="panel-title"><h2>Who Has Work</h2><span class="status">Strategic Accounts</span></div>
     <div class="table-wrap"><table><thead><tr><th>Account</th><th>Theater</th><th>Scores</th><th>Gap / Action</th></tr></thead><tbody>
       <?php foreach ($accounts as $account): ?><tr>
-        <td><strong><?= htmlspecialchars($account['account_name']) ?></strong><br><small><?= htmlspecialchars($account['account_type']) ?> · <?= htmlspecialchars($account['market'] ?? '') ?></small></td>
+        <td><strong><a href="/strategic-account-intelligence/detail?id=<?= (int)$account['id'] ?>"><?= htmlspecialchars($account['account_name']) ?></a></strong><br><small><?= htmlspecialchars($account['account_type']) ?> · <?= htmlspecialchars($account['market'] ?? '') ?></small></td>
         <td><?= htmlspecialchars($account['region_name'] ?? '') ?><br><small><?= htmlspecialchars($account['owner'] ?? $account['primary_owner'] ?? '') ?></small></td>
         <td>Rel <?= (int)($account['relationship_health_score'] ?? $account['relationship_coverage_score']) ?> · Opp <?= (int)($account['opportunity_score'] ?? $account['opportunity_volume_score']) ?><br><small>Influence <?= (int)$account['influence_coverage_score'] ?> · Strategic <?= (int)$account['strategic_score'] ?></small></td>
         <td><?= htmlspecialchars($account['recommended_action'] ?? $account['next_best_action'] ?? '') ?><br><small><?= (int)($account['recent_signal_count'] ?? 0) ?> recent signals</small></td>

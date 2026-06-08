@@ -134,6 +134,8 @@ require __DIR__ . '/../components/action_first.php';
 
 <?php $widgets = $widgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+
 <section class="metrics command-metrics">
   <div><span>Approved Network</span><strong><?= (int)$totals['approved_subcontractors'] ?></strong></div>
   <div><span>Available Crews</span><strong><?= (int)$totals['available_crews'] ?></strong></div>

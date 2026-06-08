@@ -44,7 +44,9 @@ class RelationshipController extends Controller
         }
         $profileId = (int)($contact['profile_id'] ?? 0);
         $detail = $this->profileDetail($db, $profileId);
-        $this->view('relationships/contact_detail', compact('contact', 'detail'));
+        $recentConversations = $this->conversationRows($db, 'Contact', $id, (int)($contact['organization_id'] ?? 0), (int)($contact['region_id'] ?? 0));
+        $timelineItems = $this->timelineRows($recentConversations);
+        $this->view('relationships/contact_detail', compact('contact', 'detail', 'recentConversations', 'timelineItems'));
     }
 
     public function organizationDetail(): void
@@ -63,7 +65,9 @@ class RelationshipController extends Controller
         $profiles->execute([$id]);
         $risks = $db->prepare('SELECT rr.*, rip.relationship_value_score, c.first_name, c.last_name FROM relationship_risks rr JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id LEFT JOIN contacts c ON c.id = rip.contact_id WHERE rip.organization_id = ? AND rr.status = "Open" ORDER BY CASE rr.severity WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END');
         $risks->execute([$id]);
-        $this->view('relationships/organization_detail', ['organization' => $organization, 'profiles' => $profiles->fetchAll(), 'risks' => $risks->fetchAll()]);
+        $recentConversations = $this->conversationRows($db, 'Organization', $id, $id, (int)($organization['region_id'] ?? 0));
+        $timelineItems = $this->timelineRows($recentConversations);
+        $this->view('relationships/organization_detail', ['organization' => $organization, 'profiles' => $profiles->fetchAll(), 'risks' => $risks->fetchAll(), 'recentConversations' => $recentConversations, 'timelineItems' => $timelineItems]);
     }
 
     public function convertSignal(): void
@@ -114,6 +118,18 @@ class RelationshipController extends Controller
             'open_actions' => count($actions),
         ];
         $this->view('relationships/graph', compact('title', 'subtitle', 'regionName', 'profiles', 'critical', 'projectManagers', 'objectiveRows', 'risks', 'actions', 'signals', 'metrics'));
+    }
+
+    private function conversationRows($db, string $linkedType, int $recordId, int $organizationId, int $regionId): array
+    {
+        $stmt = $db->prepare('SELECT * FROM communication_records WHERE (linked_record_type = ? AND linked_record_id = ?) OR organization_id = ? OR region_id = ? ORDER BY communication_date DESC LIMIT 8');
+        $stmt->execute([$linkedType, $recordId, $organizationId, $regionId]);
+        return $stmt->fetchAll();
+    }
+
+    private function timelineRows(array $conversations): array
+    {
+        return array_map(fn($row) => ['type' => $row['communication_type'], 'title' => $row['summary'], 'why' => $row['outcome'] ?: 'Conversation activity may change relationship access or next action.', 'next' => $row['next_step'] ?: 'Assign a follow-up if needed.', 'owner' => $row['owner'], 'date' => $row['communication_date']], $conversations);
     }
 
     private function profileDetail($db, int $profileId): array

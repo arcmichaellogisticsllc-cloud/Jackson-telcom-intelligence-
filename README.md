@@ -1681,6 +1681,76 @@ This layer feeds:
 
 Executive packages are generated for strategic accounts, workforce influence/recruitment, and competitor threats. Each package answers what it is, why it matters, what to do, and what happens if Jackson does nothing.
 
+## Workspace UX Doctrine
+
+The platform is organized around workspaces, not engines.
+
+Primary rule:
+
+`Modules feed intelligence. Workspaces organize action.`
+
+Operators should navigate:
+
+- COMMAND: what matters today
+- WORK: what work exists and what should be pursued
+- CAPACITY: who can perform work and who needs work
+- RELATIONSHIPS: who influences work and what conversations happened
+- MARKET: what is happening in the market
+- GROWTH: what should be reviewed, published, distributed, or monitored
+- OPERATIONS: what is ready for SyncERP handoff
+- SYSTEM: health, settings, automation, integrity, and administration
+
+The left navigation uses expandable workspace groups so the platform does not expose every internal module at once. Existing routes remain available, but the operator experience starts with Command Center and workspace home pages.
+
+### Record Workspace Pattern
+
+Major records use a consistent action-first workspace pattern:
+
+- record name
+- type
+- region
+- owner
+- status
+- score
+- next best action
+- primary action buttons
+- relevant tabs
+
+Supported record workspaces include strategic accounts, contacts, organizations, opportunities/pursuits, subcontractors, preconstruction profiles, and project packages.
+
+Tabs are standardized around:
+
+- Overview
+- Timeline
+- Contacts / People
+- Conversations
+- Opportunities / Pursuits
+- Capacity
+- Tasks / Actions
+- Notes
+- Documents
+- History
+
+Only relevant tabs are shown for each record type.
+
+### Timeline And Conversations
+
+Recent Conversations are visible on the Command Center and major record pages. They show calls, email drafts, meetings, notes, follow-ups, outcomes, next action, owner, and date.
+
+The Unified Intelligence Timeline summarizes what happened, why it matters, the next step, and owner. Timeline items may come from conversations, signals, escalations, recommendations, pursuit decisions, capacity events, risks, or package handoff events.
+
+### Daily Operator Flow
+
+1. Open Jackson Telcom Command Center.
+2. Review Top 5 Actions and Recent Conversations.
+3. Open the relevant workspace.
+4. Open the record workspace.
+5. Take the next action.
+6. Log the outcome or create follow-up.
+7. Return to Command Center.
+
+The UX intentionally hides internal scoring and engine complexity behind workspace and record views.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

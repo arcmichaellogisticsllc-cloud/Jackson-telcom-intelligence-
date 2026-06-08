@@ -1,8 +1,17 @@
-<section class="page-header">
-  <p class="eyebrow">Influence Account</p>
-  <h1><?= htmlspecialchars($organization['name']) ?></h1>
-  <p><?= htmlspecialchars($organization['type']) ?> · <?= htmlspecialchars($organization['region_name'] ?? '') ?> · <?= htmlspecialchars($organization['city'] ?? '') ?> <?= htmlspecialchars($organization['state'] ?? '') ?></p>
-</section>
+<?php
+$recordEyebrow = 'Account Workspace';
+$recordName = $organization['name'];
+$recordType = $organization['type'];
+$recordRegion = $organization['region_name'] ?? 'National';
+$recordOwner = 'Unassigned';
+$recordStatus = $organization['status'] ?? 'Active';
+$recordScore = count($profiles) ? max(array_map(fn($row) => (int)$row['relationship_value_score'], $profiles)) : 0;
+$recordNextAction = count($profiles) ? ($profiles[0]['next_best_action'] ?? 'Review influence map and assign next relationship action.') : 'Create first relationship profile or contact.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Owner','Mark Reviewed'];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Contacts / People','Conversations','Opportunities / Pursuits','Tasks / Actions','Notes','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <section class="grid two">
   <div class="panel">
@@ -22,6 +31,9 @@
     </tbody></table></div>
   </div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="panel">
   <div class="panel-title"><h2>Influence Map</h2><span class="status"><?= count($profiles) ?> relationships</span></div>

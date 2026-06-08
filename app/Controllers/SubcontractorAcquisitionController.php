@@ -43,7 +43,11 @@ class SubcontractorAcquisitionController extends Controller
         $documents->execute([$id]);
         $activities = $db->prepare('SELECT * FROM activities WHERE entity_type = "subcontractor" AND entity_id = ? ORDER BY activity_date DESC LIMIT 20');
         $activities->execute([$id]);
-        $this->view('subcontractors/detail', ['subcontractor' => $subcontractor, 'compliance' => $compliance->fetchAll(), 'documents' => $documents->fetchAll(), 'activities' => $activities->fetchAll(), 'pipeline' => SubcontractorAcquisitionService::PIPELINE, 'documentTypes' => array_merge(SubcontractorAcquisitionService::DOCUMENTS, ['Other'])]);
+        $conversationStmt = $db->prepare('SELECT * FROM communication_records WHERE organization_id = ? OR region_id = ? ORDER BY communication_date DESC LIMIT 8');
+        $conversationStmt->execute([(int)$subcontractor['organization_id'], (int)$subcontractor['region_id']]);
+        $recentConversations = $conversationStmt->fetchAll();
+        $timelineItems = array_map(fn($row) => ['type' => $row['communication_type'], 'title' => $row['summary'], 'why' => $row['outcome'] ?: 'Conversation may affect subcontractor qualification, compliance, or capacity readiness.', 'next' => $row['next_step'] ?: 'Create follow-up if needed.', 'owner' => $row['owner'], 'date' => $row['communication_date']], $recentConversations);
+        $this->view('subcontractors/detail', ['subcontractor' => $subcontractor, 'compliance' => $compliance->fetchAll(), 'documents' => $documents->fetchAll(), 'activities' => $activities->fetchAll(), 'recentConversations' => $recentConversations, 'timelineItems' => $timelineItems, 'pipeline' => SubcontractorAcquisitionService::PIPELINE, 'documentTypes' => array_merge(SubcontractorAcquisitionService::DOCUMENTS, ['Other'])]);
     }
 
     public function saveScorecard(): void

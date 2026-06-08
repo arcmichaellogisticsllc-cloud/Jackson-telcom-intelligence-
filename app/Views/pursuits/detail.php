@@ -1,8 +1,21 @@
-<section class="page-header">
-  <p class="eyebrow">Pursuit Detail</p>
-  <h1><?= htmlspecialchars($opportunity['name']) ?></h1>
-  <p><?= htmlspecialchars($opportunity['region_name'] ?? 'National') ?> · <?= htmlspecialchars($opportunity['classification'] ?? 'Unclassified') ?> · <?= htmlspecialchars($opportunity['recommended_decision'] ?? 'Monitor') ?></p>
-</section>
+<?php
+$recordEyebrow = 'Pursuit Workspace';
+$recordName = $opportunity['name'];
+$recordType = $opportunity['classification'] ?? 'Opportunity';
+$recordRegion = $opportunity['region_name'] ?? 'National';
+$recordOwner = $opportunity['owner'] ?? 'Unassigned';
+$recordStatus = $opportunity['recommended_decision'] ?? 'Monitor';
+$recordScore = (int)($opportunity['pursuit_score'] ?? 0);
+$recordNextAction = $opportunity['next_best_action'] ?? $opportunity['next_action'] ?? '';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Approve Pursuit','Create Preconstruction Profile'];
+$timelineItems = [
+  ['type' => 'Pursuit Decision', 'title' => $recordStatus, 'why' => $opportunity['decision_reason'] ?? $opportunity['reason'] ?? 'Pursuit decision affects whether Jackson spends relationship, capacity, and preconstruction attention.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $opportunity['updated_at'] ?? $opportunity['created_at'] ?? ''],
+  ['type' => 'Capacity Fit', 'title' => 'Capacity fit score ' . (int)($opportunity['capacity_fit_score'] ?? 0), 'why' => $opportunity['capacity_gap'] ?: 'Capacity appears sufficient for the current pursuit stage.', 'next' => 'Review Capacity Radar before proposal commitment.', 'owner' => $recordOwner, 'date' => $opportunity['updated_at'] ?? ''],
+];
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Contacts / People','Conversations','Opportunities / Pursuits','Capacity','Tasks / Actions','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
 
 <nav class="dash-tabs">
   <a href="/pursuits">Pursuit Board</a>
@@ -22,6 +35,9 @@
   <div><span>Capacity Fit</span><strong><?= (int)($opportunity['capacity_fit_score'] ?? 0) ?></strong></div>
   <div><span>Risk</span><strong><?= (int)($opportunity['risk_score'] ?? 0) ?></strong></div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="grid two">
   <article class="panel">
