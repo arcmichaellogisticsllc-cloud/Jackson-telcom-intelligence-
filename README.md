@@ -1653,6 +1653,34 @@ Integration Status tracks Draft, Ready, Exported, Imported, Executing, and Close
 
 The Executive Handoff Brief shows ready packages, blocked packages, missing capacity, missing risk review, and packages awaiting import. The ERP Integration Contract is documented in `docs/erp-integration-contract.md` and defines the future fields SyncERP will receive.
 
+## Strategic Account, Workforce & Competitive Intelligence
+
+This layer closes three final acquisition blind spots:
+
+- Strategic Account Intelligence: who has work, where account coverage is weak, which project managers and construction leaders matter, and what capacity demand may follow.
+- Workforce Intelligence: who runs the work, who can create access, who can be recruited, and which field or technical leaders can support capacity.
+- Competitive Intelligence: who else is chasing the work through hiring spikes, awards, office expansion, and subcontractor recruiting.
+
+The operating questions are:
+
+- Who has work?
+- Who runs the work?
+- Who wants the work?
+- Who else is chasing the work?
+
+Strategic account records track relationship health, opportunity value, capacity demand, influence coverage, strategic value, account status, recent signals, and recommended action. Workforce profiles track project leaders, OSP managers, construction managers, foremen, splicers, bore operators, aerial leads, inspectors, and QC leads by influence, recruitability, and relationship value. Competitor profiles track MasTec, Congruex, Ervin, Ansco, SQUAN, Utilities One, National OnDemand, and other pressure sources by market.
+
+This layer feeds:
+
+- Decision Support recommendations
+- Acquisition Command Center widgets
+- Executive Packages
+- Market Intelligence
+- Relationship Graph
+- Demand and Signal review
+
+Executive packages are generated for strategic accounts, workforce influence/recruitment, and competitor threats. Each package answers what it is, why it matters, what to do, and what happens if Jackson does nothing.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

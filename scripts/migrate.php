@@ -88,6 +88,15 @@ $columns = [
         'status' => 'TEXT DEFAULT "New"',
         'recommended_next_action' => 'TEXT',
     ],
+    'strategic_accounts' => [
+        'market' => 'TEXT',
+        'owner' => 'TEXT',
+        'relationship_health_score' => 'INTEGER DEFAULT 0',
+        'opportunity_score' => 'INTEGER DEFAULT 0',
+        'account_status' => 'TEXT DEFAULT "Active"',
+        'recent_signal_count' => 'INTEGER DEFAULT 0',
+        'recommended_action' => 'TEXT',
+    ],
 ];
 
 foreach ($columns as $table => $defs) {

@@ -18,10 +18,10 @@
     <nav>
       <?php $navGroups = [
         'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/executive-packages' => 'Decision Packages','/executive-briefs' => 'Executive Briefs','/daily-brief' => 'Executive Brief','/briefing' => 'Daily Brief','/decision-support' => 'Decision Support','/strategic-review' => 'Strategic Review'],
-        'WORK' => ['/acquisition-command' => 'Work Intelligence','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
+        'WORK' => ['/acquisition-command' => 'Work Intelligence','/strategic-account-intelligence' => 'Strategic Accounts','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction','/opportunities' => 'Opportunities'],
         'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners'],
         'RELATIONSHIPS' => ['/communications' => 'Communications','/relationship-graph' => 'Relationship Graph','/network-intelligence' => 'Network Intelligence','/relationships' => 'Influence Network','/contacts' => 'Contacts'],
-        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/harvesters' => 'Acquisition Harvesters'],
+        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/workforce-intelligence' => 'Workforce Intelligence','/competitive-intelligence' => 'Competitive Intelligence','/harvesters' => 'Acquisition Harvesters'],
         'GROWTH' => ['/demand' => 'Demand Engine','/traffic' => 'Content','/outreach' => 'Distribution'],
         'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration'],
         'SETTINGS' => ['/settings' => 'Settings','/platform-review' => 'Administration','/operator-modes' => 'Operator Modes','/ownership-matrix' => 'Ownership Matrix','/strategic-accounts' => 'Strategic Accounts','/forecasts' => 'Forecasts','/organizations' => 'Organizations','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],

@@ -17,6 +17,7 @@ use App\Services\OpportunityPursuitService;
 use App\Services\PlatformReviewService;
 use App\Services\ProjectPackageAssemblyService;
 use App\Services\RelationshipIntelligenceService;
+use App\Services\StrategicWorkforceCompetitiveService;
 
 class DashboardController extends Controller
 {
@@ -46,6 +47,7 @@ class DashboardController extends Controller
         $syncWidgets = (new ProjectPackageAssemblyService())->dashboardData();
         $marketWidgets = (new MarketIntelligenceService())->dashboardData();
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData();
+        $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
         $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
         $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
         $topOpportunities = $db->query('SELECT op.*, r.name region_name FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.stage NOT IN ("Awarded","Lost") ORDER BY op.estimated_value DESC LIMIT 8')->fetchAll();
@@ -74,6 +76,7 @@ class DashboardController extends Controller
             'syncWidgets' => $syncWidgets,
             'marketWidgets' => $marketWidgets,
             'executiveWidgets' => $executiveWidgets,
+            'strategicIntel' => $strategicIntel,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
             'topOpportunities' => $topOpportunities,

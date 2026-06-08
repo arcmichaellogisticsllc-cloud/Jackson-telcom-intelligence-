@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS workforce_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  current_company TEXT,
+  previous_company TEXT,
+  role_type TEXT NOT NULL CHECK(role_type IN ('Program Manager','Project Manager','Construction Manager','OSP Manager','Foreman','Crew Leader','Fiber Splicer','Bore Operator','Aerial Lead','Inspector','QC Lead')),
+  region_id INTEGER,
+  market TEXT,
+  skills TEXT,
+  availability_status TEXT CHECK(availability_status IN ('Unknown','Employed','Changing Companies','Open to Work','Recruitable','Not Recruitable')),
+  influence_score INTEGER DEFAULT 0,
+  recruitability_score INTEGER DEFAULT 0,
+  relationship_score INTEGER DEFAULT 0,
+  notes TEXT,
+  source_signal_count INTEGER DEFAULT 0,
+  recommended_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);
+
+CREATE TABLE IF NOT EXISTS competitor_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  competitor_name TEXT NOT NULL,
+  region_id INTEGER,
+  market TEXT,
+  services TEXT,
+  hiring_activity TEXT,
+  award_activity TEXT,
+  office_expansion_activity TEXT,
+  subcontractor_recruiting_activity TEXT,
+  capacity_growth_score INTEGER DEFAULT 0,
+  competitive_pressure_score INTEGER DEFAULT 0,
+  threat_level TEXT NOT NULL CHECK(threat_level IN ('Low','Medium','High','Critical')),
+  notes TEXT,
+  source_signal_count INTEGER DEFAULT 0,
+  recommended_action TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(region_id) REFERENCES regions(id)
+);

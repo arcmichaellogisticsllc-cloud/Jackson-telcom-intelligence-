@@ -16,6 +16,9 @@ class ExecutivePackagingService
         $this->buildNeedPackages($db);
         $this->buildInfluencePackages($db);
         $this->buildDecisionPackages($db);
+        $this->buildStrategicAccountPackages($db);
+        $this->buildWorkforcePackages($db);
+        $this->buildCompetitorThreatPackages($db);
         $this->buildBriefs($db);
     }
 
@@ -197,6 +200,92 @@ class ExecutivePackagingService
         $this->decisionFromGrowthBlockers($db);
     }
 
+    private function buildStrategicAccountPackages(PDO $db): void
+    {
+        if (!$this->tableExists($db, 'strategic_accounts')) {
+            return;
+        }
+        $rows = $db->query('SELECT sa.*, r.owner region_owner FROM strategic_accounts sa LEFT JOIN regions r ON r.id = sa.region_id WHERE COALESCE(sa.strategic_score,0) >= 78 ORDER BY sa.strategic_score DESC LIMIT 14')->fetchAll();
+        foreach ($rows as $row) {
+            $summary = $row['account_name'] . ' is a strategic account in ' . ($row['market'] ?? 'fiber backbone work') . ' with account coverage and opportunity value.';
+            $id = $this->createPackage($db, [
+                'title' => 'Strategic account: ' . $row['account_name'],
+                'type' => 'Strategic',
+                'region_id' => $row['region_id'],
+                'market' => $row['market'] ?? $row['account_type'],
+                'confidence' => $row['relationship_health_score'] ?? $row['relationship_coverage_score'] ?? 70,
+                'impact' => $row['strategic_score'],
+                'urgency' => max((int)($row['opportunity_score'] ?? $row['opportunity_volume_score']), (int)$row['capacity_demand_score']),
+                'decision' => 'Should Jackson strengthen account coverage or assign executive relationship action?',
+                'summary' => $summary,
+                'action' => $row['recommended_action'] ?? $row['next_best_action'],
+                'risk' => 'May lose project access, decision-maker coverage, or early visibility into future backbone work.',
+                'owner' => $this->owner($row['owner'] ?? $row['primary_owner'] ?? $row['region_owner'] ?? ''),
+                'source_type' => 'strategic_account',
+                'source_id' => $row['id'],
+            ]);
+            $db->prepare('INSERT INTO decision_packages (executive_package_id, decision_type, supporting_evidence, supporting_signals, supporting_relationships, risks, confidence, recommendation) VALUES (?, "Strengthen Relationship", ?, ?, ?, ?, ?, ?)')->execute([$id, 'Strategic score ' . (int)$row['strategic_score'] . ', opportunity score ' . (int)($row['opportunity_score'] ?? $row['opportunity_volume_score']) . '.', (int)($row['recent_signal_count'] ?? 0) . ' recent account signals.', 'Influence coverage score ' . (int)$row['influence_coverage_score'] . '.', 'Weak account coverage can delay access to work before competitors move.', (int)($row['relationship_health_score'] ?? $row['relationship_coverage_score'] ?? 70), $row['recommended_action'] ?? $row['next_best_action']]);
+            $this->addActions($db, $id, ['Call','Email','Add Note','Create Follow-Up','Assign Relationship Action','Mark Complete']);
+        }
+    }
+
+    private function buildWorkforcePackages(PDO $db): void
+    {
+        if (!$this->tableExists($db, 'workforce_profiles')) {
+            return;
+        }
+        $rows = $db->query('SELECT wp.*, r.owner region_owner FROM workforce_profiles wp LEFT JOIN regions r ON r.id = wp.region_id WHERE wp.influence_score >= 82 OR wp.recruitability_score >= 80 ORDER BY MAX(wp.influence_score, wp.recruitability_score) DESC LIMIT 14')->fetchAll();
+        foreach ($rows as $row) {
+            $isRecruit = (int)$row['recruitability_score'] >= (int)$row['influence_score'];
+            $id = $this->createPackage($db, [
+                'title' => ($isRecruit ? 'Workforce recruit: ' : 'Workforce influence: ') . $row['name'],
+                'type' => $isRecruit ? 'Capacity' : 'Influence',
+                'region_id' => $row['region_id'],
+                'market' => $row['market'],
+                'confidence' => max((int)$row['relationship_score'], 58),
+                'impact' => max((int)$row['influence_score'], (int)$row['recruitability_score']),
+                'urgency' => $row['availability_status'] === 'Changing Companies' ? 86 : max((int)$row['influence_score'], (int)$row['recruitability_score']),
+                'decision' => 'Should Jackson contact, recruit, or strengthen this workforce relationship?',
+                'summary' => $row['name'] . ' is a ' . $row['role_type'] . ' tied to ' . $row['current_company'] . ' and ' . $row['market'] . '.',
+                'action' => $row['recommended_action'],
+                'risk' => 'May miss a person who can run work, reveal work, recruit crews, or open account access.',
+                'owner' => $this->owner($row['region_owner'] ?? ''),
+                'source_type' => 'workforce_profile',
+                'source_id' => $row['id'],
+            ]);
+            $db->prepare('INSERT INTO decision_packages (executive_package_id, decision_type, supporting_evidence, supporting_relationships, supporting_capacity, risks, confidence, recommendation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([$id, $isRecruit ? 'Recruit Capacity' : 'Strengthen Relationship', 'Role ' . $row['role_type'] . ', availability ' . $row['availability_status'] . '.', 'Influence score ' . (int)$row['influence_score'] . ', relationship score ' . (int)$row['relationship_score'] . '.', 'Recruitability score ' . (int)$row['recruitability_score'] . '.', 'Workforce movement often creates both account access and capacity options.', max((int)$row['relationship_score'], 58), $row['recommended_action']]);
+            $this->addActions($db, $id, ['Call','Email','Add Note','Create Follow-Up','Assign Hunt','Assign Relationship Action']);
+        }
+    }
+
+    private function buildCompetitorThreatPackages(PDO $db): void
+    {
+        if (!$this->tableExists($db, 'competitor_profiles')) {
+            return;
+        }
+        $rows = $db->query('SELECT cp.*, r.owner region_owner FROM competitor_profiles cp LEFT JOIN regions r ON r.id = cp.region_id WHERE cp.threat_level IN ("High","Critical") ORDER BY cp.competitive_pressure_score DESC LIMIT 12')->fetchAll();
+        foreach ($rows as $row) {
+            $id = $this->createPackage($db, [
+                'title' => 'Competitor threat: ' . $row['competitor_name'],
+                'type' => 'Risk',
+                'region_id' => $row['region_id'],
+                'market' => $row['market'],
+                'confidence' => min(100, 62 + (int)$row['source_signal_count'] * 4),
+                'impact' => $row['competitive_pressure_score'],
+                'urgency' => $row['threat_level'] === 'Critical' ? 94 : 82,
+                'decision' => 'Should Jackson increase account, capacity, or market defense in this theater?',
+                'summary' => $row['competitor_name'] . ' shows competitive pressure in ' . $row['market'] . '.',
+                'action' => $row['recommended_action'],
+                'risk' => 'Competitor hiring, awards, or subcontractor recruiting may signal work moving before Jackson has coverage.',
+                'owner' => $this->owner($row['region_owner'] ?? ''),
+                'source_type' => 'competitor_profile',
+                'source_id' => $row['id'],
+            ]);
+            $db->prepare('INSERT INTO decision_packages (executive_package_id, decision_type, supporting_evidence, risks, confidence, recommendation) VALUES (?, "Mitigate Risk", ?, ?, ?, ?)')->execute([$id, $row['hiring_activity'] . ' ' . $row['award_activity'] . ' ' . $row['subcontractor_recruiting_activity'], 'Competitive pressure score ' . (int)$row['competitive_pressure_score'] . ' and threat level ' . $row['threat_level'] . '.', min(100, 62 + (int)$row['source_signal_count'] * 4), $row['recommended_action']]);
+            $this->addActions($db, $id, ['Add Note','Create Follow-Up','Assign Hunt','Assign Relationship Action','Mark Complete']);
+        }
+    }
+
     private function decisionFromPursuits(PDO $db): void
     {
         $rows = $db->query('SELECT opd.*, op.name opportunity_name, op.market, op.estimated_value, op.capacity_required, ps.pursuit_score, ps.risk_score, ps.relationship_fit_score, ps.capacity_fit_score, r.owner region_owner FROM opportunity_pursuit_decisions opd JOIN opportunities op ON op.id = opd.opportunity_id LEFT JOIN pursuit_scores ps ON ps.opportunity_id = op.id LEFT JOIN regions r ON r.id = op.region_id WHERE opd.recommended_decision IN ("Pursue Aggressively","Pursue","Avoid") ORDER BY ps.pursuit_score DESC, ps.risk_score DESC LIMIT 16')->fetchAll();
@@ -371,6 +460,13 @@ class ExecutivePackagingService
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    private function tableExists(PDO $db, string $table): bool
+    {
+        $stmt = $db->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?");
+        $stmt->execute([$table]);
+        return (bool)$stmt->fetchColumn();
     }
 
     private function urgency(string $value): int
