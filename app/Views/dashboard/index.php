@@ -69,6 +69,29 @@ $actionHref = function (array $action): string {
 
 $categoryLabels = ['Capacity' => 'Capacity', 'Relationship' => 'Relationship', 'Opportunity' => 'Pursuit', 'Demand' => 'Growth', 'Content' => 'Growth', 'Hunt' => 'Capacity', 'Subcontractor' => 'Capacity', 'Risk' => 'Risk'];
 $criticalHealth = array_values(array_filter($healthChecks, fn($check) => in_array(strtolower((string)($check['status'] ?? 'pass')), ['fail', 'warn'], true)));
+$workflowCards = [
+    [
+        'title' => 'Onboard Ground Crew',
+        'current' => ((int)($onboardingMetrics['New Capacity Being Created'] ?? 0)) . ' capacity records in onboarding',
+        'next' => ((int)($onboardingMetrics['Missing Documents'] ?? 0)) > 0 ? 'Generate intake links or review missing documents.' : 'Add the next real crew or review submitted intake.',
+        'href' => '/onboarding/subcontractors#add-ground-crew',
+        'cta' => 'Open Onboarding',
+    ],
+    [
+        'title' => 'Clear Capacity Blocker',
+        'current' => count($blockers) . ' critical blockers on this screen',
+        'next' => $blockers ? 'Assign capacity hunts and move matching providers into onboarding.' : 'No critical blocker is active. Review capacity radar for emerging gaps.',
+        'href' => '/capacity-radar',
+        'cta' => 'Open Capacity Radar',
+    ],
+    [
+        'title' => 'Move Work Toward Pursuit',
+        'current' => count($opportunities) . ' top opportunities surfaced',
+        'next' => $opportunities ? 'Open the decision queue and confirm pursue, hold, or avoid.' : 'No opportunity is currently waiting on this screen.',
+        'href' => '/executive-packages',
+        'cta' => 'Open Decision Queue',
+    ],
+];
 ?>
 
 <section class="command-hero">
@@ -119,6 +142,20 @@ $criticalHealth = array_values(array_filter($healthChecks, fn($check) => in_arra
       </article>
     <?php endforeach; ?>
     <?php if (!$topActions): ?><article class="empty-state"><h3>No urgent actions</h3><p>Run the acquisition cycle or review escalations if this seems wrong.</p></article><?php endif; ?>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-title"><div><p class="eyebrow">Workflow</p><h2>Move Work Forward</h2></div><span class="status">Guided Next Steps</span></div>
+  <div class="workflow-rail">
+    <?php foreach ($workflowCards as $card): ?>
+      <article>
+        <h3><?= htmlspecialchars($card['title']) ?></h3>
+        <p><strong>Current:</strong> <?= htmlspecialchars($card['current']) ?></p>
+        <p><strong>Next:</strong> <?= htmlspecialchars($card['next']) ?></p>
+        <a class="btn secondary" href="<?= htmlspecialchars($card['href']) ?>"><?= htmlspecialchars($card['cta']) ?></a>
+      </article>
+    <?php endforeach; ?>
   </div>
 </section>
 

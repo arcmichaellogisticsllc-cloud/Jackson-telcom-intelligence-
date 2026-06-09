@@ -46,6 +46,44 @@ require __DIR__ . '/../components/action_first.php';
   <?php foreach ($metrics as $label => $value): ?><div><span><?= htmlspecialchars($label) ?></span><strong><?= (int)$value ?></strong></div><?php endforeach; ?>
 </section>
 
+<?php if (in_array($section, ['overview','subcontractors'], true)): ?>
+<section class="panel">
+  <div class="panel-title"><div><p class="eyebrow">Subcontractor Workflow</p><h2>From discovered crew to review-ready capacity</h2></div><span class="status">No Auto Approval</span></div>
+  <div class="workflow-rail">
+    <article>
+      <span class="step-number">1</span>
+      <h3>Add Crew</h3>
+      <p>Create the minimum record: company, region, contact, services, and crew count.</p>
+      <a class="btn secondary" href="#add-ground-crew">Add Ground Crew</a>
+    </article>
+    <article>
+      <span class="step-number">2</span>
+      <h3>Send Intake Link</h3>
+      <p>Generate a link and send it manually. The subcontractor fills in the detail.</p>
+      <a class="btn secondary" href="#intake-links">View Intake Links</a>
+    </article>
+    <article>
+      <span class="step-number">3</span>
+      <h3>Review Submission</h3>
+      <p>Submitted intake updates crews, equipment, services, and document readiness.</p>
+      <a class="btn secondary" href="#subcontractor-onboarding">Review Capacity</a>
+    </article>
+    <article>
+      <span class="step-number">4</span>
+      <h3>Verify Documents</h3>
+      <p>W9, COI, MSA, NDA, and safety program must be reviewed before approval.</p>
+      <a class="btn secondary" href="/onboarding/documents">Open Documents</a>
+    </article>
+    <article>
+      <span class="step-number">5</span>
+      <h3>Approve Or Hold</h3>
+      <p>Move to Approved, Preferred, Strategic Partner, or Rejected only after review.</p>
+      <a class="btn secondary" href="/onboarding/reviews">Open Reviews</a>
+    </article>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php if (in_array($section, ['overview','metrics'], true)): ?>
 <section class="grid two">
   <div class="panel">
@@ -74,7 +112,7 @@ require __DIR__ . '/../components/action_first.php';
 <?php if (in_array($section, ['overview','subcontractors'], true)): ?>
 <section class="grid two">
   <div class="panel">
-    <div class="panel-title"><h2>Add Ground Crew To Onboarding</h2><span class="status">Tomorrow Ready</span></div>
+    <div class="panel-title"><h2 id="add-ground-crew">Add Ground Crew To Onboarding</h2><span class="status">Tomorrow Ready</span></div>
     <form method="post" action="/onboarding/ground-crew" class="form-grid compact">
       <?= $csrf ?>
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
@@ -131,7 +169,7 @@ require __DIR__ . '/../components/action_first.php';
 </section>
 
 <section class="panel">
-  <div class="panel-title"><h2>Subcontractor Intake Links</h2><span class="status">Self-Service Intake</span></div>
+  <div class="panel-title"><h2 id="intake-links">Subcontractor Intake Links</h2><span class="status">Self-Service Intake</span></div>
   <div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Theater</th><th>Status</th><th>Expires</th><th>Requested By</th></tr></thead><tbody>
     <?php foreach (($intakeLinks ?? []) as $link): ?><tr>
       <td><strong><?= htmlspecialchars($link['company_name'] ?: 'Subcontractor #' . $link['onboarding_id']) ?></strong><br><small>Onboarding #<?= (int)$link['onboarding_id'] ?></small></td>
@@ -145,7 +183,7 @@ require __DIR__ . '/../components/action_first.php';
 </section>
 
 <section class="panel">
-  <div class="panel-title"><h2>New Capacity Being Created</h2><span class="status">Subcontractor Onboarding</span></div>
+  <div class="panel-title"><h2 id="subcontractor-onboarding">New Capacity Being Created</h2><span class="status">Subcontractor Onboarding</span></div>
   <div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Theater</th><th>Stage</th><th>Readiness</th><th>Missing / Risk</th><th>Action</th></tr></thead><tbody>
     <?php foreach ($subcontractors as $row): ?><tr>
       <td><strong><?= htmlspecialchars($row['company_name'] ?: 'Subcontractor #' . $row['subcontractor_id']) ?></strong><br><small><?= (int)$row['available_crew_count'] ?> available / <?= (int)$row['crew_count'] ?> total crews</small></td>
