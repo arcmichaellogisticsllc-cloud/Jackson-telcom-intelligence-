@@ -14,6 +14,7 @@ use App\Services\DemandDistributionService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
+use App\Services\OnboardingService;
 use App\Services\OperationalMaturityService;
 use App\Services\OpportunityPursuitService;
 use App\Services\PlatformReviewService;
@@ -50,6 +51,7 @@ class DashboardController extends Controller
         $marketWidgets = (new MarketIntelligenceService())->dashboardData();
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData();
         $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
+        $onboardingWidgets = (new OnboardingService())->dashboardData();
         $maturityWidgets = (new OperationalMaturityService())->dashboardData();
         $allowedRegionIds = $this->allowedRegionIds();
         $visualWidgets = (new DecisionVisualService())->visualData($allowedRegionIds);
@@ -87,6 +89,7 @@ class DashboardController extends Controller
             'marketWidgets' => $marketWidgets,
             'executiveWidgets' => $executiveWidgets,
             'strategicIntel' => $strategicIntel,
+            'onboardingWidgets' => $onboardingWidgets,
             'maturityWidgets' => $maturityWidgets,
             'visualWidgets' => $visualWidgets,
             'recentConversations' => $recentConversations,
@@ -233,6 +236,7 @@ class DashboardController extends Controller
         $syncWidgets = (new ProjectPackageAssemblyService())->dashboardData($regionId);
         $marketWidgets = (new MarketIntelligenceService())->dashboardData($regionId);
         $executiveWidgets = (new ExecutiveOperatingService())->dashboardData($regionId);
+        $onboardingWidgets = (new OnboardingService())->dashboardData(null, $regionId);
         $relationships = $db->prepare("SELECT c.*, o.name organization_name FROM contacts c LEFT JOIN organizations o ON o.id = c.organization_id WHERE c.region_id = ? AND (c.last_contact_date IS NULL OR c.last_contact_date < date('now','-90 days')) ORDER BY CASE influence_level WHEN 'Decision Maker' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 8");
         $relationships->execute([$regionId]);
         $compliance = $db->prepare("SELECT s.*, o.name organization_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id WHERE s.region_id = ? AND (s.insurance_status != 'Approved' OR s.w9_status != 'Approved') ORDER BY o.name LIMIT 8");
@@ -244,7 +248,7 @@ class DashboardController extends Controller
             return $opp;
         }, $opps->fetchAll());
 
-        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'demandWidgets', 'topDemandContent', 'targetWidgets', 'topTargets', 'decisionWidgets', 'commandData', 'pursuitWidgets', 'warehouseWidgets', 'platformData', 'syncWidgets', 'marketWidgets', 'executiveWidgets'));
+        $this->view('dashboard/region', compact('region', 'capacity', 'gaps', 'score', 'actions', 'relationships', 'compliance', 'opportunities', 'signalWidgets', 'qualityWidgets', 'topSources', 'subcontractorWidgets', 'relationshipWidgets', 'topRelationships', 'demandWidgets', 'topDemandContent', 'targetWidgets', 'topTargets', 'decisionWidgets', 'commandData', 'pursuitWidgets', 'warehouseWidgets', 'platformData', 'syncWidgets', 'marketWidgets', 'executiveWidgets', 'onboardingWidgets'));
     }
 
     private function module(string $title, string $subtitle, array $items, string $body): void

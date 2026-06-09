@@ -88,6 +88,22 @@ require __DIR__ . '/../components/action_first.php';
 
 <?php require __DIR__ . '/../components/recent_conversations.php'; ?>
 
+<section class="panel">
+  <div class="panel-title"><h2>Onboarding Readiness</h2><a class="btn secondary" href="/onboarding">Open Onboarding</a></div>
+  <p class="muted">Discovery becomes operationally ready capacity, workforce, strategic accounts, and markets here.</p>
+  <div class="mini-metrics">
+    <?php foreach (($onboardingWidgets['metrics'] ?? []) as $label => $value): ?>
+      <div><span><?= htmlspecialchars($label) ?></span><strong><?= (int)$value ?></strong></div>
+    <?php endforeach; ?>
+  </div>
+  <div class="command-items">
+    <?php foreach (array_slice($onboardingWidgets['recommendations'] ?? [], 0, 4) as $item): ?>
+      <div><strong><?= htmlspecialchars($item['title'] ?? 'Onboarding action') ?></strong><span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['recommended_action'] ?? 'Complete readiness review.') ?></span></div>
+    <?php endforeach; ?>
+    <?php if (empty($onboardingWidgets['recommendations'])): ?><div><strong>No onboarding actions</strong><span>Current onboarding queues have no open recommendations.</span></div><?php endif; ?>
+  </div>
+</section>
+
 <section class="grid two">
   <div class="panel">
     <div class="panel-title"><h2>Top Risks</h2><a class="btn secondary" href="/decision-support">Review Risks</a></div>

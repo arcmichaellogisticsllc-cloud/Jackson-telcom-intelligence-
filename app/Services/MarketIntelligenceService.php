@@ -15,6 +15,7 @@ class MarketIntelligenceService
         $this->buildProfiles($db);
         $this->buildScores($db);
         $this->buildRecommendations($db);
+        (new OnboardingService())->rebuild();
     }
 
     public function dashboardData(?int $regionId = null): array
@@ -31,6 +32,14 @@ class MarketIntelligenceService
 
     private function clearGenerated(PDO $db): void
     {
+        $marketIds = array_column($db->query("SELECT id FROM market_onboarding")->fetchAll(), 'id');
+        if ($marketIds) {
+            $idList = implode(',', array_map('intval', $marketIds));
+            $db->exec("DELETE FROM onboarding_reviews WHERE onboarding_type = 'Market' AND onboarding_id IN ({$idList})");
+            $db->exec("DELETE FROM onboarding_documents WHERE onboarding_type = 'Market' AND onboarding_id IN ({$idList})");
+        }
+        $db->exec('DELETE FROM market_onboarding');
+        $db->exec("DELETE FROM sqlite_sequence WHERE name = 'market_onboarding'");
         foreach (['market_readiness_scores','market_intelligence_profiles','market_intelligence_sources'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");

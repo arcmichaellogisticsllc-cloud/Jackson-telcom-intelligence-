@@ -14,6 +14,7 @@ class WorkspaceController extends Controller
         'relationships' => ['RELATIONSHIPS', 'Who influences work and what conversations happened.', ['Communications' => '/communications', 'Contacts' => '/contacts', 'Organizations' => '/organizations', 'Relationship Graph' => '/relationship-graph', 'Network Intelligence' => '/network-intelligence']],
         'market' => ['MARKET', 'What is happening in the market.', ['Signals' => '/signals', 'Escalations' => '/escalations', 'Watchlists' => '/watchlists', 'Market Intelligence' => '/market-intelligence', 'Competitive Intelligence' => '/competitive-intelligence']],
         'growth' => ['GROWTH', 'What should we publish, review, distribute, and where.', ['Demand Engine' => '/demand', 'Content' => '/traffic', 'Distribution' => '/outreach', 'Channels' => '/demand-briefing']],
+        'onboarding' => ['ONBOARDING', 'Turn discovered targets into operationally ready assets.', ['Overview' => '/onboarding', 'Subcontractors' => '/onboarding/subcontractors', 'Workforce' => '/onboarding/workforce', 'Strategic Accounts' => '/onboarding/strategic-accounts', 'Markets' => '/onboarding/markets', 'Documents' => '/onboarding/documents', 'Reviews' => '/onboarding/reviews', 'Metrics' => '/onboarding/metrics']],
         'operations' => ['OPERATIONS', 'What is ready for SyncERP handoff.', ['SyncERP Integration' => '/syncerp-integration', 'Project Packages' => '/syncerp-integration', 'ERP Readiness' => '/syncerp-integration', 'Handoff Brief' => '/syncerp-handoff-brief']],
         'system' => ['SYSTEM', 'Health, settings, automation, integrity, and operating controls.', ['Settings' => '/settings', 'Production Readiness' => '/production-readiness', 'Data Quality Review' => '/data-quality', 'Connector Runs' => '/connector-runs', 'Audit Logs' => '/audit-logs', 'Operating Rhythm' => '/operating-rhythm', 'Decision Visuals' => '/decision-visuals', 'Administration' => '/platform-review', 'Operator Modes' => '/operator-modes', 'Recommendations' => '/recommendations', 'Intelligence Warehouse' => '/warehouse']],
     ];
@@ -76,6 +77,7 @@ class WorkspaceController extends Controller
             'relationships' => ['Contacts' => $this->count($db, 'contacts'), 'Organizations' => $this->count($db, 'organizations'), 'Relationship Profiles' => $this->count($db, 'relationship_intelligence_profiles'), 'Conversations' => $this->count($db, 'communication_records')],
             'market' => ['Signals' => $this->count($db, 'signals'), 'Escalations' => $this->count($db, 'signal_quality_profiles', 'classification = "Escalate"'), 'Watchlists' => $this->count($db, 'watchlist_items'), 'Competitors' => $this->count($db, 'competitor_profiles')],
             'growth' => ['Demand Signals' => $this->count($db, 'demand_signals'), 'Content Drafts' => $this->count($db, 'content_drafts'), 'Distribution Plans' => $this->count($db, 'distribution_plans'), 'Channels' => $this->count($db, 'channels')],
+            'onboarding' => ['Subcontractors' => $this->count($db, 'subcontractor_onboarding'), 'Workforce' => $this->count($db, 'workforce_onboarding'), 'Strategic Accounts' => $this->count($db, 'strategic_account_onboarding'), 'Markets' => $this->count($db, 'market_onboarding')],
             'operations' => ['Project Packages' => $this->count($db, 'project_packages'), 'Ready' => $this->count($db, 'erp_readiness_profiles', 'readiness_category IN ("Ready","Ready Now")'), 'Blocked' => $this->count($db, 'erp_readiness_profiles', 'readiness_category IN ("Not Ready","Needs Review")'), 'Handoffs' => $this->count($db, 'integration_statuses')],
             default => ['Health Checks' => $this->count($db, 'platform_health_checks'), 'Recommendations' => $this->count($db, 'recommended_actions', 'status = "Open"'), 'Activities' => $this->count($db, 'activities'), 'Lessons' => $this->count($db, 'lessons_learned')],
         };
@@ -90,6 +92,7 @@ class WorkspaceController extends Controller
             'relationships' => $this->fetch($db, 'SELECT cr.summary title, cr.communication_type type, cr.next_step next_action, cr.owner FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id WHERE ' . $rWhere . ' ORDER BY cr.communication_date DESC LIMIT 8', $rParams),
             'market' => $this->fetch($db, 'SELECT s.title, s.signal_type type, s.recommended_next_action next_action, s.owner FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE ' . $rWhere . ' ORDER BY s.impact_score DESC LIMIT 8', $rParams),
             'growth' => $this->fetch($db, 'SELECT co.title, co.content_type type, co.status next_action, co.audience owner FROM content_opportunities co LEFT JOIN regions r ON r.id = co.region_id WHERE ' . $rWhere . ' ORDER BY co.strategic_value DESC LIMIT 8', $rParams),
+            'onboarding' => $this->fetch($db, 'SELECT COALESCE(s.company_name, "Subcontractor #" || so.subcontractor_id) title, "Subcontractor" type, so.onboarding_status next_action, so.assigned_owner owner FROM subcontractor_onboarding so JOIN subcontractors s ON s.id = so.subcontractor_id LEFT JOIN regions r ON r.id = so.region_id WHERE ' . $rWhere . ' UNION ALL SELECT wp.name title, "Workforce" type, wo.onboarding_status next_action, wo.assigned_owner owner FROM workforce_onboarding wo JOIN workforce_profiles wp ON wp.id = wo.workforce_profile_id LEFT JOIN regions r ON r.id = wo.region_id WHERE ' . $rWhere . ' LIMIT 8', array_merge($rParams, $rParams)),
             'operations' => $this->fetch($db, 'SELECT pp.package_name title, pp.package_status type, pp.notes next_action, pp.package_owner owner FROM project_packages pp LEFT JOIN regions r ON r.id = pp.region_id WHERE ' . $rWhere . ' ORDER BY pp.estimated_value DESC LIMIT 8', $rParams),
             default => $this->fetch($db, 'SELECT ra.title, ra.category type, ra.recommended_next_action next_action, ra.assigned_owner owner FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.status = "Open" AND ' . $rWhere . ' ORDER BY ra.priority_score DESC LIMIT 8', $rParams),
         };
@@ -103,8 +106,8 @@ class WorkspaceController extends Controller
     private function regionFilter(string $column): array
     {
         $regions = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
             default => [],
         };

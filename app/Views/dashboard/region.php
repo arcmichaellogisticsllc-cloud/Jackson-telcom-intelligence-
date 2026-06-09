@@ -76,6 +76,18 @@ require __DIR__ . '/../components/action_first.php';
 
 <section class="grid two">
   <div class="panel">
+    <div class="panel-title"><h2>Onboarding Readiness</h2><a class="btn secondary" href="/onboarding">Open Onboarding</a></div>
+    <div class="mini-metrics">
+      <?php foreach (($onboardingWidgets['metrics'] ?? []) as $label => $value): ?>
+        <div><span><?= htmlspecialchars($label) ?></span><strong><?= (int)$value ?></strong></div>
+      <?php endforeach; ?>
+    </div>
+    <div class="command-items">
+      <?php foreach (array_slice($onboardingWidgets['recommendations'] ?? [], 0, 3) as $item): ?><div><strong><?= htmlspecialchars($item['title'] ?? 'Onboarding action') ?></strong><span><?= htmlspecialchars($item['recommended_action'] ?? 'Complete readiness review.') ?></span></div><?php endforeach; ?>
+      <?php if (empty($onboardingWidgets['recommendations'])): ?><div><strong>No onboarding actions</strong><span>This theater has no open onboarding recommendations.</span></div><?php endif; ?>
+    </div>
+  </div>
+  <div class="panel">
     <div class="panel-title"><h2>Top Capacity Gaps</h2><a class="btn secondary" href="/capacity-radar/<?= $slug ?>">Capacity Radar</a></div>
     <div class="gap-list">
       <?php foreach ($gaps as $service => $gap): ?>

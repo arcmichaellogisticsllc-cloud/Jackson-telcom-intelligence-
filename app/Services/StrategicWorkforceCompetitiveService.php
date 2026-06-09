@@ -15,6 +15,7 @@ class StrategicWorkforceCompetitiveService
         $this->buildWorkforceProfiles($db);
         $this->buildCompetitorProfiles($db);
         $this->buildRecommendations($db);
+        (new OnboardingService())->rebuild();
     }
 
     public function dashboardData(?int $regionId = null): array
@@ -32,6 +33,22 @@ class StrategicWorkforceCompetitiveService
 
     private function clearGenerated(PDO $db): void
     {
+        $accountIds = array_column($db->query('SELECT id FROM strategic_account_onboarding')->fetchAll(), 'id');
+        if ($accountIds) {
+            $idList = implode(',', array_map('intval', $accountIds));
+            $db->exec("DELETE FROM onboarding_reviews WHERE onboarding_type = 'Strategic Account' AND onboarding_id IN ({$idList})");
+            $db->exec("DELETE FROM onboarding_documents WHERE onboarding_type = 'Strategic Account' AND onboarding_id IN ({$idList})");
+        }
+        $workforceIds = array_column($db->query('SELECT id FROM workforce_onboarding')->fetchAll(), 'id');
+        if ($workforceIds) {
+            $idList = implode(',', array_map('intval', $workforceIds));
+            $db->exec("DELETE FROM onboarding_reviews WHERE onboarding_type = 'Workforce' AND onboarding_id IN ({$idList})");
+            $db->exec("DELETE FROM onboarding_documents WHERE onboarding_type = 'Workforce' AND onboarding_id IN ({$idList})");
+        }
+        foreach (['strategic_account_onboarding','workforce_onboarding'] as $table) {
+            $db->exec("DELETE FROM {$table}");
+            $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
+        }
         foreach (['workforce_influence_relationships','workforce_forecasts','workforce_movements','competitor_forecasts','competitive_pressure_indexes','competitor_movements','win_loss_intelligence'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");

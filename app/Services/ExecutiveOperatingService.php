@@ -18,6 +18,7 @@ class ExecutiveOperatingService
         $this->buildStrategicAccounts($db);
         $this->buildDominance($db);
         $this->buildStrategicRecommendations($db);
+        (new OnboardingService())->rebuild();
     }
 
     public function dashboardData(?int $regionId = null): array
@@ -70,6 +71,14 @@ class ExecutiveOperatingService
 
     private function clearGenerated(PDO $db): void
     {
+        $accountIds = array_column($db->query('SELECT id FROM strategic_account_onboarding')->fetchAll(), 'id');
+        if ($accountIds) {
+            $idList = implode(',', array_map('intval', $accountIds));
+            $db->exec("DELETE FROM onboarding_reviews WHERE onboarding_type = 'Strategic Account' AND onboarding_id IN ({$idList})");
+            $db->exec("DELETE FROM onboarding_documents WHERE onboarding_type = 'Strategic Account' AND onboarding_id IN ({$idList})");
+        }
+        $db->exec('DELETE FROM strategic_account_onboarding');
+        $db->exec("DELETE FROM sqlite_sequence WHERE name = 'strategic_account_onboarding'");
         foreach (['strategic_recommendations','regional_dominance_scores','strategic_accounts','ownership_assignments','forecast_records','network_relationships'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");

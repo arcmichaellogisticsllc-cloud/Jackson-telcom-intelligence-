@@ -1751,6 +1751,26 @@ The Unified Intelligence Timeline summarizes what happened, why it matters, the 
 
 The UX intentionally hides internal scoring and engine complexity behind workspace and record views.
 
+## Onboarding Workspace
+
+The Onboarding Workspace converts discovered intelligence into operationally ready assets before they enter the active Jackson operating network.
+
+It covers four onboarding lanes:
+
+- Subcontractors: W9, COI, MSA, NDA, safety program, coverage, disciplines, crews, and equipment.
+- Workforce: role, market, skills, certifications, experience, recruitability, and availability.
+- Strategic Accounts: relationship coverage, influence coverage, opportunity mapping, owner assignment, and account readiness.
+- Markets: utility mapping, prime mapping, capacity mapping, relationship mapping, workforce, strategic accounts, and opportunity density.
+
+Onboarding stages make the bridge explicit:
+
+- Discovery and qualification identify the asset.
+- Reviews confirm compliance, capacity, relationship, or strategic readiness.
+- Documents and missing-item alerts expose what blocks approval.
+- Readiness scores classify each item as Not Ready, Developing, Ready, Preferred, or Strategic.
+
+The Onboarding Command Center shows new capacity being created, new relationships being created, strategic accounts in progress, markets in development, top onboarding actions, risks, overdue reviews, and missing documents. Onboarding actions write to activities and feed recommendations, executive packages, daily actions, and the unified timeline.
+
 ## Executive Workspace & Action System
 
 The default operator experience is the Jackson Telcom Command Center. Mike and Ron should not have to navigate backend engines to decide what to do next.
