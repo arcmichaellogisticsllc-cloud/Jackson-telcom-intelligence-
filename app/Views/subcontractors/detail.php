@@ -17,6 +17,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a subcontractor readiness workspace for turning a company into deployable Jackson capacity.';
 $why = 'This subcontractor can become approved, preferred, or strategic deployable capacity for fiber backbone work.';
 $recommended = $recordNextAction ?: 'Review qualification score, compliance status, and available crews.';
 $next = 'Log the next contact, request documents, or promote the subcontractor when readiness supports it.';

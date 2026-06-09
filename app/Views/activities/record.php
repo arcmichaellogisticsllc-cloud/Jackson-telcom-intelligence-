@@ -1,8 +1,42 @@
-<section class="page-header">
-  <p class="eyebrow"><?= htmlspecialchars($label) ?> Detail</p>
-  <h1><?= htmlspecialchars($record['name'] ?? (($record['first_name'] ?? '') . ' ' . ($record['last_name'] ?? '')) ?: $label . ' #' . $record['id']) ?></h1>
-  <p>Activity timeline for this acquisition record.</p>
-</section>
+<?php
+$recordTitle = trim((string)($record['name'] ?? (($record['first_name'] ?? '') . ' ' . ($record['last_name'] ?? ''))));
+$recordTitle = $recordTitle ?: $label . ' #' . $record['id'];
+$regionName = 'National';
+foreach ($regions as $region) {
+  if ((int)($record['region_id'] ?? 0) === (int)$region['id']) {
+    $regionName = $region['name'];
+    break;
+  }
+}
+$recordEyebrow = 'Record Workspace';
+$recordName = $recordTitle;
+$recordType = $label;
+$recordRegion = $regionName;
+$recordOwner = $record['owner'] ?? $record['relationship_owner'] ?? $_SESSION['user']['name'] ?? 'Unassigned';
+$recordStatus = $record['status'] ?? $record['stage'] ?? $record['approval_stage'] ?? 'Open';
+$recordScore = (int)($record['score'] ?? $record['impact_score'] ?? $record['acquisition_score'] ?? 0);
+$recordNextAction = $record['next_action'] ?? $record['recommended_next_action'] ?? 'Review the record and create the next operator action.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Owner','Mark Reviewed'];
+$recordEntityType = $type;
+$recordEntityId = (int)$record['id'];
+$recordRegionId = (int)($record['region_id'] ?? 0);
+$timelineItems = [];
+foreach ($activities as $activity) {
+  $timelineItems[] = ['type' => $activity['activity_type'], 'title' => $activity['title'], 'why' => $activity['notes'] ?: 'This activity may affect the record status, owner, or next action.', 'next' => 'Review current status and log the next step.', 'owner' => $activity['owner'], 'date' => $activity['activity_date']];
+}
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Tasks / Actions','Notes','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$what = 'This is a generic record workspace for records that do not yet have a specialized detail view.';
+$why = 'This fallback view keeps activity, notes, and next actions visible without exposing operators to raw database structure first.';
+$recommended = $recordNextAction;
+$next = 'Use the record action buttons to log the next activity or assign ownership.';
+$risk = 'If fallback records are not actionable, useful intelligence can get stranded outside the main operating workspaces.';
+require __DIR__ . '/../components/action_first.php';
+?>
 
 <section class="grid two">
   <div class="panel">
@@ -49,12 +83,14 @@
   </div>
 </section>
 
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
+
 <section class="panel">
   <h2>Activity Timeline</h2>
   <div class="activity-list timeline">
     <?php foreach ($activities as $activity): ?>
       <div><strong><?= htmlspecialchars($activity['title']) ?></strong><span><?= htmlspecialchars(substr($activity['activity_date'],0,10)) ?> · <?= htmlspecialchars($activity['activity_type']) ?> · <?= htmlspecialchars($activity['owner']) ?> · <?= htmlspecialchars($activity['region_name'] ?? '') ?></span><p><?= htmlspecialchars($activity['notes']) ?></p></div>
     <?php endforeach; ?>
-    <?php if (!$activities): ?><p>No activities for this record yet.</p><?php endif; ?>
+    <?php if (!$activities): ?><?php $emptyTitle = 'No activities yet'; $emptyBody = 'Use Add Note, Log Call, Draft Email, or Create Follow-Up to create the first record action.'; $emptyActionHref = ''; $emptyActionLabel = ''; require __DIR__ . '/../components/empty_state.php'; ?><?php endif; ?>
   </div>
 </section>

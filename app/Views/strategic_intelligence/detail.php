@@ -17,6 +17,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a strategic account workspace for account coverage, influence, opportunities, and capacity demand.';
 $why = $account['notes'] ?? 'This account can create work, access, demand, or capacity pressure in a Jackson theater.';
 $recommended = $recordNextAction ?: 'Strengthen account coverage and confirm the next relationship action.';
 $next = 'Log account activity or create a relationship follow-up for the next owner action.';

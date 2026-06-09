@@ -17,6 +17,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a relationship asset, not a passive contact record.';
 $why = $contact['relationship_summary'] ?? 'This contact may create work, capacity, influence, or market intelligence.';
 $recommended = $recordNextAction ?: 'Confirm the relationship objective and create the next relationship action.';
 $next = 'Use Add Note, Log Call, Draft Email, or Create Follow-Up to move the relationship forward.';

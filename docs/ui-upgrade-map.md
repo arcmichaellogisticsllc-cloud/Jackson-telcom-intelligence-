@@ -175,6 +175,36 @@ Shared components:
 - `components/platform_health.php`
 - `components/empty_state.php`
 
+## Record Workspace Standard
+
+Major record detail pages should use the same operator pattern:
+
+- `record_header.php`
+- `record_tabs.php`
+- `action_first.php`
+- `recent_conversations.php` when communication records exist
+- `intelligence_timeline.php`
+- contextual panels for scorecards, capacity, documents, risks, or handoff context
+
+The action-first block should answer:
+
+- What This Is
+- Why It Matters
+- Next Step
+- Risk of Inaction
+
+The following record types are expected to follow this pattern:
+
+- Strategic Account
+- Contact
+- Organization
+- Opportunity / Pursuit
+- Subcontractor
+- Acquisition Target
+- Preconstruction Profile
+- Project Package
+- Generic activity record fallback
+
 ## Empty State Rule
 
 Production mode may have no business records after demo purge. Empty states must look intentional and must not show fake placeholders.

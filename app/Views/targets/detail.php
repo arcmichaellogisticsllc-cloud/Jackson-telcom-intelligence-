@@ -1,8 +1,42 @@
-<section class="page-header">
-  <p class="eyebrow">Acquisition Target</p>
-  <h1><?= htmlspecialchars($target['target_name']) ?></h1>
-  <p><?= htmlspecialchars($target['reason_to_pursue']) ?></p>
-</section>
+<?php
+$recordEyebrow = 'Target Workspace';
+$recordName = $target['target_name'];
+$recordType = $target['target_type'] ?? 'Acquisition Target';
+$recordRegion = $target['region_name'] ?? 'National';
+$recordOwner = $target['owner'] ?? 'Unassigned';
+$recordStatus = $target['status'] ?? 'New';
+$recordScore = (int)($target['acquisition_score'] ?? 0);
+$recordNextAction = $target['recommended_next_action'] ?? 'Review target and decide whether to hunt, watch, convert, or archive.';
+$recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Assign Owner','Mark Reviewed'];
+$recordEntityType = 'acquisition_target';
+$recordEntityId = (int)$target['id'];
+$recordRegionId = (int)($target['region_id'] ?? 0);
+$timelineItems = [
+  ['type' => 'Target Created', 'title' => $target['target_name'], 'why' => $target['reason_to_pursue'] ?? 'This target may become work, capacity, relationship access, or market intelligence.', 'next' => $recordNextAction, 'owner' => $recordOwner, 'date' => $target['created_at'] ?? ''],
+  ['type' => 'Source Signal', 'title' => $target['signal_title'] ?? $target['source_type'] ?? 'Source intelligence', 'why' => 'The target should stay connected to its original intelligence source for confidence and context.', 'next' => 'Validate source quality before conversion.', 'owner' => $recordOwner, 'date' => $target['last_touched_at'] ?? ''],
+];
+foreach ($assignments as $assignment) {
+  $timelineItems[] = ['type' => 'Hunt Assignment', 'title' => $assignment['hunt_name'], 'why' => 'Hunt execution determines whether this target becomes an operational asset.', 'next' => $assignment['current_step'] ?: 'Assign playbook and next step.', 'owner' => $assignment['assigned_owner'] ?? $recordOwner, 'date' => $assignment['updated_at'] ?? ''];
+}
+foreach ($recentConversations ?? [] as $conversation) {
+  $timelineItems[] = ['type' => $conversation['communication_type'], 'title' => $conversation['summary'], 'why' => $conversation['outcome'] ?: 'Conversation may affect qualification, conversion, or next action.', 'next' => $conversation['next_step'] ?: 'Create follow-up if needed.', 'owner' => $conversation['owner'], 'date' => $conversation['communication_date']];
+}
+foreach ($activities as $activity) {
+  $timelineItems[] = ['type' => $activity['activity_type'], 'title' => $activity['title'], 'why' => $activity['notes'] ?: 'Activity changed target context or status.', 'next' => 'Review current target status and next action.', 'owner' => $activity['owner'], 'date' => $activity['activity_date']];
+}
+require __DIR__ . '/../components/record_header.php';
+$tabs = ['Overview','Timeline','Conversations','Hunts','Tasks / Actions','Notes','History'];
+require __DIR__ . '/../components/record_tabs.php';
+?>
+
+<?php
+$what = 'This is an acquisition target generated from signals, hunts, or manual intelligence.';
+$why = $target['reason_to_pursue'] ?? 'This target may become capacity, work, relationship access, or market intelligence.';
+$recommended = $recordNextAction;
+$next = 'Use a record action, assign to a hunt, or convert the target when qualification is clear.';
+$risk = 'If this target is not worked, useful intelligence can age out, competitors can move first, and capacity or work opportunities can be missed.';
+require __DIR__ . '/../components/action_first.php';
+?>
 
 <section class="metrics">
   <div><span>Acquisition Score</span><strong><?= (int)$target['acquisition_score'] ?></strong></div>
@@ -11,6 +45,9 @@
   <div><span>Relationship Value</span><strong><?= (int)$target['relationship_value_score'] ?></strong></div>
   <div><span>Opportunity Value</span><strong><?= (int)$target['opportunity_value_score'] ?></strong></div>
 </section>
+
+<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+<?php require __DIR__ . '/../components/intelligence_timeline.php'; ?>
 
 <section class="grid two">
   <div class="panel">
@@ -47,7 +84,7 @@
     <h2>Active Hunt Assignments</h2>
     <div class="table-wrap"><table><thead><tr><th>Hunt</th><th>Playbook</th><th>Status</th><th>Current Step</th><th>Qualification</th><th>Outcome</th></tr></thead><tbody>
       <?php foreach ($assignments as $assignment): ?><tr><td><?= htmlspecialchars($assignment['hunt_name']) ?></td><td><?= htmlspecialchars($assignment['playbook_name'] ?? '') ?></td><td><?= htmlspecialchars($assignment['hunt_status']) ?></td><td><?= htmlspecialchars($assignment['current_step'] ?? '') ?></td><td><?= (int)$assignment['qualification_score'] ?> · <?= htmlspecialchars($assignment['qualification_result'] ?? '') ?></td><td><?= htmlspecialchars($assignment['outcome'] ?? '') ?><br><small><?= htmlspecialchars($assignment['outcome_notes'] ?? '') ?></small></td></tr><?php endforeach; ?>
-      <?php if (!$assignments): ?><tr><td colspan="6">Not assigned to a hunt yet.</td></tr><?php endif; ?>
+      <?php if (!$assignments): ?><tr><td colspan="6"><?php $emptyTitle = 'Not assigned to a hunt yet'; $emptyBody = 'Assign this target to a hunt and playbook when it is ready for operator pursuit.'; $emptyActionHref = '/hunts'; $emptyActionLabel = 'Open Hunts'; require __DIR__ . '/../components/empty_state.php'; ?></td></tr><?php endif; ?>
     </tbody></table></div>
     <?php if ($assignments): ?>
       <hr>
@@ -90,6 +127,6 @@
     <h2>Activity Timeline</h2>
     <div class="activity-list timeline">
       <?php foreach ($activities as $activity): ?><div><strong><?= htmlspecialchars($activity['title']) ?></strong><span><?= htmlspecialchars(substr($activity['activity_date'],0,10)) ?> · <?= htmlspecialchars($activity['activity_type']) ?> · <?= htmlspecialchars($activity['owner']) ?></span><p><?= htmlspecialchars($activity['notes']) ?></p></div><?php endforeach; ?>
-      <?php if (!$activities): ?><p>No activity yet.</p><?php endif; ?>
+      <?php if (!$activities): ?><?php $emptyTitle = 'No activity yet'; $emptyBody = 'Use Add Note, Log Call, Draft Email, or Create Follow-Up to create the first timeline entry.'; $emptyActionHref = ''; $emptyActionLabel = ''; require __DIR__ . '/../components/empty_state.php'; ?><?php endif; ?>
     </div>
 </section>

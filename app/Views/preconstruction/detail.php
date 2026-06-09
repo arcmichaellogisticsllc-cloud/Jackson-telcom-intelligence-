@@ -24,6 +24,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a preconstruction intelligence workspace for bid readiness, capacity consumption, margin, and risk.';
 $why = $profile['bid_reason'] ?? 'This profile decides whether Jackson can bid, execute, make money, and control risk before award.';
 $recommended = $recordNextAction ?: 'Resolve bid, capacity, margin, and risk questions before handoff.';
 $next = 'Log preconstruction review activity or package for SyncERP when readiness is complete.';

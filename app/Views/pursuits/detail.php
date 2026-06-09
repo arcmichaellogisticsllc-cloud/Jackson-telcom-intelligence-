@@ -24,6 +24,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a pursuit decision workspace for deciding whether Jackson should pursue, monitor, or avoid work.';
 $why = $opportunity['decision_reason'] ?? $opportunity['reason'] ?? 'This pursuit determines whether Jackson should spend capacity, relationship, and preconstruction attention.';
 $recommended = $recordNextAction ?: 'Review pursuit score, relationship fit, and capacity fit before advancing.';
 $next = 'Log pursuit activity or create a preconstruction profile when the decision is ready.';

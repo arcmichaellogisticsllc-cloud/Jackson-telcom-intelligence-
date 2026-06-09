@@ -24,6 +24,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is a SyncERP handoff package workspace. It prepares execution context without building execution here.';
 $why = 'This package preserves acquisition, pursuit, relationship, capacity, preconstruction, margin, and risk context for future SyncERP handoff.';
 $recommended = $recordNextAction;
 $next = 'Resolve blockers, record the handoff review, and keep the package in review until it is ready.';

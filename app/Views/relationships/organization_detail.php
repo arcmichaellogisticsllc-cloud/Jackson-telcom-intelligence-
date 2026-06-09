@@ -17,6 +17,7 @@ require __DIR__ . '/../components/record_tabs.php';
 ?>
 
 <?php
+$what = 'This is an organization workspace for work, capacity, influence, or market context.';
 $why = 'This organization may hold work, capacity, influence, or relationships that affect Jackson growth.';
 $recommended = $recordNextAction ?: 'Review the influence map and assign the next owner action.';
 $next = 'Log the next conversation or create a follow-up tied to the organization.';

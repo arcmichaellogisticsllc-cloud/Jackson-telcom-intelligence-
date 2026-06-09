@@ -15,6 +15,7 @@ class ActivityController extends Controller
         'opportunity' => 'Opportunity',
         'subcontractor' => 'Subcontractor',
         'capacity_provider' => 'Capacity Provider',
+        'acquisition_target' => 'Acquisition Target',
         'pursuit' => 'Opportunity',
         'preconstruction_profile' => 'Preconstruction Profile',
         'project_package' => 'Project Package',
@@ -163,6 +164,7 @@ class ActivityController extends Controller
             'organization' => ['SELECT NULL contact_id, id organization_id FROM organizations WHERE id = ?', [$recordId]],
             'subcontractor' => ['SELECT NULL contact_id, organization_id FROM subcontractors WHERE id = ?', [$recordId]],
             'opportunity' => ['SELECT NULL contact_id, organization_id FROM opportunities WHERE id = ?', [$recordId]],
+            'acquisition_target' => ['SELECT NULL contact_id, NULL organization_id FROM acquisition_targets WHERE id = ?', [$recordId]],
         ];
 
         if (!isset($queries[$recordType])) {
@@ -187,6 +189,7 @@ class ActivityController extends Controller
             'preconstruction_profile' => ['preconstruction_profiles', 'owner'],
             'project_package' => ['project_packages', 'package_owner'],
             'strategic_account' => ['strategic_accounts', 'owner'],
+            'acquisition_target' => ['acquisition_targets', 'owner'],
         ];
 
         if (!isset($map[$recordType]) || $recordId <= 0) {
