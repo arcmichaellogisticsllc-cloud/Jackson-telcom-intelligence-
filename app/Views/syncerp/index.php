@@ -10,7 +10,7 @@
   <a href="/syncerp-integration/great-lakes">Great Lakes</a>
   <a href="/syncerp-integration/southwest">Southwest</a>
   <a href="/syncerp-handoff-brief">Executive Handoff Brief</a>
-  <form method="post" action="/syncerp-integration/rebuild"><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><button class="btn secondary">Rebuild Packages</button></form>
+  <form method="post" action="/syncerp-integration/rebuild" onsubmit="return confirm('Rebuild handoff packages? This does not create SyncERP execution records.')"><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><button class="btn secondary">Rebuild Packages</button></form>
 </nav>
 
 <section class="metrics">

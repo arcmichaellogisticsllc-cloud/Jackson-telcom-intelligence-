@@ -72,6 +72,7 @@ class AcquisitionTargetController extends Controller
         $stmt = Database::connection()->prepare('INSERT INTO acquisition_targets (target_name, target_type, source_type, source_url, organization_name, contact_name, email, phone, website, region_id, state, city, owner, acquisition_score, confidence_score, strategic_value_score, urgency_score, capacity_value_score, relationship_value_score, opportunity_value_score, status, priority, reason_to_pursue, recommended_next_action, notes, duplicate_key, next_action_due_at) VALUES (:target_name, :target_type, :source_type, :source_url, :organization_name, :contact_name, :email, :phone, :website, :region_id, :state, :city, :owner, :acquisition_score, :confidence_score, :strategic_value_score, :urgency_score, :capacity_value_score, :relationship_value_score, :opportunity_value_score, :status, :priority, :reason_to_pursue, :recommended_next_action, :notes, :duplicate_key, :next_action_due_at)');
         $stmt->execute($data);
         RecommendationEngine::regenerate();
+        $this->flash('Acquisition target added.');
         $this->redirect('/targets');
     }
 
@@ -79,6 +80,7 @@ class AcquisitionTargetController extends Controller
     {
         Auth::requireLogin();
         (new AcquisitionTargetService())->buildFromSignals();
+        $this->flash('Acquisition targets rebuilt from reviewed signals.');
         $this->redirect('/targets');
     }
 
@@ -86,6 +88,7 @@ class AcquisitionTargetController extends Controller
     {
         Auth::requireLogin();
         (new AcquisitionTargetService())->updateStatus((int)$_POST['id'], $_POST['status'] ?? 'New', Auth::user()['name'] ?? 'Web');
+        $this->flash('Target status updated to ' . ($_POST['status'] ?? 'New') . '.');
         $this->redirect('/targets/detail?id=' . (int)$_POST['id']);
     }
 
@@ -114,6 +117,9 @@ class AcquisitionTargetController extends Controller
             (new AcquisitionTargetService())->updateStatus($id, 'Converted', Auth::user()['name'] ?? 'Web');
             $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES ("acquisition_target", ?, ?, "Status Change", "Target converted", ?, CURRENT_TIMESTAMP, ?)')->execute([$id, $target['region_id'], 'Converted to ' . $created, Auth::user()['name'] ?? 'Web']);
             RecommendationEngine::regenerate();
+            $this->flash('Target converted to ' . $created . '. Source history was preserved.');
+        } else {
+            $this->flash('Target conversion was not completed. Check the selected conversion type.', 'warning');
         }
         $this->redirect('/targets/detail?id=' . $id);
     }

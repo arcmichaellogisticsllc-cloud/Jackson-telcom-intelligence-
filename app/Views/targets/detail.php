@@ -64,6 +64,7 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel">
     <h2>What Should We Do Next?</h2>
     <p><strong><?= htmlspecialchars($target['recommended_next_action']) ?></strong></p>
+    <p class="form-guidance">Status changes are logged. Conversion preserves source signal and hunt history.</p>
     <form method="post" action="/targets/status" class="form-card">
       <input type="hidden" name="id" value="<?= (int)$target['id'] ?>">
       <label>Status <select name="status"><?php foreach ($statuses as $status): ?><option <?= $status === $target['status'] ? 'selected' : '' ?>><?= htmlspecialchars($status) ?></option><?php endforeach; ?></select></label>
@@ -111,9 +112,10 @@ require __DIR__ . '/../components/action_first.php';
   </div>
   <div class="panel">
     <h2>What Can This Target Become?</h2>
+    <p class="form-guidance">Conversion creates the selected operating record and marks this target converted. It does not send outreach.</p>
     <div class="convert-grid">
       <?php foreach (['organization' => 'Organization','contact' => 'Contact','subcontractor_candidate' => 'Subcontractor Candidate','subcontractor' => 'Subcontractor Profile','opportunity' => 'Opportunity','outreach' => 'Outreach Target'] as $key => $label): ?>
-        <form method="post" action="/targets/convert">
+        <form method="post" action="/targets/convert" onsubmit="return confirm('Convert this target to <?= htmlspecialchars($label) ?>? Source history will be preserved.')">
           <input type="hidden" name="id" value="<?= (int)$target['id'] ?>">
           <input type="hidden" name="convert_to" value="<?= htmlspecialchars($key) ?>">
           <button class="btn secondary">Convert to <?= htmlspecialchars($label) ?></button>

@@ -38,6 +38,7 @@ class RecommendationController extends Controller
                 Auth::user()['name'] ?? 'Admin',
             ]);
         }
+        $this->flash('Recommendation status updated to ' . ($_POST['status'] ?? 'Open') . '.');
         $this->redirect('/recommendations');
     }
 
@@ -45,6 +46,7 @@ class RecommendationController extends Controller
     {
         Auth::requireLogin();
         RecommendationEngine::regenerate();
+        $this->flash('Recommendations regenerated.');
         $this->redirect('/recommendations');
     }
 

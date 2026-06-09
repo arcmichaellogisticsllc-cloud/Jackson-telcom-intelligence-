@@ -52,6 +52,7 @@ class DemandController extends Controller
         Auth::requireLogin();
         (new DemandDistributionService())->saveChannel($_POST);
         RecommendationEngine::regenerate();
+        $this->flash('Channel saved.');
         $this->redirect('/demand');
     }
 
@@ -60,6 +61,7 @@ class DemandController extends Controller
         Auth::requireLogin();
         (new DemandDistributionService())->saveContentOpportunity($_POST);
         RecommendationEngine::regenerate();
+        $this->flash('Content opportunity saved. Human review is still required before publication.');
         $this->redirect('/demand');
     }
 
@@ -68,6 +70,7 @@ class DemandController extends Controller
         Auth::requireLogin();
         (new DemandDistributionService())->saveDemandSignal($_POST);
         RecommendationEngine::regenerate();
+        $this->flash('Demand signal saved.');
         $this->redirect('/demand');
     }
 
@@ -89,6 +92,7 @@ class DemandController extends Controller
             ]);
         }
         RecommendationEngine::regenerate();
+        $this->flash('Content draft review updated. No publishing occurred.');
         $this->redirect($_POST['return_to'] ?? '/demand');
     }
 
@@ -110,6 +114,7 @@ class DemandController extends Controller
             ]);
         }
         RecommendationEngine::regenerate();
+        $this->flash('Distribution status updated. No automated posting occurred.');
         $this->redirect($_POST['return_to'] ?? '/demand');
     }
 

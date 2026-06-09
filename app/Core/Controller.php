@@ -15,6 +15,14 @@ class Controller
         echo $this->injectCsrfFields(ob_get_clean());
     }
 
+    protected function flash(string $message, string $type = 'success'): void
+    {
+        $_SESSION['flash_messages'][] = [
+            'message' => $message,
+            'type' => in_array($type, ['success', 'warning', 'error', 'info'], true) ? $type : 'success',
+        ];
+    }
+
     protected function redirect(string $path): void
     {
         header('Location: ' . $path);

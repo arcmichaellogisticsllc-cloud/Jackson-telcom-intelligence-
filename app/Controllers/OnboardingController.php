@@ -28,6 +28,7 @@ class OnboardingController extends Controller
     {
         Auth::requireLogin();
         $this->service->rebuild();
+        $this->flash('Onboarding workspace rebuilt.');
         $this->redirect($_POST['return_to'] ?? '/onboarding');
     }
 
@@ -35,6 +36,7 @@ class OnboardingController extends Controller
     {
         Auth::requireLogin();
         $this->service->updateStage($_POST['onboarding_type'] ?? 'Subcontractor', (int)($_POST['id'] ?? 0), $_POST['status'] ?? 'Prospect', $_POST['notes'] ?? '');
+        $this->flash('Onboarding stage updated.');
         $this->redirect($_POST['return_to'] ?? '/onboarding');
     }
 
@@ -42,6 +44,7 @@ class OnboardingController extends Controller
     {
         Auth::requireLogin();
         $this->service->saveReview($_POST);
+        $this->flash('Onboarding review saved.');
         $this->redirect($_POST['return_to'] ?? '/onboarding/reviews');
     }
 
@@ -49,6 +52,7 @@ class OnboardingController extends Controller
     {
         Auth::requireLogin();
         $this->service->saveDocument($_POST);
+        $this->flash('Onboarding document record saved.');
         $this->redirect($_POST['return_to'] ?? '/onboarding/documents');
     }
 

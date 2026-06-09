@@ -49,6 +49,7 @@ class SyncErpIntegrationController extends Controller
         Auth::requireLogin();
         $this->service->rebuild();
         (new DecisionSupportService())->rebuild();
+        $this->flash('Project packages rebuilt for SyncERP handoff review. No execution workflow was created.');
         $this->redirect($_POST['return_to'] ?? '/syncerp-integration');
     }
 

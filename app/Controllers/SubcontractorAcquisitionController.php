@@ -55,6 +55,7 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         (new SubcontractorAcquisitionService())->updateScorecard($id, $_POST, $_POST['notes'] ?? '');
+        $this->flash('Qualification scorecard saved.');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
     }
@@ -64,6 +65,7 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         (new SubcontractorAcquisitionService())->saveCompliance($id, $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['review_date'] ?: date('Y-m-d'), Auth::user()['name'] ?? 'Admin', $_POST['notes'] ?? '');
+        $this->flash('Compliance status saved for ' . ($_POST['document_type'] ?? 'document') . '.');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
     }
@@ -73,6 +75,7 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         (new SubcontractorAcquisitionService())->saveDocument($id, $_POST['file_name'], $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['notes'] ?? '');
+        $this->flash('Document record added. Storage only; no external file transfer occurred.');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
     }
@@ -84,6 +87,7 @@ class SubcontractorAcquisitionController extends Controller
         $level = $_POST['level'] ?? 'Prospect';
         (new SubcontractorAcquisitionService())->promote($id, $level);
         Database::connection()->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) SELECT "subcontractor", id, region_id, "Status Change", "Subcontractor promoted", ?, CURRENT_TIMESTAMP, ? FROM subcontractors WHERE id = ?')->execute(['Moved to ' . $level . '.', Auth::user()['name'] ?? 'Admin', $id]);
+        $this->flash('Subcontractor moved to ' . $level . '.');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
     }

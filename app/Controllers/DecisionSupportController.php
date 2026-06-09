@@ -58,6 +58,7 @@ class DecisionSupportController extends Controller
     {
         Auth::requireLogin();
         (new DecisionSupportService())->completeAction((int)$_POST['id'], $_POST['outcome_notes'] ?? '');
+        $this->flash('Daily action completed.');
         $this->redirect($_POST['return_to'] ?? '/decision-support');
     }
 
@@ -65,6 +66,7 @@ class DecisionSupportController extends Controller
     {
         Auth::requireLogin();
         (new DecisionSupportService())->dismissAction((int)$_POST['id'], $_POST['outcome_notes'] ?? '');
+        $this->flash('Daily action dismissed.');
         $this->redirect($_POST['return_to'] ?? '/decision-support');
     }
 
@@ -78,6 +80,7 @@ class DecisionSupportController extends Controller
             $_POST['due_date'] ?? '',
             $_POST['owner'] ?? ''
         );
+        $this->flash('Follow-up daily action created.');
         $this->redirect($_POST['return_to'] ?? '/decision-support');
     }
 

@@ -237,6 +237,29 @@ Current shared list patterns:
 - target work queue in `targets/index.php`
 - recommendation work queue in `recommendations/index.php`
 
+## Operator Action Feedback Standard
+
+POST actions should give immediate operator feedback after redirect.
+
+Use flash messages for:
+
+- Notes, calls, email drafts, and follow-ups
+- Daily action completion, dismissal, and follow-up creation
+- Recommendation status updates and regeneration
+- Target status changes, hunt assignment, and conversion
+- Subcontractor scorecards, compliance, document records, and promotion
+- Data quality issue creation and resolution
+- Onboarding stages, reviews, and document records
+- Content review and distribution status changes
+- SyncERP handoff package rebuilds
+
+Feedback copy should state whether the action did or did not create external side effects. Examples:
+
+- Draft only. Nothing was sent.
+- No automated posting occurred.
+- No execution workflow was created.
+- Source history was preserved.
+
 ## Empty State Rule
 
 Production mode may have no business records after demo purge. Empty states must look intentional and must not show fake placeholders.

@@ -31,6 +31,15 @@ $recordActionOwner = $recordOwner ?? 'Unassigned';
           <input type="hidden" name="region_id" value="<?= $recordRegionId ?>">
           <input type="hidden" name="return_to" value="<?= htmlspecialchars($recordReturnTo) ?>">
           <input type="hidden" name="action_type" value="<?= htmlspecialchars($action) ?>">
+          <?php if ($action === 'Draft Email'): ?>
+            <p class="form-guidance">Draft only. Nothing will be sent from Jackson Platform.</p>
+          <?php elseif ($action === 'Create Follow-Up'): ?>
+            <p class="form-guidance">Creates a follow-up record and timeline entry for human action.</p>
+          <?php elseif ($action === 'Log Call'): ?>
+            <p class="form-guidance">Log the call outcome and the next step so the timeline stays current.</p>
+          <?php elseif ($action === 'Assign Owner'): ?>
+            <p class="form-guidance">Owner changes are logged for visibility and accountability.</p>
+          <?php endif; ?>
           <label><?= $action === 'Assign Owner' ? 'New owner' : 'Owner' ?>
             <input name="owner" value="<?= htmlspecialchars($recordActionOwner) ?>" required>
           </label>

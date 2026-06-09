@@ -67,6 +67,7 @@ class ActivityController extends Controller
             $_POST['entity_type'], $_POST['entity_id'], $_POST['region_id'], $_POST['activity_type'],
             $_POST['title'], $_POST['notes'], $_POST['activity_date'] ?: date('Y-m-d'), $_POST['owner'],
         ]);
+        $this->flash('Activity added.');
         if (!empty($_POST['return_to'])) {
             $this->redirect($_POST['return_to']);
         }
@@ -133,6 +134,15 @@ class ActivityController extends Controller
             $this->assignOwner($db, $recordType, $recordId, $owner);
         }
 
+        $message = match ($action) {
+            'Log Call' => 'Call logged.',
+            'Draft Email' => 'Email draft saved for human review. Nothing was sent.',
+            'Create Follow-Up' => 'Follow-up created.',
+            'Assign Owner' => 'Owner updated and activity logged.',
+            'Mark Reviewed' => 'Record marked reviewed in the timeline.',
+            default => $action . ' saved.',
+        };
+        $this->flash($message);
         $this->redirect($_POST['return_to'] ?? '/activities');
     }
 

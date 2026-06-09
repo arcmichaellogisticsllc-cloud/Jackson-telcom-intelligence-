@@ -60,6 +60,7 @@ class HuntController extends Controller
         foreach ($fields as $field) $data[$field] = $_POST[$field] ?? null;
         $stmt = Database::connection()->prepare('INSERT INTO hunts (hunt_name, hunt_type, region_id, owner, objective, target_count_goal, start_date, end_date, status, success_metric, notes) VALUES (:hunt_name, :hunt_type, :region_id, :owner, :objective, :target_count_goal, :start_date, :end_date, :status, :success_metric, :notes)');
         $stmt->execute($data);
+        $this->flash('Hunt saved.');
         $this->redirect('/hunts');
     }
 
@@ -71,6 +72,7 @@ class HuntController extends Controller
         foreach ($fields as $field) $data[$field] = $_POST[$field] ?? null;
         $stmt = Database::connection()->prepare('INSERT INTO acquisition_playbooks (playbook_name, playbook_type, target_type, region_id, objective, opening_script, qualification_questions, disqualification_rules, required_documents, conversion_goal, notes) VALUES (:playbook_name, :playbook_type, :target_type, :region_id, :objective, :opening_script, :qualification_questions, :disqualification_rules, :required_documents, :conversion_goal, :notes)');
         $stmt->execute($data);
+        $this->flash('Playbook saved.');
         $this->redirect('/playbooks');
     }
 
@@ -79,6 +81,7 @@ class HuntController extends Controller
         Auth::requireLogin();
         $stmt = Database::connection()->prepare('INSERT INTO playbook_steps (playbook_id, step_number, step_name, channel, instructions, expected_outcome, delay_days, required_before_next_step, creates_task) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$_POST['playbook_id'], $_POST['step_number'], $_POST['step_name'], $_POST['channel'], $_POST['instructions'], $_POST['expected_outcome'], $_POST['delay_days'], $_POST['required_before_next_step'], isset($_POST['creates_task']) ? 1 : 0]);
+        $this->flash('Playbook step added.');
         $this->redirect('/playbooks');
     }
 
@@ -86,6 +89,7 @@ class HuntController extends Controller
     {
         Auth::requireLogin();
         (new HuntService())->assignTarget((int)$_POST['hunt_id'], (int)$_POST['acquisition_target_id'], (int)$_POST['playbook_id'], $_POST['assigned_owner'] ?: (Auth::user()['name'] ?? 'Admin'));
+        $this->flash('Target assigned to hunt and playbook.');
         $this->redirect('/targets/detail?id=' . (int)$_POST['acquisition_target_id']);
     }
 
@@ -93,6 +97,7 @@ class HuntController extends Controller
     {
         Auth::requireLogin();
         (new HuntService())->completeTask((int)$_POST['task_id'], $_POST['outcome_notes'] ?? '', Auth::user()['name'] ?? 'Admin');
+        $this->flash('Hunt task completed.');
         $this->redirect('/hunt-actions');
     }
 
@@ -100,6 +105,7 @@ class HuntController extends Controller
     {
         Auth::requireLogin();
         (new HuntService())->setOutcome((int)$_POST['hunt_target_id'], $_POST['outcome'] ?? 'Future Follow-Up', $_POST['outcome_notes'] ?? '', Auth::user()['name'] ?? 'Admin');
+        $this->flash('Hunt outcome saved.');
         $this->redirect($_POST['return_to'] ?? '/hunt-actions');
     }
 

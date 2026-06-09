@@ -81,6 +81,14 @@
       <form method="post" action="/logout"><button class="link-button">Logout</button></form>
     </header>
   <?php endif; ?>
+  <?php $flashMessages = $_SESSION['flash_messages'] ?? []; unset($_SESSION['flash_messages']); ?>
+  <?php if ($flashMessages): ?>
+    <section class="flash-stack" aria-live="polite">
+      <?php foreach ($flashMessages as $flash): ?>
+        <div class="flash <?= htmlspecialchars($flash['type'] ?? 'success') ?>"><?= htmlspecialchars($flash['message'] ?? '') ?></div>
+      <?php endforeach; ?>
+    </section>
+  <?php endif; ?>
   <?php require $contentView; ?>
 </main>
 </body>
