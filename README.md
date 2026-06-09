@@ -2032,6 +2032,42 @@ Start real hunting by adding real strategic accounts first: Comcast, Charter, Fr
 
 Full transition details are in `docs/production-data-transition.md`.
 
+## Foundational Real Intelligence Network
+
+Real hunting intake uses review-gated CSV files, not demo seed data. Import files live in:
+
+`storage/imports/real_hunt/`
+
+Load a file with:
+
+```bash
+php scripts/import_real_hunt.php storage/imports/real_hunt/strategic_accounts_real_hunt.csv strategic_accounts
+```
+
+Supported datasets:
+
+- `strategic_accounts`
+- `organizations`
+- `contacts`
+- `capacity_providers`
+- `engineering_firms`
+- `primes_competitors`
+- `workforce`
+- `opportunities`
+- `markets`
+
+The importer always creates raw signal items and signal records first, tags rows as `import_source=real_hunt`, records source URLs/confidence/review status in `real_hunt_import_records`, and creates Data Quality Issues for low-confidence, incomplete, or non-verified records.
+
+Rules:
+
+- Do not add fake records to hit count targets.
+- Do not guess personal emails, phone numbers, or names.
+- Do not mark capacity providers Approved from public research alone.
+- Do not bypass Signal Quality or Data Quality Review.
+- Treat contacts and workforce rows without public names as relationship/workforce targets until manually verified.
+
+First-pass results and shortfalls are documented in `docs/first-pass-real-hunt-report.md`.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

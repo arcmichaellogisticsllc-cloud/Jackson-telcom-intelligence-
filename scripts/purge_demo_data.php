@@ -162,10 +162,18 @@ $preservedTables = [
     'connectors',
     'recommendation_tuning_rules',
     'erp_contract_validation_items',
+    'real_hunt_import_records',
 ];
 
 echo $dryRun ? "Demo data purge dry run\n" : "Demo data purge confirm mode\n";
 echo "Preserved system/config tables: " . implode(', ', $preservedTables) . "\n\n";
+
+$realHuntRows = tableExists($db, 'real_hunt_import_records')
+    ? (int)$db->query("SELECT COUNT(*) FROM real_hunt_import_records WHERE import_source = 'real_hunt'")->fetchColumn()
+    : 0;
+if ($realHuntRows > 0) {
+    echo "Production real_hunt imports detected: {$realHuntRows}. Confirmed demo purge is disabled to protect production records.\n\n";
+}
 
 $counts = [];
 foreach ($purgeTables as $table) {
@@ -185,6 +193,11 @@ echo "\nTotal demo/business rows selected for purge: {$total}\n";
 if ($dryRun) {
     echo "Dry run only. No records were deleted.\n";
     exit(0);
+}
+
+if ($realHuntRows > 0) {
+    fwrite(STDERR, "FAIL real_hunt production imports exist. Refusing destructive demo purge. Restore from backup or start from a clean demo database before purging.\n");
+    exit(1);
 }
 
 $backupPath = createBackup();

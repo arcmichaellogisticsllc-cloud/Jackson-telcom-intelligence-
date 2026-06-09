@@ -1,0 +1,6 @@
+account_name,account_type,region,market,website,source_url,source_type,confidence_score,review_status,import_source,notes
+Comcast,Telecom Provider,National,National,https://corporate.comcast.com,https://corporate.comcast.com/company,Official Company,92,Verified,real_hunt,Strategic account for cable broadband and fiber/network expansion monitoring
+Charter / Spectrum,Telecom Provider,National,National,https://corporate.charter.com,https://corporate.charter.com/about,Official Company,92,Verified,real_hunt,Strategic account for Spectrum broadband construction and rural expansion monitoring
+Frontier,Telecom Provider,National,National,https://frontier.com,https://frontier.com/corporate/company,Official Company,90,Verified,real_hunt,Strategic account for fiber expansion and Great Lakes pursuit monitoring
+AT&T,Telecom Provider,National,National,https://www.att.com,https://about.att.com,Official Company,92,Verified,real_hunt,Strategic account for fiber network and enterprise/utility access monitoring
+Windstream,Telecom Provider,National,National,https://www.windstream.com,https://www.windstream.com/about,Official Company,88,Verified,real_hunt,Strategic account for Kinetic fiber and rural broadband monitoring

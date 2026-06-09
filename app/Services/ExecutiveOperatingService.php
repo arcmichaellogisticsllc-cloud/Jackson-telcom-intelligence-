@@ -9,6 +9,10 @@ class ExecutiveOperatingService
 {
     public function rebuild(): void
     {
+        if ($this->productionDataMode()) {
+            return;
+        }
+
         $db = Database::connection();
         $this->clearGenerated($db);
         $this->buildCommunications($db);
@@ -19,6 +23,11 @@ class ExecutiveOperatingService
         $this->buildDominance($db);
         $this->buildStrategicRecommendations($db);
         (new OnboardingService())->rebuild();
+    }
+
+    private function productionDataMode(): bool
+    {
+        return is_file(__DIR__ . '/../../storage/production_data_mode');
     }
 
     public function dashboardData(?int $regionId = null): array
