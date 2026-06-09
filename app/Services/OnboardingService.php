@@ -136,10 +136,31 @@ class OnboardingService
                 ->execute([$onboardingId, $regionId, $documentType, $fileName, Auth::user()['name'] ?? 'Admin', 'Requested during ground crew onboarding. Replace placeholder name when real document is received.']);
         }
 
+        $this->ensurePendingReview($db, 'Subcontractor', $onboardingId, $regionId, 'Compliance Review', 'Verify W9, COI, MSA, NDA, and safety program before approval.');
+        $this->ensurePendingReview($db, 'Subcontractor', $onboardingId, $regionId, 'Capacity Review', 'Verify crews, disciplines, equipment, coverage, and mobilization readiness before approval.');
         $this->activity($db, 'subcontractor_onboarding', $onboardingId, $regionId, 'Created', 'Ground crew onboarding started', "Company: {$company}\nServices: {$services}\nCrews: {$availableCrews} available / {$crewCount} total\nNext: request W9, COI, MSA, NDA, safety program, and verify equipment.");
         $this->createDailyAction($db, $regionId, 'Complete ground crew onboarding package for ' . $company, 'Subcontractor', $onboardingId);
         $this->generateRecommendations($db);
         return $onboardingId;
+    }
+
+    public function subcontractorDetail(int $onboardingId): array
+    {
+        $db = Database::connection();
+        $subcontractor = $this->subcontractorOnboarding($db, $onboardingId);
+        if (!$subcontractor) {
+            return ['subcontractor' => null];
+        }
+        Auth::requireRegionAccess($subcontractor['region_id'] ?? null);
+
+        $documents = $this->rows($db, 'SELECT * FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY CASE status WHEN "Missing" THEN 1 WHEN "Requested" THEN 2 WHEN "Submitted" THEN 3 WHEN "Rejected" THEN 4 WHEN "Expired" THEN 5 ELSE 6 END, document_type', [$onboardingId]);
+        $reviews = $this->rows($db, 'SELECT * FROM onboarding_reviews WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY CASE status WHEN "Pending" THEN 1 WHEN "Needs Information" THEN 2 WHEN "Rejected" THEN 3 ELSE 4 END, created_at DESC', [$onboardingId]);
+        $activities = $this->rows($db, 'SELECT * FROM activities WHERE entity_type IN ("subcontractor_onboarding","onboarding_review","onboarding_document") AND entity_id = ? ORDER BY activity_date DESC LIMIT 30', [$onboardingId]);
+        $actions = $this->rows($db, 'SELECT * FROM daily_actions WHERE linked_record_type = "subcontractor_onboarding" AND linked_record_id = ? AND status IN ("Open","In Progress") ORDER BY decision_score DESC, due_date ASC LIMIT 10', [$onboardingId]);
+        $intakeLinks = $this->rows($db, 'SELECT * FROM onboarding_intake_links WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY created_at DESC LIMIT 5', [$onboardingId]);
+        $approvalGate = $this->subcontractorApprovalGate($db, $onboardingId);
+
+        return compact('subcontractor', 'documents', 'reviews', 'activities', 'actions', 'intakeLinks', 'approvalGate');
     }
 
     public function createSubcontractorIntakeLink(int $onboardingId, int $expiresDays = 14): ?string
@@ -261,6 +282,8 @@ class OnboardingService
             $db->prepare('UPDATE onboarding_intake_links SET status = "Submitted", submitted_at = CURRENT_TIMESTAMP, submission_payload = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
                 ->execute([$payload, (int)$row['link_id']]);
             $this->activity($db, 'subcontractor_onboarding', (int)$row['onboarding_id'], $row['region_id'] ?? null, 'Intake Submitted', 'Subcontractor intake submitted by ' . $company, "Services: {$services}\nCrews: {$availableCrews} available / {$crewCount} total\nMissing: " . ($missing ?: 'None reported') . "\nNotes: {$notes}");
+            $this->ensurePendingReview($db, 'Subcontractor', (int)$row['onboarding_id'], $row['region_id'] ?? null, 'Compliance Review', 'Review self-reported documents and mark each required document Approved, Rejected, or Needs Information.');
+            $this->ensurePendingReview($db, 'Subcontractor', (int)$row['onboarding_id'], $row['region_id'] ?? null, 'Capacity Review', 'Review submitted crews, disciplines, equipment, coverage, and mobilization readiness.');
             $this->createDailyAction($db, $row['region_id'] ?? null, 'Review subcontractor intake for ' . $company, 'Subcontractor', (int)$row['onboarding_id']);
             if ($startedTransaction) {
                 $db->commit();
@@ -276,18 +299,33 @@ class OnboardingService
         return true;
     }
 
-    public function updateStage(string $type, int $id, string $status, string $notes): void
+    public function updateStage(string $type, int $id, string $status, string $notes): array
     {
         $db = Database::connection();
         [$table, $statusColumn, $entityType] = $this->tableFor($type);
         $row = $this->find($db, $table, $id);
         if (!$row) {
-            return;
+            return ['ok' => false, 'message' => 'Onboarding record not found.'];
         }
         Auth::requireRegionAccess($row['region_id'] ?? null);
+
+        if ($type === 'Subcontractor' && in_array($status, ['Approved','Preferred','Strategic Partner'], true)) {
+            $gate = $this->subcontractorApprovalGate($db, $id);
+            if (!$gate['canApprove']) {
+                $message = 'Approval blocked. Missing: ' . implode('; ', $gate['blockers']);
+                $this->activity($db, $entityType, $id, $row['region_id'] ?? null, 'Approval Blocked', $message, $notes);
+                return ['ok' => false, 'message' => $message];
+            }
+        }
+
         $db->prepare("UPDATE {$table} SET {$statusColumn} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
             ->execute([$status, $id]);
+        if ($type === 'Subcontractor') {
+            $db->prepare('UPDATE subcontractors SET approval_stage = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$status, (int)$row['subcontractor_id']]);
+        }
         $this->activity($db, $entityType, $id, $row['region_id'] ?? null, 'Stage Change', "{$type} onboarding moved to {$status}", $notes);
+        return ['ok' => true, 'message' => "{$type} onboarding moved to {$status}."];
     }
 
     public function saveReview(array $input): void
@@ -305,6 +343,7 @@ class OnboardingService
         $stmt->execute([$type, $onboardingId, $input['review_type'] ?? 'Strategic Review', $row['region_id'] ?? null, $input['status'] ?? 'Pending', Auth::user()['name'] ?? 'Admin', trim((string)($input['review_notes'] ?? '')), trim((string)($input['follow_up_action'] ?? ''))]);
         $id = (int)$db->lastInsertId();
         $this->activity($db, 'onboarding_review', $id, $row['region_id'] ?? null, 'Review', ($input['review_type'] ?? 'Strategic Review') . ' ' . ($input['status'] ?? 'Pending'), $input['review_notes'] ?? '');
+        $this->activity($db, $this->tableFor($type)[2], $onboardingId, $row['region_id'] ?? null, 'Review', ($input['review_type'] ?? 'Strategic Review') . ' ' . ($input['status'] ?? 'Pending'), $input['review_notes'] ?? '');
         if (!empty($input['follow_up_action'])) {
             $this->createDailyAction($db, $row['region_id'] ?? null, $input['follow_up_action'], $type, $onboardingId);
         }
@@ -325,6 +364,10 @@ class OnboardingService
         $stmt->execute([$type, $onboardingId, $row['region_id'] ?? null, $input['document_type'] ?? 'Other', trim((string)($input['file_name'] ?? 'Onboarding document')), $input['status'] ?? 'Submitted', ($input['expires_at'] ?? '') ?: null, Auth::user()['name'] ?? 'Admin', trim((string)($input['notes'] ?? ''))]);
         $id = (int)$db->lastInsertId();
         $this->activity($db, 'onboarding_document', $id, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . ($input['status'] ?? 'Submitted'), $input['document_type'] ?? 'Other');
+        $this->activity($db, $this->tableFor($type)[2], $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . ($input['status'] ?? 'Submitted'), $input['document_type'] ?? 'Other');
+        if ($type === 'Subcontractor') {
+            $this->syncSubcontractorDocumentStatus($db, $onboardingId, (string)($input['document_type'] ?? 'Other'), (string)($input['status'] ?? 'Submitted'));
+        }
     }
 
     private function syncSubcontractors(PDO $db): void
@@ -595,6 +638,105 @@ class OnboardingService
         }
         $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, ?, NULL, "Subcontractor Intake", ?)')
             ->execute([$onboardingId, $regionId, $type, $fileName, $status, 'Self-reported through subcontractor intake. Jackson must review actual document before approval.']);
+    }
+
+    private function ensurePendingReview(PDO $db, string $type, int $onboardingId, mixed $regionId, string $reviewType, string $notes): void
+    {
+        $exists = $db->prepare('SELECT id FROM onboarding_reviews WHERE onboarding_type = ? AND onboarding_id = ? AND review_type = ? AND status IN ("Pending","Needs Information") LIMIT 1');
+        $exists->execute([$type, $onboardingId, $reviewType]);
+        if ($exists->fetchColumn()) {
+            return;
+        }
+        $db->prepare('INSERT INTO onboarding_reviews (onboarding_type, onboarding_id, review_type, region_id, status, reviewer, review_notes, follow_up_action, reviewed_at) VALUES (?, ?, ?, ?, "Pending", ?, ?, "", NULL)')
+            ->execute([$type, $onboardingId, $reviewType, $regionId ?: null, Auth::user()['name'] ?? 'System', $notes]);
+    }
+
+    private function subcontractorApprovalGate(PDO $db, int $onboardingId): array
+    {
+        $row = $this->subcontractorOnboarding($db, $onboardingId);
+        if (!$row) {
+            return ['canApprove' => false, 'blockers' => ['Onboarding record not found'], 'documents' => [], 'reviews' => []];
+        }
+
+        $documents = [];
+        $blockers = [];
+        foreach (['W9','COI','MSA','NDA','Safety Program'] as $type) {
+            $status = $this->latestDocumentStatus($db, $onboardingId, $type);
+            $documents[$type] = $status;
+            if ($status !== 'Approved') {
+                $blockers[] = "{$type} document not approved";
+            }
+        }
+
+        $reviews = [];
+        foreach (['Compliance Review','Capacity Review'] as $reviewType) {
+            $status = $this->latestReviewStatus($db, $onboardingId, $reviewType);
+            $reviews[$reviewType] = $status;
+            if ($status !== 'Approved') {
+                $blockers[] = "{$reviewType} not approved";
+            }
+        }
+
+        if ((int)($row['available_crew_count'] ?? 0) <= 0) {
+            $blockers[] = 'Available crew count not verified';
+        }
+        if (trim((string)($row['disciplines'] ?? $row['services_offered'] ?? '')) === '') {
+            $blockers[] = 'Disciplines not verified';
+        }
+        if (trim((string)($row['equipment_counts'] ?? '')) === '') {
+            $blockers[] = 'Equipment not verified';
+        }
+
+        return [
+            'canApprove' => $blockers === [],
+            'blockers' => $blockers,
+            'documents' => $documents,
+            'reviews' => $reviews,
+        ];
+    }
+
+    private function latestDocumentStatus(PDO $db, int $onboardingId, string $documentType): string
+    {
+        $stmt = $db->prepare('SELECT status FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND document_type = ? ORDER BY updated_at DESC, id DESC LIMIT 1');
+        $stmt->execute([$onboardingId, $documentType]);
+        return (string)($stmt->fetchColumn() ?: 'Missing');
+    }
+
+    private function latestReviewStatus(PDO $db, int $onboardingId, string $reviewType): string
+    {
+        $stmt = $db->prepare('SELECT status FROM onboarding_reviews WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND review_type = ? ORDER BY updated_at DESC, id DESC LIMIT 1');
+        $stmt->execute([$onboardingId, $reviewType]);
+        return (string)($stmt->fetchColumn() ?: 'Pending');
+    }
+
+    private function syncSubcontractorDocumentStatus(PDO $db, int $onboardingId, string $documentType, string $status): void
+    {
+        $columns = [
+            'W9' => 'w9_status',
+            'COI' => 'coi_status',
+            'MSA' => 'msa_status',
+            'NDA' => 'nda_status',
+            'Safety Program' => 'safety_program_status',
+        ];
+        if (!isset($columns[$documentType])) {
+            return;
+        }
+        $column = $columns[$documentType];
+        $db->prepare("UPDATE subcontractor_onboarding SET {$column} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+            ->execute([$status, $onboardingId]);
+
+        $row = $this->find($db, 'subcontractor_onboarding', $onboardingId);
+        if (!$row) {
+            return;
+        }
+        if ($documentType === 'W9') {
+            $db->prepare('UPDATE subcontractors SET w9_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$status, (int)$row['subcontractor_id']]);
+        }
+        if ($documentType === 'COI') {
+            $db->prepare('UPDATE subcontractors SET insurance_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$status, (int)$row['subcontractor_id']]);
+        }
     }
 
     private function baseUrl(): string

@@ -81,6 +81,7 @@ $routes = [
     '/competitive-intelligence',
     '/onboarding',
     '/onboarding/subcontractors',
+    '/onboarding/subcontractors/detail?id=1',
     '/onboarding/workforce',
     '/onboarding/strategic-accounts',
     '/onboarding/markets',

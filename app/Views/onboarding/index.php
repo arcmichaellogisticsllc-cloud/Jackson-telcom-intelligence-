@@ -154,6 +154,7 @@ require __DIR__ . '/../components/action_first.php';
           <strong><?= htmlspecialchars($crew['company_name'] ?: 'Ground Crew #' . $crew['subcontractor_id']) ?></strong>
           <span><?= htmlspecialchars($crew['region_name'] ?? 'National') ?> · <?= htmlspecialchars($crew['onboarding_status']) ?> · <?= (int)$crew['available_crew_count'] ?> available crews</span>
           <span><?= htmlspecialchars($crew['missing_items'] ?: 'Ready for review') ?></span>
+          <a class="btn secondary" href="/onboarding/subcontractors/detail?id=<?= (int)$crew['id'] ?>">Open Workflow</a>
           <form method="post" action="/onboarding/intake-link" class="inline-form">
             <?= $csrf ?>
             <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
@@ -186,14 +187,15 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel-title"><h2 id="subcontractor-onboarding">New Capacity Being Created</h2><span class="status">Subcontractor Onboarding</span></div>
   <div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Theater</th><th>Stage</th><th>Readiness</th><th>Missing / Risk</th><th>Action</th></tr></thead><tbody>
     <?php foreach ($subcontractors as $row): ?><tr>
-      <td><strong><?= htmlspecialchars($row['company_name'] ?: 'Subcontractor #' . $row['subcontractor_id']) ?></strong><br><small><?= (int)$row['available_crew_count'] ?> available / <?= (int)$row['crew_count'] ?> total crews</small></td>
+      <td><strong><a href="/onboarding/subcontractors/detail?id=<?= (int)$row['id'] ?>"><?= htmlspecialchars($row['company_name'] ?: 'Subcontractor #' . $row['subcontractor_id']) ?></a></strong><br><small><?= (int)$row['available_crew_count'] ?> available / <?= (int)$row['crew_count'] ?> total crews</small></td>
       <td><?= htmlspecialchars($row['region_name'] ?? 'National') ?><br><small><?= htmlspecialchars($row['assigned_owner'] ?? 'Admin') ?></small></td>
       <td><?= htmlspecialchars($row['onboarding_status']) ?></td>
       <td><?= (int)$row['onboarding_score'] ?><br><small><?= htmlspecialchars($row['readiness_category']) ?></small></td>
       <td><?= htmlspecialchars($row['missing_items'] ?: $row['risk_flags'] ?: 'Ready for review') ?></td>
       <td>
         <form method="post" action="/onboarding/intake-link" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_id" value="<?= (int)$row['id'] ?>"><input type="hidden" name="expires_days" value="14"><button class="btn secondary">Generate Intake Link</button></form>
-        <form method="post" action="/onboarding/stage" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_type" value="Subcontractor"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><select name="status"><option>Qualified</option><option>Documents Requested</option><option>Compliance Review</option><option>Capacity Review</option><option>Approved</option><option>Preferred</option><option>Strategic Partner</option><option>Rejected</option></select><input name="notes" placeholder="Notes"><button class="btn secondary">Move</button></form>
+        <form method="post" action="/onboarding/stage" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_type" value="Subcontractor"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><select name="status"><option>Qualified</option><option>Documents Requested</option><option>Compliance Review</option><option>Capacity Review</option><option>Rejected</option></select><input name="notes" placeholder="Notes"><button class="btn secondary">Move</button></form>
+        <a class="btn secondary" href="/onboarding/subcontractors/detail?id=<?= (int)$row['id'] ?>">Review Gates</a>
       </td>
     </tr><?php endforeach; ?>
     <?php if (!$subcontractors): ?><tr><td colspan="6">No subcontractors are in onboarding yet. Add a ground crew above to start real onboarding.</td></tr><?php endif; ?>

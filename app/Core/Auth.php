@@ -208,13 +208,14 @@ class Auth
             '/strategic-account-intelligence/detail' => ['id' => ['strategic_accounts', 'region_id']],
             '/outreach/detail' => ['id' => ['outreach_intelligence', 'region_id']],
             '/subcontractor-acquisition/detail' => ['id' => ['subcontractors', 'region_id']],
+            '/onboarding/subcontractors/detail' => ['id' => ['subcontractor_onboarding', 'region_id']],
             default => [],
         };
     }
 
     private static function recordRegionId(string $table, string $column, int $id): ?int
     {
-        $allowedTables = ['contacts','organizations','acquisition_targets','opportunity_pursuit_decisions','preconstruction_profiles','project_packages','executive_packages','strategic_accounts','outreach_intelligence','subcontractors'];
+        $allowedTables = ['contacts','organizations','acquisition_targets','opportunity_pursuit_decisions','preconstruction_profiles','project_packages','executive_packages','strategic_accounts','outreach_intelligence','subcontractors','subcontractor_onboarding'];
         if (!in_array($table, $allowedTables, true)) {
             return null;
         }

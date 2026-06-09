@@ -17,6 +17,16 @@ class OnboardingController extends Controller
 
     public function index(): void { $this->render('overview'); }
     public function subcontractors(): void { $this->render('subcontractors'); }
+    public function subcontractorDetail(): void
+    {
+        Auth::requireLogin();
+        $data = $this->service->subcontractorDetail((int)($_GET['id'] ?? 0));
+        if (!$data['subcontractor']) {
+            $this->redirect('/onboarding/subcontractors');
+            return;
+        }
+        $this->view('onboarding/subcontractor_detail', $data);
+    }
     public function workforce(): void { $this->render('workforce'); }
     public function accounts(): void { $this->render('accounts'); }
     public function markets(): void { $this->render('markets'); }
@@ -62,7 +72,10 @@ class OnboardingController extends Controller
     public function stage(): void
     {
         Auth::requireLogin();
-        $this->service->updateStage($_POST['onboarding_type'] ?? 'Subcontractor', (int)($_POST['id'] ?? 0), $_POST['status'] ?? 'Prospect', $_POST['notes'] ?? '');
+        $result = $this->service->updateStage($_POST['onboarding_type'] ?? 'Subcontractor', (int)($_POST['id'] ?? 0), $_POST['status'] ?? 'Prospect', $_POST['notes'] ?? '');
+        if ($result['message'] ?? '') {
+            $_SESSION['flash'] = $result['message'];
+        }
         $this->redirect($_POST['return_to'] ?? '/onboarding');
     }
 

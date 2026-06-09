@@ -85,6 +85,7 @@ $router->post('/production-readiness/tuning', [ProductionReadinessController::cl
 $router->post('/production-readiness/erp-validation', [ProductionReadinessController::class, 'erpValidation']);
 $router->get('/onboarding', [OnboardingController::class, 'index']);
 $router->get('/onboarding/subcontractors', [OnboardingController::class, 'subcontractors']);
+$router->get('/onboarding/subcontractors/detail', [OnboardingController::class, 'subcontractorDetail']);
 $router->get('/onboarding/workforce', [OnboardingController::class, 'workforce']);
 $router->get('/onboarding/strategic-accounts', [OnboardingController::class, 'accounts']);
 $router->get('/onboarding/markets', [OnboardingController::class, 'markets']);
