@@ -79,8 +79,8 @@ class SyncErpIntegrationController extends Controller
         $region = trim((string)($_GET['region'] ?? ''));
         $status = trim((string)($_GET['status'] ?? ''));
         $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
             default => [],
         };

@@ -53,8 +53,8 @@ class RecommendationController extends Controller
         $conditions = ['1=1'];
         $params = [];
         $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
             default => [],
         };
@@ -85,6 +85,11 @@ class RecommendationController extends Controller
         if ($status !== '') {
             $conditions[] = "COALESCE(ra.status,'') = ?";
             $params[] = $status;
+        }
+        $priority = trim((string)($_GET['priority'] ?? ''));
+        if ($priority !== '') {
+            $conditions[] = "COALESCE(ra.priority,'') = ?";
+            $params[] = $priority;
         }
         return [implode(' AND ', $conditions), $params];
     }

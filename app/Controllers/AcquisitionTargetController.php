@@ -27,7 +27,7 @@ class AcquisitionTargetController extends Controller
             'southwest' => 'Southwest Hunting List',
             default => 'National Hunting List',
         };
-        $this->list($region, $title, 'Daily hunting list sorted by priority, acquisition score, urgency, and next action due.');
+        $this->list(in_array($region, ['southeast', 'great-lakes', 'southwest'], true) ? $region : null, $title, 'Daily hunting list sorted by priority, acquisition score, urgency, and next action due.');
     }
 
     public function detail(): void
@@ -123,7 +123,12 @@ class AcquisitionTargetController extends Controller
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
         $params = [];
-        $where = '';
+        $conditions = ['1=1'];
+        $allowedRegions = $this->allowedRegionNames();
+        if ($allowedRegions) {
+            $conditions[] = '(r.name IS NULL OR r.name IN (' . implode(',', array_fill(0, count($allowedRegions), '?')) . '))';
+            array_push($params, ...$allowedRegions);
+        }
         if ($regionSlug) {
             $name = match ($regionSlug) {
                 'southeast' => 'Southeast',
@@ -131,14 +136,56 @@ class AcquisitionTargetController extends Controller
                 'southwest' => 'Southwest',
                 default => '',
             };
-            $where = 'WHERE r.name = ?';
+            $conditions[] = 'r.name = ?';
             $params[] = $name;
         }
+
+        $query = trim((string)($_GET['q'] ?? ''));
+        if ($query !== '') {
+            $conditions[] = "(COALESCE(at.target_name,'') LIKE ? OR COALESCE(at.target_type,'') LIKE ? OR COALESCE(at.organization_name,'') LIKE ? OR COALESCE(at.contact_name,'') LIKE ? OR COALESCE(at.email,'') LIKE ? OR COALESCE(at.phone,'') LIKE ? OR COALESCE(at.city,'') LIKE ? OR COALESCE(at.state,'') LIKE ? OR COALESCE(r.name,'') LIKE ? OR COALESCE(at.status,'') LIKE ?)";
+            array_push($params, ...array_fill(0, 10, '%' . $query . '%'));
+        }
+        $owner = trim((string)($_GET['owner'] ?? ''));
+        if ($owner !== '') {
+            $conditions[] = "COALESCE(at.owner,'') = ?";
+            $params[] = $owner;
+        }
+        $regionFilter = trim((string)($_GET['region'] ?? ''));
+        if ($regionFilter !== '' && !in_array($regionFilter, ['southeast', 'great-lakes', 'southwest'], true)) {
+            if ($allowedRegions && !in_array($regionFilter, $allowedRegions, true)) {
+                $conditions[] = '1=0';
+            } else {
+                $conditions[] = 'r.name = ?';
+                $params[] = $regionFilter;
+            }
+        }
+        $status = trim((string)($_GET['status'] ?? ''));
+        if ($status !== '') {
+            $conditions[] = "COALESCE(at.status,'') = ?";
+            $params[] = $status;
+        }
+        $priority = trim((string)($_GET['priority'] ?? ''));
+        if ($priority !== '') {
+            $conditions[] = "COALESCE(at.priority,'') = ?";
+            $params[] = $priority;
+        }
+
+        $where = 'WHERE ' . implode(' AND ', $conditions);
         $sql = "SELECT at.*, r.name region_name, s.title signal_title FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id LEFT JOIN signals s ON s.id = at.source_signal_id {$where} ORDER BY CASE at.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END, at.acquisition_score DESC, at.urgency_score DESC, at.next_action_due_at ASC";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $targets = $stmt->fetchAll();
         $this->view('targets/index', ['targets' => $targets, 'regions' => $regions, 'title' => $title, 'subtitle' => $subtitle, 'options' => $this->options()]);
+    }
+
+    private function allowedRegionNames(): array
+    {
+        return match (Auth::user()['role'] ?? 'Admin') {
+            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Southwest Owner' => ['Southwest', 'National'],
+            default => [],
+        };
     }
 
     private function organization($db, array $t): string

@@ -213,8 +213,8 @@ class CrudController extends Controller
     private function allowedRegionNames(): array
     {
         return match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
+            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
+            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
             default => [],
         };

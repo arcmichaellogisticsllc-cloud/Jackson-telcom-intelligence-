@@ -205,6 +205,38 @@ The following record types are expected to follow this pattern:
 - Project Package
 - Generic activity record fallback
 
+## Operator List View Standard
+
+Major list pages should behave as work queues, not database exports.
+
+Default columns should prioritize:
+
+- Record
+- Region
+- Owner
+- Status
+- Score or priority
+- Last Activity
+- Next Action
+- Actions
+
+Supported filters should be real server-side filters where possible:
+
+- Search
+- Owner
+- Region
+- Status
+- Priority for priority-driven queues
+
+IDs, raw source fields, and internal engine fields should stay out of the default scan path. Operators can open the record detail page when they need evidence, source details, or lower-frequency metadata.
+
+Current shared list patterns:
+
+- `components/list_toolbar.php`
+- `crud/table.php`
+- target work queue in `targets/index.php`
+- recommendation work queue in `recommendations/index.php`
+
 ## Empty State Rule
 
 Production mode may have no business records after demo purge. Empty states must look intentional and must not show fake placeholders.

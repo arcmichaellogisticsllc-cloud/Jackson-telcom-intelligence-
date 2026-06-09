@@ -48,26 +48,36 @@
   </form>
 </section>
 
+<?php
+$listEyebrow = 'Target Work Queue';
+$listTitle = 'Acquisition Targets';
+$listRegions = array_map(fn($region) => $region['name'], $regions);
+$listOwners = $options['owners'];
+$listStatuses = $options['statuses'];
+$listPriorities = $options['priorities'];
+require __DIR__ . '/../components/list_toolbar.php';
+?>
+
 <section class="panel">
-  <div class="panel-title"><h2>Targets</h2><span class="status"><?= count($targets) ?> total</span></div>
+  <div class="panel-title"><h2>Operator Work Queue</h2><span class="status"><?= count($targets) ?> shown</span></div>
   <div class="table-wrap">
-    <table>
-      <thead><tr><th>Target</th><th>Type</th><th>Theater</th><th>Score</th><th>Priority</th><th>Reason to Pursue</th><th>Recommended Next Action</th><th>Status</th><th>Owner</th><th>Signal Source</th></tr></thead>
+    <table class="operator-table">
+      <thead><tr><th>Target</th><th>Theater</th><th>Owner</th><th>Status</th><th>Priority</th><th>Score</th><th>Last Activity</th><th>Next Action</th><th>Actions</th></tr></thead>
       <tbody>
       <?php foreach ($targets as $target): ?>
         <tr>
           <td><a href="/targets/detail?id=<?= (int)$target['id'] ?>"><strong><?= htmlspecialchars($target['target_name']) ?></strong></a><br><small><?= htmlspecialchars(trim(($target['city'] ?? '') . ' ' . ($target['state'] ?? ''))) ?></small></td>
-          <td><?= htmlspecialchars($target['target_type']) ?></td>
           <td><?= htmlspecialchars($target['region_name'] ?? 'National') ?></td>
-          <td><strong><?= (int)$target['acquisition_score'] ?></strong><br><small>Urgency <?= (int)$target['urgency_score'] ?></small></td>
-          <td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td>
-          <td><?= htmlspecialchars($target['reason_to_pursue']) ?></td>
-          <td><?= htmlspecialchars($target['recommended_next_action']) ?></td>
-          <td><?= htmlspecialchars($target['status']) ?></td>
           <td><?= htmlspecialchars($target['owner']) ?></td>
-          <td><?= htmlspecialchars($target['signal_title'] ?? '') ?><br><small><?= htmlspecialchars($target['source_type']) ?></small></td>
+          <td><span class="status"><?= htmlspecialchars($target['status']) ?></span></td>
+          <td><span class="priority <?= strtolower($target['priority']) ?>"><?= htmlspecialchars($target['priority']) ?></span></td>
+          <td><strong><?= (int)$target['acquisition_score'] ?></strong><br><small>Urgency <?= (int)$target['urgency_score'] ?></small></td>
+          <td><?= htmlspecialchars(substr($target['last_touched_at'] ?? $target['created_at'] ?? '', 0, 10) ?: 'No activity') ?></td>
+          <td><?= htmlspecialchars($target['recommended_next_action']) ?></td>
+          <td class="row-actions"><a class="link-button" href="/targets/detail?id=<?= (int)$target['id'] ?>">Open</a><a class="link-button" href="/record?type=acquisition_target&id=<?= (int)$target['id'] ?>">Timeline</a></td>
         </tr>
       <?php endforeach; ?>
+      <?php if (!$targets): ?><tr><td colspan="9"><?php $emptyTitle = 'No targets match this view'; $emptyBody = 'Clear filters, add a real target, or build targets from reviewed signals.'; $emptyActionHref = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/targets'; $emptyActionLabel = 'Clear Filters'; require __DIR__ . '/../components/empty_state.php'; ?></td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>

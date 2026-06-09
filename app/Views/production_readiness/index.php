@@ -83,7 +83,7 @@ require __DIR__ . '/../components/action_first.php';
         <td><?= htmlspecialchars($issue['region_name'] ?? 'National') ?></td>
         <td><form method="post" action="/production-readiness/data-quality/update" class="inline-form"><input type="hidden" name="id" value="<?= (int)$issue['id'] ?>"><select name="status"><option>In Review</option><option>Resolved</option><option>Dismissed</option></select><input name="resolution_outcome" placeholder="Outcome"><input name="resolution_notes" placeholder="Notes"><button class="btn secondary">Update</button></form></td>
       </tr><?php endforeach; ?>
-      <?php if (!$dataQualityIssues): ?><tr><td colspan="4">No open data quality issues.</td></tr><?php endif; ?>
+      <?php if (!$dataQualityIssues): ?><tr><td colspan="4"><?php $emptyTitle = 'No open data quality issues'; $emptyBody = 'Real data has no unresolved quality issues in this queue. New connector imports and integrity checks will surface issues here.'; $emptyActionHref = '/production-readiness'; $emptyActionLabel = 'Production Readiness'; require __DIR__ . '/../components/empty_state.php'; ?></td></tr><?php endif; ?>
     </tbody></table></div>
   </div>
 </section>

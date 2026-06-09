@@ -3,9 +3,13 @@ $query = $_GET['q'] ?? '';
 $ownerFilter = $_GET['owner'] ?? '';
 $regionFilter = $_GET['region'] ?? '';
 $statusFilter = $_GET['status'] ?? '';
+$priorityFilter = $_GET['priority'] ?? '';
 $listRegions = $listRegions ?? ['Southeast','Great Lakes','Southwest','National'];
 $listOwners = $listOwners ?? ['Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin','Unassigned'];
 $listStatuses = $listStatuses ?? ['Open','Active','New','In Progress','Qualified','Approved','Preferred','Strategic Partner','Ready For SyncERP','Completed','Dismissed'];
+$listPriorities = $listPriorities ?? [];
+$hasFilters = $query !== '' || $ownerFilter !== '' || $regionFilter !== '' || $statusFilter !== '' || $priorityFilter !== '';
+$clearHref = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 ?>
 <form class="list-toolbar" method="get">
   <div>
@@ -26,6 +30,13 @@ $listStatuses = $listStatuses ?? ['Open','Active','New','In Progress','Qualified
       <option value="">All statuses</option>
       <?php foreach ($listStatuses as $status): ?><option value="<?= htmlspecialchars($status) ?>" <?= $statusFilter === $status ? 'selected' : '' ?>><?= htmlspecialchars($status) ?></option><?php endforeach; ?>
     </select>
+    <?php if ($listPriorities): ?>
+      <select name="priority" onchange="this.form.submit()">
+        <option value="">All priorities</option>
+        <?php foreach ($listPriorities as $priority): ?><option value="<?= htmlspecialchars($priority) ?>" <?= $priorityFilter === $priority ? 'selected' : '' ?>><?= htmlspecialchars($priority) ?></option><?php endforeach; ?>
+      </select>
+    <?php endif; ?>
     <button class="btn secondary" type="submit">Filter</button>
+    <?php if ($hasFilters): ?><a class="btn secondary" href="<?= htmlspecialchars($clearHref) ?>">Clear</a><?php endif; ?>
   </div>
 </form>
