@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
+<?php $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); ?>
 <?php if ($user): ?>
   <aside class="sidebar">
     <?php $brand = $app['brand'] ?? []; ?>
@@ -23,7 +24,6 @@
     </a>
     <nav>
       <?php
-      $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
       $navGroups = [
         'COMMAND' => ['/' => 'Command Center','/decision-visuals' => 'Decision Visuals','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages'],
         'WORK' => ['/acquisition-command' => 'Work Intelligence','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
@@ -50,7 +50,7 @@
     </nav>
   </aside>
 <?php endif; ?>
-<main class="<?= $user ? 'main' : 'login-main' ?>">
+<main class="<?= $user ? 'main' : ($currentPath === '/onboarding/intake' ? 'public-main' : 'login-main') ?>">
   <?php if ($user): ?>
     <header class="topbar">
       <div>

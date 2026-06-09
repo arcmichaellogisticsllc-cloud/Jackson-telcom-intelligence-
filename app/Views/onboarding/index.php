@@ -1,5 +1,7 @@
 <?php
 $section = $section ?? 'overview';
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 $tabs = [
   'overview' => ['/onboarding', 'Overview'],
   'subcontractors' => ['/onboarding/subcontractors', 'Subcontractors'],
@@ -23,6 +25,14 @@ $csrf = \App\Core\Auth::csrfInput();
   <?php foreach ($tabs as $key => [$href, $label]): ?><a class="<?= $section === $key ? 'active' : '' ?>" href="<?= $href ?>"><?= $label ?></a><?php endforeach; ?>
   <form method="post" action="/onboarding/rebuild"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><button class="btn secondary">Rebuild Readiness</button></form>
 </nav>
+
+<?php if ($flash): ?>
+<section class="panel">
+  <div class="panel-title"><h2>Onboarding Link Ready</h2><span class="status">Manual Send Only</span></div>
+  <p><?= htmlspecialchars($flash) ?></p>
+  <p><small>Copy this link and send it manually by text, email, or message. The platform does not send outreach automatically.</small></p>
+</section>
+<?php endif; ?>
 
 <?php
 $why = 'Onboarding is the missing workflow between discovery, qualification, and operational readiness.';
@@ -106,11 +116,32 @@ require __DIR__ . '/../components/action_first.php';
           <strong><?= htmlspecialchars($crew['company_name'] ?: 'Ground Crew #' . $crew['subcontractor_id']) ?></strong>
           <span><?= htmlspecialchars($crew['region_name'] ?? 'National') ?> · <?= htmlspecialchars($crew['onboarding_status']) ?> · <?= (int)$crew['available_crew_count'] ?> available crews</span>
           <span><?= htmlspecialchars($crew['missing_items'] ?: 'Ready for review') ?></span>
+          <form method="post" action="/onboarding/intake-link" class="inline-form">
+            <?= $csrf ?>
+            <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+            <input type="hidden" name="onboarding_id" value="<?= (int)$crew['id'] ?>">
+            <input type="hidden" name="expires_days" value="14">
+            <button class="btn secondary">Generate Intake Link</button>
+          </form>
         </div>
       <?php endforeach; ?>
       <?php if (empty($groundCrewQueue)): ?><div class="empty-state"><strong>No ground crews in onboarding yet.</strong><span>Add tomorrow's crews here, then request documents and complete compliance/capacity review.</span></div><?php endif; ?>
     </div>
   </div>
+</section>
+
+<section class="panel">
+  <div class="panel-title"><h2>Subcontractor Intake Links</h2><span class="status">Self-Service Intake</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Theater</th><th>Status</th><th>Expires</th><th>Requested By</th></tr></thead><tbody>
+    <?php foreach (($intakeLinks ?? []) as $link): ?><tr>
+      <td><strong><?= htmlspecialchars($link['company_name'] ?: 'Subcontractor #' . $link['onboarding_id']) ?></strong><br><small>Onboarding #<?= (int)$link['onboarding_id'] ?></small></td>
+      <td><?= htmlspecialchars($link['region_name'] ?? 'National') ?></td>
+      <td><?= htmlspecialchars($link['status']) ?><?= !empty($link['submitted_at']) ? '<br><small>' . htmlspecialchars($link['submitted_at']) . '</small>' : '' ?></td>
+      <td><?= htmlspecialchars($link['expires_at']) ?></td>
+      <td><?= htmlspecialchars($link['requested_by'] ?? 'Admin') ?></td>
+    </tr><?php endforeach; ?>
+    <?php if (empty($intakeLinks)): ?><tr><td colspan="5">No intake links generated yet. Use Generate Intake Link on a subcontractor row, then manually send the link.</td></tr><?php endif; ?>
+  </tbody></table></div>
 </section>
 
 <section class="panel">
@@ -122,7 +153,10 @@ require __DIR__ . '/../components/action_first.php';
       <td><?= htmlspecialchars($row['onboarding_status']) ?></td>
       <td><?= (int)$row['onboarding_score'] ?><br><small><?= htmlspecialchars($row['readiness_category']) ?></small></td>
       <td><?= htmlspecialchars($row['missing_items'] ?: $row['risk_flags'] ?: 'Ready for review') ?></td>
-      <td><form method="post" action="/onboarding/stage" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_type" value="Subcontractor"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><select name="status"><option>Qualified</option><option>Documents Requested</option><option>Compliance Review</option><option>Capacity Review</option><option>Approved</option><option>Preferred</option><option>Strategic Partner</option><option>Rejected</option></select><input name="notes" placeholder="Notes"><button class="btn secondary">Move</button></form></td>
+      <td>
+        <form method="post" action="/onboarding/intake-link" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_id" value="<?= (int)$row['id'] ?>"><input type="hidden" name="expires_days" value="14"><button class="btn secondary">Generate Intake Link</button></form>
+        <form method="post" action="/onboarding/stage" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_type" value="Subcontractor"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><select name="status"><option>Qualified</option><option>Documents Requested</option><option>Compliance Review</option><option>Capacity Review</option><option>Approved</option><option>Preferred</option><option>Strategic Partner</option><option>Rejected</option></select><input name="notes" placeholder="Notes"><button class="btn secondary">Move</button></form>
+      </td>
     </tr><?php endforeach; ?>
     <?php if (!$subcontractors): ?><tr><td colspan="6">No subcontractors are in onboarding yet. Add a ground crew above to start real onboarding.</td></tr><?php endif; ?>
   </tbody></table></div>

@@ -87,6 +87,7 @@ $routes = [
     '/onboarding/documents',
     '/onboarding/reviews',
     '/onboarding/metrics',
+    '/onboarding/intake?token=invalid',
     '/acquisition-command',
     '/acquisition-command/southeast',
     '/acquisition-command/great-lakes',

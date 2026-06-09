@@ -2120,6 +2120,20 @@ Rules:
 
 First-pass results and shortfalls are documented in `docs/first-pass-real-hunt-report.md`.
 
+## Subcontractor Intake Links
+
+Onboarding supports subcontractor self-service intake without automated sending.
+
+Workflow:
+
+1. Add the ground crew or subcontractor prospect in `/onboarding/subcontractors`.
+2. Click `Generate Intake Link`.
+3. Copy the generated link and send it manually.
+4. The subcontractor completes company, contact, coverage, services, crew, equipment, and document-readiness fields.
+5. The submission updates onboarding, document registry, activities, and follow-up actions.
+
+Intake submissions never approve a subcontractor automatically. They move the record into document/compliance review so Jackson can verify W9, COI, MSA, NDA, safety program, capacity, and equipment before approval.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

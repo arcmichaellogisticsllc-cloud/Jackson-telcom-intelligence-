@@ -28,7 +28,7 @@ class Router
             return;
         }
 
-        $publicPaths = ['/login', '/password-reset', '/password-reset/confirm'];
+        $publicPaths = ['/login', '/password-reset', '/password-reset/confirm', '/onboarding/intake'];
         if (!in_array($path, $publicPaths, true) && !Auth::check()) {
             header('Location: /login');
             return;

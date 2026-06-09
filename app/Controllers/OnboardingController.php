@@ -38,6 +38,27 @@ class OnboardingController extends Controller
         $this->redirect($id ? '/onboarding/subcontractors#ground-crew-' . $id : ($_POST['return_to'] ?? '/onboarding/subcontractors'));
     }
 
+    public function intakeLink(): void
+    {
+        Auth::requireLogin();
+        $link = $this->service->createSubcontractorIntakeLink((int)($_POST['onboarding_id'] ?? 0), (int)($_POST['expires_days'] ?? 14));
+        $_SESSION['flash'] = $link ? 'Subcontractor intake link: ' . $link : 'Unable to create intake link.';
+        $this->redirect($_POST['return_to'] ?? '/onboarding/subcontractors');
+    }
+
+    public function intake(): void
+    {
+        $data = $this->service->intakeForm((string)($_GET['token'] ?? ''));
+        $this->view('onboarding/intake', $data);
+    }
+
+    public function submitIntake(): void
+    {
+        $submitted = $this->service->submitSubcontractorIntake($_POST);
+        $_SESSION['intake_submitted'] = $submitted;
+        $this->redirect('/onboarding/intake?submitted=' . ($submitted ? '1' : '0'));
+    }
+
     public function stage(): void
     {
         Auth::requireLogin();

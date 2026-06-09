@@ -44,6 +44,7 @@ class OnboardingService
             'documents' => $this->rows($db, 'SELECT od.*, r.name region_name FROM onboarding_documents od LEFT JOIN regions r ON r.id = od.region_id WHERE ' . $where . ' ORDER BY CASE od.status WHEN "Missing" THEN 1 WHEN "Requested" THEN 2 WHEN "Expired" THEN 3 ELSE 4 END, od.created_at DESC LIMIT 80', $params),
             'recommendations' => $this->rows($db, 'SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.source_module = "Onboarding Workspace" AND ra.status = "Open" AND ' . $where . ' ORDER BY ra.priority_score DESC LIMIT 10', $params),
             'groundCrewQueue' => $this->rows($db, 'SELECT so.*, s.company_name, s.phone, s.email, s.services_offered, s.available_crew_count, s.crew_count, s.primary_contact, s.markets_served, r.name region_name FROM subcontractor_onboarding so JOIN subcontractors s ON s.id = so.subcontractor_id LEFT JOIN regions r ON r.id = so.region_id WHERE ' . $where . ' AND (LOWER(COALESCE(s.services_offered,"")) LIKE "%underground%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%ground%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%boring%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%row%") ORDER BY CASE so.onboarding_status WHEN "Documents Requested" THEN 1 WHEN "Qualified" THEN 2 WHEN "Compliance Review" THEN 3 WHEN "Capacity Review" THEN 4 ELSE 5 END, so.updated_at DESC LIMIT 20', $params),
+            'intakeLinks' => $this->rows($db, 'SELECT oil.*, so.region_id, s.company_name, r.name region_name FROM onboarding_intake_links oil JOIN subcontractor_onboarding so ON so.id = oil.onboarding_id AND oil.onboarding_type = "Subcontractor" JOIN subcontractors s ON s.id = so.subcontractor_id LEFT JOIN regions r ON r.id = so.region_id WHERE ' . $where . ' ORDER BY oil.created_at DESC LIMIT 20', $params),
             'regions' => $db->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll(),
         ];
     }
@@ -139,6 +140,140 @@ class OnboardingService
         $this->createDailyAction($db, $regionId, 'Complete ground crew onboarding package for ' . $company, 'Subcontractor', $onboardingId);
         $this->generateRecommendations($db);
         return $onboardingId;
+    }
+
+    public function createSubcontractorIntakeLink(int $onboardingId, int $expiresDays = 14): ?string
+    {
+        $db = Database::connection();
+        $row = $this->subcontractorOnboarding($db, $onboardingId);
+        if (!$row) {
+            return null;
+        }
+        Auth::requireRegionAccess($row['region_id'] ?? null);
+
+        $token = bin2hex(random_bytes(32));
+        $hash = hash('sha256', $token);
+        $expiresDays = max(1, min(30, $expiresDays));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+' . $expiresDays . ' days'));
+
+        $db->prepare('UPDATE onboarding_intake_links SET status = "Revoked", updated_at = CURRENT_TIMESTAMP WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND status = "Active"')
+            ->execute([$onboardingId]);
+        $db->prepare('INSERT INTO onboarding_intake_links (onboarding_type, onboarding_id, token_hash, status, requested_by, expires_at) VALUES ("Subcontractor", ?, ?, "Active", ?, ?)')
+            ->execute([$onboardingId, $hash, Auth::user()['name'] ?? 'Admin', $expiresAt]);
+
+        $this->activity($db, 'subcontractor_onboarding', $onboardingId, $row['region_id'] ?? null, 'Intake Link', 'Subcontractor intake link generated', 'Copy this link and send it manually. No automated outreach was sent.');
+
+        return $this->baseUrl() . '/onboarding/intake?token=' . $token;
+    }
+
+    public function intakeForm(string $token): array
+    {
+        $db = Database::connection();
+        $submitted = !empty($_GET['submitted']);
+        $intake = $token !== '' ? $this->activeIntakeByToken($db, $token) : null;
+        return [
+            'intake' => $intake,
+            'token' => $token,
+            'submitted' => $submitted,
+            'invalidReason' => $submitted ? '' : 'This intake link is missing, expired, submitted, or no longer active.',
+        ];
+    }
+
+    public function submitSubcontractorIntake(array $input): bool
+    {
+        $db = Database::connection();
+        $token = trim((string)($input['token'] ?? ''));
+        $row = $this->activeIntakeByToken($db, $token);
+        if (!$row) {
+            return false;
+        }
+
+        $services = $this->selectedServices($input);
+        $documentStatuses = $this->documentStatuses($input);
+        $missing = $this->missingDocumentList($documentStatuses);
+        $crewCount = max(0, (int)($input['crew_count'] ?? 0));
+        $availableCrews = max(0, (int)($input['available_crew_count'] ?? 0));
+        $equipment = $this->submittedEquipmentSummary($input);
+        $coverage = trim((string)($input['states_served'] ?? ''));
+        $notes = trim((string)($input['notes'] ?? ''));
+        $company = trim((string)($input['company_name'] ?? '')) ?: $row['company_name'];
+        $readyDocs = count(array_filter($documentStatuses, fn($status) => $status === 'Submitted'));
+        $score = min(100, 30 + ($services ? 12 : 0) + ($coverage ? 10 : 0) + min(20, $availableCrews * 5) + min(15, $readyDocs * 3) + ($equipment ? 10 : 0));
+        $stage = $missing ? 'Documents Requested' : 'Compliance Review';
+        $category = $this->category($score);
+
+        $startedTransaction = !$db->inTransaction();
+        if ($startedTransaction) {
+            $db->beginTransaction();
+        }
+        try {
+            $db->prepare('UPDATE organizations SET name = COALESCE(NULLIF(?, ""), name), website = COALESCE(NULLIF(?, ""), website), phone = COALESCE(NULLIF(?, ""), phone), notes = trim(COALESCE(notes, "") || char(10) || ?) WHERE id = ?')
+                ->execute([$company, trim((string)($input['website'] ?? '')), trim((string)($input['phone'] ?? '')), 'Subcontractor intake submitted on ' . date('Y-m-d') . '.', (int)$row['organization_id']]);
+
+            $db->prepare('UPDATE subcontractors SET company_name = COALESCE(NULLIF(?, ""), company_name), legal_name = COALESCE(NULLIF(?, ""), legal_name), years_in_business = ?, website = COALESCE(NULLIF(?, ""), website), phone = COALESCE(NULLIF(?, ""), phone), email = COALESCE(NULLIF(?, ""), email), owner_name = COALESCE(NULLIF(?, ""), owner_name), primary_contact = COALESCE(NULLIF(?, ""), primary_contact), contact_title = COALESCE(NULLIF(?, ""), contact_title), states_served = COALESCE(NULLIF(?, ""), states_served), markets_served = COALESCE(NULLIF(?, ""), markets_served), services_offered = COALESCE(NULLIF(?, ""), services_offered), crew_count = ?, available_crew_count = ?, aerial_crew_count = ?, underground_crew_count = ?, fiber_splicing_crew_count = ?, directional_boring_crew_count = ?, traffic_control_crew_count = ?, mowing_row_crew_count = ?, inspection_crew_count = ?, qc_crew_count = ?, make_ready_crew_count = ?, bucket_trucks = ?, digger_derricks = ?, directional_drills = ?, splicing_trailers = ?, fusion_splicers = ?, reel_trailers = ?, vac_trucks = ?, insurance_status = ?, w9_status = ?, approval_stage = ?, availability = COALESCE(NULLIF(?, ""), availability), notes = trim(COALESCE(notes, "") || char(10) || ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([
+                    $company,
+                    trim((string)($input['legal_name'] ?? '')),
+                    max(0, (int)($input['years_in_business'] ?? 0)),
+                    trim((string)($input['website'] ?? '')),
+                    trim((string)($input['phone'] ?? '')),
+                    trim((string)($input['email'] ?? '')),
+                    trim((string)($input['owner_name'] ?? '')),
+                    trim((string)($input['primary_contact'] ?? '')),
+                    trim((string)($input['contact_title'] ?? '')),
+                    $coverage,
+                    trim((string)($input['markets_served'] ?? '')),
+                    $services,
+                    $crewCount,
+                    $availableCrews,
+                    max(0, (int)($input['aerial_crew_count'] ?? 0)),
+                    max(0, (int)($input['underground_crew_count'] ?? 0)),
+                    max(0, (int)($input['fiber_splicing_crew_count'] ?? 0)),
+                    max(0, (int)($input['directional_boring_crew_count'] ?? 0)),
+                    max(0, (int)($input['traffic_control_crew_count'] ?? 0)),
+                    max(0, (int)($input['mowing_row_crew_count'] ?? 0)),
+                    max(0, (int)($input['inspection_crew_count'] ?? 0)),
+                    max(0, (int)($input['qc_crew_count'] ?? 0)),
+                    max(0, (int)($input['make_ready_crew_count'] ?? 0)),
+                    max(0, (int)($input['bucket_trucks'] ?? 0)),
+                    max(0, (int)($input['digger_derricks'] ?? 0)),
+                    max(0, (int)($input['directional_drills'] ?? 0)),
+                    max(0, (int)($input['splicing_trailers'] ?? 0)),
+                    max(0, (int)($input['fusion_splicers'] ?? 0)),
+                    max(0, (int)($input['reel_trailers'] ?? 0)),
+                    max(0, (int)($input['vac_trucks'] ?? 0)),
+                    $documentStatuses['COI'],
+                    $documentStatuses['W9'],
+                    $stage,
+                    trim((string)($input['availability'] ?? '')),
+                    trim("Subcontractor intake submitted.\n{$notes}"),
+                    (int)$row['subcontractor_id'],
+                ]);
+
+            $db->prepare('UPDATE subcontractor_onboarding SET onboarding_status = ?, onboarding_score = ?, readiness_category = ?, w9_status = ?, coi_status = ?, msa_status = ?, nda_status = ?, safety_program_status = ?, coverage_area = ?, disciplines = ?, crew_counts = ?, equipment_counts = ?, missing_items = ?, approval_notes = ?, risk_flags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$stage, $score, $category, $documentStatuses['W9'], $documentStatuses['COI'], $documentStatuses['MSA'], $documentStatuses['NDA'], $documentStatuses['Safety Program'], $coverage, $services, "{$availableCrews} available / {$crewCount} total", $equipment ?: 'No equipment counts submitted.', $missing, 'Subcontractor completed self-service intake. Jackson review still required before approval.', $missing ? 'Missing documents before approval: ' . $missing : 'Compliance review required before approval.', (int)$row['onboarding_id']]);
+
+            foreach ($documentStatuses as $type => $status) {
+                $this->upsertIntakeDocument($db, (int)$row['onboarding_id'], (int)$row['region_id'], $type, $status, $company);
+            }
+
+            $payload = json_encode($input, JSON_UNESCAPED_SLASHES);
+            $db->prepare('UPDATE onboarding_intake_links SET status = "Submitted", submitted_at = CURRENT_TIMESTAMP, submission_payload = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$payload, (int)$row['link_id']]);
+            $this->activity($db, 'subcontractor_onboarding', (int)$row['onboarding_id'], $row['region_id'] ?? null, 'Intake Submitted', 'Subcontractor intake submitted by ' . $company, "Services: {$services}\nCrews: {$availableCrews} available / {$crewCount} total\nMissing: " . ($missing ?: 'None reported') . "\nNotes: {$notes}");
+            $this->createDailyAction($db, $row['region_id'] ?? null, 'Review subcontractor intake for ' . $company, 'Subcontractor', (int)$row['onboarding_id']);
+            if ($startedTransaction) {
+                $db->commit();
+            }
+        } catch (\Throwable $e) {
+            if ($startedTransaction) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
+        $this->generateRecommendations($db);
+        return true;
     }
 
     public function updateStage(string $type, int $id, string $status, string $notes): void
@@ -358,6 +493,115 @@ class OnboardingService
             'Market' => ['market_onboarding', 'onboarding_status', 'market_onboarding'],
             default => ['subcontractor_onboarding', 'onboarding_status', 'subcontractor_onboarding'],
         };
+    }
+
+    private function subcontractorOnboarding(PDO $db, int $onboardingId): ?array
+    {
+        $stmt = $db->prepare('SELECT so.id onboarding_id, so.*, s.id subcontractor_id, s.company_name, s.organization_id, s.phone, s.email, s.website, s.primary_contact, s.contact_title, s.states_served, s.markets_served, s.services_offered, s.crew_count, s.available_crew_count, o.name organization_name, r.name region_name FROM subcontractor_onboarding so JOIN subcontractors s ON s.id = so.subcontractor_id JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = so.region_id WHERE so.id = ? LIMIT 1');
+        $stmt->execute([$onboardingId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    private function activeIntakeByToken(PDO $db, string $token): ?array
+    {
+        if ($token === '' || strlen($token) < 32) {
+            return null;
+        }
+        $hash = hash('sha256', $token);
+        $stmt = $db->prepare('SELECT oil.id link_id, oil.expires_at, so.id onboarding_id, so.*, s.id subcontractor_id, s.company_name, s.legal_name, s.organization_id, s.website, s.phone, s.email, s.owner_name, s.primary_contact, s.contact_title, s.states_served, s.markets_served, s.services_offered, s.crew_count, s.available_crew_count, s.availability, o.name organization_name, (SELECT name FROM regions WHERE id = so.region_id) region_name FROM onboarding_intake_links oil JOIN subcontractor_onboarding so ON so.id = oil.onboarding_id AND oil.onboarding_type = "Subcontractor" JOIN subcontractors s ON s.id = so.subcontractor_id JOIN organizations o ON o.id = s.organization_id WHERE oil.token_hash = ? AND oil.status = "Active" LIMIT 1');
+        $stmt->execute([$hash]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            return null;
+        }
+        if (strtotime((string)$row['expires_at']) < time()) {
+            $db->prepare('UPDATE onboarding_intake_links SET status = "Expired", updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([(int)$row['link_id']]);
+            return null;
+        }
+        return $row;
+    }
+
+    private function selectedServices(array $input): string
+    {
+        $services = [];
+        foreach (['Aerial','Underground','Fiber Splicing','Directional Boring','Traffic Control','ROW / Mowing','Inspection','QC','Make Ready'] as $service) {
+            $key = 'service_' . strtolower(str_replace([' / ', ' '], ['_', '_'], $service));
+            if (!empty($input[$key])) {
+                $services[] = $service;
+            }
+        }
+        $other = trim((string)($input['services_other'] ?? ''));
+        if ($other !== '') {
+            $services[] = $other;
+        }
+        return implode(', ', array_unique($services));
+    }
+
+    private function documentStatuses(array $input): array
+    {
+        $statuses = [];
+        foreach (['W9','COI','MSA','NDA','Safety Program'] as $type) {
+            $key = 'doc_' . strtolower(str_replace(' ', '_', $type));
+            $value = (string)($input[$key] ?? 'Requested');
+            $statuses[$type] = in_array($value, ['Submitted','Requested','Missing'], true) ? $value : 'Requested';
+        }
+        return $statuses;
+    }
+
+    private function missingDocumentList(array $statuses): string
+    {
+        $missing = [];
+        foreach ($statuses as $type => $status) {
+            if ($status !== 'Submitted') {
+                $missing[] = $type;
+            }
+        }
+        return implode('; ', $missing);
+    }
+
+    private function submittedEquipmentSummary(array $input): string
+    {
+        $parts = [];
+        foreach ([
+            'Bucket Trucks' => 'bucket_trucks',
+            'Digger Derricks' => 'digger_derricks',
+            'Directional Drills' => 'directional_drills',
+            'Splicing Trailers' => 'splicing_trailers',
+            'Fusion Splicers' => 'fusion_splicers',
+            'Reel Trailers' => 'reel_trailers',
+            'Vac Trucks' => 'vac_trucks',
+        ] as $label => $key) {
+            $parts[] = $label . ': ' . max(0, (int)($input[$key] ?? 0));
+        }
+        $notes = trim((string)($input['equipment_notes'] ?? ''));
+        if ($notes !== '') {
+            $parts[] = 'Notes: ' . $notes;
+        }
+        return implode('; ', $parts);
+    }
+
+    private function upsertIntakeDocument(PDO $db, int $onboardingId, int $regionId, string $type, string $status, string $company): void
+    {
+        $existing = $db->prepare('SELECT id FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND document_type = ? ORDER BY id DESC LIMIT 1');
+        $existing->execute([$onboardingId, $type]);
+        $documentId = (int)$existing->fetchColumn();
+        $fileName = $status === 'Submitted'
+            ? 'SUBMITTED - ' . $company . ' - ' . $type
+            : 'REQUESTED - ' . $company . ' - ' . $type;
+        if ($documentId) {
+            $db->prepare('UPDATE onboarding_documents SET status = ?, file_name = ?, reviewed_by = "Subcontractor Intake", notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$status, $fileName, 'Self-reported through subcontractor intake. Jackson must review actual document before approval.', $documentId]);
+            return;
+        }
+        $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, ?, NULL, "Subcontractor Intake", ?)')
+            ->execute([$onboardingId, $regionId, $type, $fileName, $status, 'Self-reported through subcontractor intake. Jackson must review actual document before approval.']);
+    }
+
+    private function baseUrl(): string
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8090';
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $scheme . '://' . $host;
     }
 
     private function groundCrewServices(array $input): string
