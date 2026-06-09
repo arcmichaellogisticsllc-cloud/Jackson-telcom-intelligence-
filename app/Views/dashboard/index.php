@@ -1,45 +1,76 @@
 <?php
 $brand = $app['brand'] ?? [];
 $command = $commandData ?? ['metrics' => [], 'work' => [], 'capacity' => [], 'need' => [], 'influence' => []];
-$widgets = [
+$topActions = array_slice($decisionWidgets['topActions'] ?? [], 0, 5);
+$blockers = array_slice($decisionWidgets['blockers'] ?? [], 0, 3);
+$opportunities = array_slice($topOpportunities ?? [], 0, 3);
+$visualAlerts = array_slice($visualWidgets['alerts'] ?? [], 0, 3);
+$onboardingMetrics = $onboardingWidgets['metrics'] ?? [];
+$onboardingActions = array_slice($onboardingWidgets['recommendations'] ?? [], 0, 3);
+$recentConversations = array_slice($recentConversations ?? [], 0, 3);
+$healthChecks = array_slice($platformData['health'] ?? [], 0, 4);
+
+$shortItems = fn(array $rows, callable $map): array => array_slice(array_map($map, $rows), 0, 3);
+$stateWidgets = [
     [
-        'eyebrow' => 'Work Ready',
-        'title' => 'Who has work?',
+        'eyebrow' => 'Who Has Work',
+        'title' => 'Work Ready',
         'score' => $command['metrics']['work'] ?? 0,
         'summary' => 'Utilities, primes, municipalities, and programs with active or future fiber backbone work.',
         'href' => '/acquisition-command',
-        'cta' => 'Open Work Intelligence',
-        'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Work signal', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['work_readiness_score'] ?? 0)], $command['work'] ?? []),
+        'cta' => 'Open Work',
+        'items' => $shortItems($command['work'] ?? [], fn($row) => ['title' => $row['organization_name'] ?? 'Work signal', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['work_readiness_score'] ?? 0)]),
     ],
     [
-        'eyebrow' => 'Capacity Available',
-        'title' => 'Who can perform work?',
+        'eyebrow' => 'Who Has Capacity',
+        'title' => 'Capacity Available',
         'score' => $command['metrics']['capacity'] ?? 0,
-        'summary' => 'Approved, preferred, strategic, and internal deployable capacity that can support pursuit decisions.',
+        'summary' => 'Deployable crews and providers that can support real pursuit decisions.',
         'href' => '/capacity-radar',
-        'cta' => 'Open Capacity Radar',
-        'items' => array_map(fn($row) => ['title' => $row['profile_name'] ?? 'Capacity provider', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . (int)($row['available_crews'] ?? 0) . ' crews'], $command['capacity'] ?? []),
+        'cta' => 'Open Capacity',
+        'items' => $shortItems($command['capacity'] ?? [], fn($row) => ['title' => $row['profile_name'] ?? 'Capacity provider', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . (int)($row['available_crews'] ?? 0) . ' crews']),
     ],
     [
-        'eyebrow' => 'Capacity Seeking Work',
-        'title' => 'Who needs work?',
+        'eyebrow' => 'Who Needs Work',
+        'title' => 'Capacity Seeking Work',
         'score' => $command['metrics']['need'] ?? 0,
-        'summary' => 'Underutilized contractors and crews that may become fast capacity wins for Jackson Telcom.',
+        'summary' => 'Underutilized contractors and crews that may become fast capacity wins.',
         'href' => '/hunting-lists',
-        'cta' => 'Open Hunting Lists',
-        'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Need signal', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['workload_status'] ?? 'Unknown')], $command['need'] ?? []),
+        'cta' => 'Open Need',
+        'items' => $shortItems($command['need'] ?? [], fn($row) => ['title' => $row['organization_name'] ?? 'Need signal', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['workload_status'] ?? 'Unknown')]),
     ],
     [
-        'eyebrow' => 'Influence Network',
-        'title' => 'Who influences work?',
+        'eyebrow' => 'Who Influences Work',
+        'title' => 'Influence Network',
         'score' => $command['metrics']['influence'] ?? 0,
-        'summary' => 'Project managers, construction leaders, utility contacts, and prime contacts who can create access.',
+        'summary' => 'Project managers, construction leaders, utility contacts, and prime contacts who create access.',
         'href' => '/relationship-graph',
-        'cta' => 'Open Influence Network',
-        'items' => array_map(fn($row) => ['title' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: 'Influence contact', 'meta' => ($row['region_name'] ?? 'National') . ' · influence ' . (int)($row['final_influence_score'] ?? 0)], $command['influence'] ?? []),
+        'cta' => 'Open Influence',
+        'items' => $shortItems($command['influence'] ?? [], fn($row) => ['title' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: 'Influence contact', 'meta' => ($row['region_name'] ?? 'National') . ' · influence ' . (int)($row['final_influence_score'] ?? 0)]),
     ],
 ];
+
+$actionHref = function (array $action): string {
+    $type = $action['linked_record_type'] ?? $action['source_type'] ?? '';
+    $id = (int)($action['linked_record_id'] ?? $action['source_id'] ?? 0);
+    return match ($type) {
+        'Executive Package' => $id ? '/executive-packages/detail?id=' . $id : '/executive-packages',
+        'opportunity', 'Opportunity' => $id ? '/pursuits/detail?id=' . $id : '/pursuits',
+        'preconstruction_profile', 'Preconstruction Profile' => $id ? '/preconstruction/detail?id=' . $id : '/preconstruction',
+        'project_package', 'Project Package' => $id ? '/syncerp-integration/detail?id=' . $id : '/syncerp-integration',
+        'contact', 'Contact' => $id ? '/contacts/detail?id=' . $id : '/contacts',
+        'organization', 'Organization' => $id ? '/organizations/detail?id=' . $id : '/organizations',
+        'subcontractor', 'Subcontractor' => $id ? '/subcontractor-acquisition/detail?id=' . $id : '/subcontractor-acquisition',
+        'subcontractor_onboarding' => $id ? '/onboarding/subcontractors#ground-crew-' . $id : '/onboarding/subcontractors',
+        'acquisition_target', 'Acquisition Target' => $id ? '/targets/detail?id=' . $id : '/targets',
+        default => '/decision-support',
+    };
+};
+
+$categoryLabels = ['Capacity' => 'Capacity', 'Relationship' => 'Relationship', 'Opportunity' => 'Pursuit', 'Demand' => 'Growth', 'Content' => 'Growth', 'Hunt' => 'Capacity', 'Subcontractor' => 'Capacity', 'Risk' => 'Risk'];
+$criticalHealth = array_values(array_filter($healthChecks, fn($check) => in_array(strtolower((string)($check['status'] ?? 'pass')), ['fail', 'warn'], true)));
 ?>
+
 <section class="command-hero">
   <div class="command-mark">
     <?php if (!empty($brand['logo_path'])): ?>
@@ -51,114 +82,133 @@ $widgets = [
   <div>
     <p class="eyebrow"><?= htmlspecialchars($brand['platform_name'] ?? 'Jackson Intelligence Platform') ?></p>
     <h1><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></h1>
-    <p>The operating brain for who has work, who has capacity, who needs work, who influences work, and what Jackson Telcom should do next.</p>
+    <p>One operating screen for work, capacity, relationships, risks, and today’s next moves.</p>
   </div>
 </section>
 
 <nav class="dash-tabs">
   <a class="active" href="/">Command Center</a>
-  <a href="/daily-brief">Executive Brief</a>
-  <a href="/command/southeast">Mike Perspective</a>
-  <a href="/command/great-lakes">Ron Perspective</a>
-  <a href="/command/southwest">Shared Southwest</a>
+  <a href="/daily-brief">Daily Brief</a>
+  <a href="/executive-briefs">Executive Brief</a>
+  <a href="/executive-packages">Decision Queue</a>
+  <a href="/decision-visuals">Executive Maps</a>
   <a href="/ownership">Ownership</a>
 </nav>
 
-<?php
-$why = 'This is the first screen after login. It collapses the platform into the five decisions that matter today.';
-$recommended = 'Work from Today\'s Priorities first, then inspect Work, Capacity, Need, and Influence only where action is required.';
-$next = 'Pick one priority, contact the owner or target, and record the outcome before moving to the next action.';
-$risk = 'If this screen gets ignored, high-value work, capacity, and relationship actions can sit while competitors move first.';
-require __DIR__ . '/../components/action_first.php';
-?>
-
-<?php $priorityActions = $decisionWidgets['topActions'] ?? []; require __DIR__ . '/../components/todays_priorities.php'; ?>
-
-<section class="grid three">
-  <?php foreach (['my' => 'My Priorities', 'shared' => 'Shared Priorities', 'company' => 'Company Priorities'] as $key => $label): ?>
-    <div class="panel">
-      <div class="panel-title"><h2><?= htmlspecialchars($label) ?></h2><a class="btn secondary" href="/ownership">Ownership</a></div>
-      <div class="command-items">
-        <?php foreach (array_slice($ownershipWidgets['priorities'][$key] ?? [], 0, 3) as $item): ?>
-          <div>
-            <strong><?= htmlspecialchars($item['action_title'] ?? 'Priority') ?></strong>
-            <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['primary_owner'] ?? $item['owner'] ?? 'Unassigned') ?> · <?= htmlspecialchars($item['recommended_next_step'] ?? 'Confirm next action.') ?></span>
-          </div>
-        <?php endforeach; ?>
-        <?php if (empty($ownershipWidgets['priorities'][$key] ?? [])): ?><div><strong>No active priorities</strong><span>This bucket is clear for the current perspective.</span></div><?php endif; ?>
-      </div>
-    </div>
-  <?php endforeach; ?>
+<section class="action-first-grid">
+  <article><span>What This Is</span><p>The first screen after login. It shows what needs action now.</p></article>
+  <article><span>Why It Matters</span><p>Work, capacity, relationship, and onboarding issues lose value when they sit.</p></article>
+  <article><span>Next Step</span><p>Work the Top 5 first. Then clear blockers and intake items waiting on Jackson.</p></article>
+  <article><span>Risk Of Inaction</span><p>High-value work and capacity can stall while competitors move first.</p></article>
 </section>
 
 <section class="panel command-priorities">
-  <div class="panel-title"><h2>Decision Visuals</h2><a class="btn secondary" href="/decision-visuals">Open Visual Hub</a></div>
+  <div class="panel-title">
+    <div><p class="eyebrow">Today</p><h2>Top 5 Actions</h2></div>
+    <a class="btn secondary" href="/decision-support">Open Action Queue</a>
+  </div>
   <div class="priority-list">
-    <?php foreach (array_slice($visualWidgets['alerts'] ?? [], 0, 3) as $alert): ?>
+    <?php foreach ($topActions as $action): ?>
+      <?php $category = $categoryLabels[$action['action_category'] ?? ''] ?? ($action['action_category'] ?? 'Work'); ?>
       <article>
-        <span class="priority high">Visual Alert · <?= (int)$alert['score'] ?></span>
-        <h3><?= htmlspecialchars($alert['title']) ?></h3>
-        <p><?= htmlspecialchars($alert['why']) ?></p>
-        <small><?= htmlspecialchars($alert['action']) ?></small>
-        <p><a class="btn secondary" href="<?= htmlspecialchars($alert['href']) ?>">Open</a></p>
+        <span class="priority <?= strtolower($action['priority'] ?? 'medium') ?>"><?= htmlspecialchars($category) ?> · <?= htmlspecialchars($action['priority'] ?? 'Medium') ?></span>
+        <h3><a href="<?= htmlspecialchars($actionHref($action)) ?>"><?= htmlspecialchars($action['action_title'] ?? $action['title'] ?? 'Action required') ?></a></h3>
+        <p><?= htmlspecialchars($action['reason'] ?? $action['why_it_matters'] ?? 'This needs operator attention.') ?></p>
+        <p><strong>Next:</strong> <?= htmlspecialchars($action['recommended_next_step'] ?? $action['recommended_next_action'] ?? 'Assign owner and complete the next step.') ?></p>
+        <small><?= htmlspecialchars($action['owner'] ?? $action['assigned_owner'] ?? 'Admin') ?> · <?= htmlspecialchars($action['region_name'] ?? $action['region'] ?? 'National') ?></small>
       </article>
     <?php endforeach; ?>
-    <?php if (empty($visualWidgets['alerts'])): ?><article><h3>No visual alerts</h3><p>Decision visuals have no critical alerts for this operator view.</p></article><?php endif; ?>
+    <?php if (!$topActions): ?><article class="empty-state"><h3>No urgent actions</h3><p>Run the acquisition cycle or review escalations if this seems wrong.</p></article><?php endif; ?>
   </div>
 </section>
 
-<?php $widgets = $widgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
+<section class="grid three">
+  <div class="panel">
+    <div class="panel-title"><h2>Critical Blockers</h2><a class="btn secondary" href="/decision-support">Review</a></div>
+    <div class="command-items">
+      <?php foreach ($blockers as $item): ?>
+        <div>
+          <strong><?= htmlspecialchars($item['blocker_title'] ?? 'Growth blocker') ?></strong>
+          <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['severity'] ?? 'Medium') ?> · <?= htmlspecialchars($item['recommended_resolution'] ?? 'Assign owner and next action.') ?></span>
+        </div>
+      <?php endforeach; ?>
+      <?php if (!$blockers): ?><div class="empty-state"><strong>No critical blockers</strong><span>Current operating blockers are clear.</span></div><?php endif; ?>
+    </div>
+  </div>
 
-<?php require __DIR__ . '/../components/recent_conversations.php'; ?>
+  <div class="panel">
+    <div class="panel-title"><h2>Onboarding Waiting</h2><a class="btn secondary" href="/onboarding">Open</a></div>
+    <div class="mini-metrics compact">
+      <div><span>Capacity Being Created</span><strong><?= (int)($onboardingMetrics['New Capacity Being Created'] ?? 0) ?></strong></div>
+      <div><span>Missing Documents</span><strong><?= (int)($onboardingMetrics['Missing Documents'] ?? 0) ?></strong></div>
+    </div>
+    <div class="command-items">
+      <?php foreach ($onboardingActions as $item): ?>
+        <div><strong><?= htmlspecialchars($item['title'] ?? 'Onboarding action') ?></strong><span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['recommended_next_action'] ?? $item['recommended_action'] ?? 'Complete readiness review.') ?></span></div>
+      <?php endforeach; ?>
+      <?php if (!$onboardingActions): ?><div class="empty-state"><strong>No onboarding actions</strong><span>Subcontractor and readiness queues are clear.</span></div><?php endif; ?>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><h2>Recent Conversations</h2><a class="btn secondary" href="/communications">Log</a></div>
+    <div class="command-items">
+      <?php foreach ($recentConversations as $item): ?>
+        <div>
+          <strong><?= htmlspecialchars($item['summary'] ?? $item['title'] ?? 'Conversation') ?></strong>
+          <span><?= htmlspecialchars(substr($item['communication_date'] ?? $item['activity_date'] ?? '', 0, 10)) ?> · <?= htmlspecialchars($item['owner'] ?? 'Unassigned') ?> · <?= htmlspecialchars($item['next_step'] ?? $item['next_action'] ?? 'Create follow-up if needed.') ?></span>
+        </div>
+      <?php endforeach; ?>
+      <?php if (!$recentConversations): ?><div class="empty-state"><strong>No conversations yet</strong><span>Log calls, meetings, notes, drafts, and follow-ups as they happen.</span></div><?php endif; ?>
+    </div>
+  </div>
+</section>
 
 <section class="panel">
-  <div class="panel-title"><h2>Onboarding Readiness</h2><a class="btn secondary" href="/onboarding">Open Onboarding</a></div>
-  <p class="muted">Discovery becomes operationally ready capacity, workforce, strategic accounts, and markets here.</p>
-  <div class="mini-metrics">
-    <?php foreach (($onboardingWidgets['metrics'] ?? []) as $label => $value): ?>
-      <div><span><?= htmlspecialchars($label) ?></span><strong><?= (int)$value ?></strong></div>
-    <?php endforeach; ?>
-  </div>
-  <div class="command-items">
-    <?php foreach (array_slice($onboardingWidgets['recommendations'] ?? [], 0, 4) as $item): ?>
-      <div><strong><?= htmlspecialchars($item['title'] ?? 'Onboarding action') ?></strong><span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['recommended_action'] ?? 'Complete readiness review.') ?></span></div>
-    <?php endforeach; ?>
-    <?php if (empty($onboardingWidgets['recommendations'])): ?><div><strong>No onboarding actions</strong><span>Current onboarding queues have no open recommendations.</span></div><?php endif; ?>
-  </div>
+  <div class="panel-title"><h2>Company State</h2><span class="status">Four Hunting Questions</span></div>
+  <?php $widgets = $stateWidgets; $columns = 4; require __DIR__ . '/../components/command_widgets.php'; ?>
 </section>
 
 <section class="grid two">
   <div class="panel">
-    <div class="panel-title"><h2>Top Risks</h2><a class="btn secondary" href="/decision-support">Review Risks</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Risk</th><th>Theater</th><th>Severity</th><th>Next Step</th></tr></thead><tbody><?php foreach (array_slice($decisionWidgets['blockers'] ?? [], 0, 5) as $item): ?><tr><td><strong><?= htmlspecialchars($item['blocker_title'] ?? 'Growth blocker') ?></strong><br><small><?= htmlspecialchars($item['reason'] ?? '') ?></small></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td><span class="priority <?= strtolower($item['severity'] ?? 'medium') ?>"><?= htmlspecialchars($item['severity'] ?? 'Medium') ?></span></td><td><?= htmlspecialchars($item['recommended_resolution'] ?? 'Assign owner and next action.') ?></td></tr><?php endforeach; ?><?php if (empty($decisionWidgets['blockers'])): ?><tr><td colspan="4">No critical risks are active.</td></tr><?php endif; ?></tbody></table></div>
+    <div class="panel-title"><h2>Decision Queue</h2><a class="btn secondary" href="/executive-packages">Open Queue</a></div>
+    <div class="command-items">
+      <?php foreach ($opportunities as $item): ?>
+        <div>
+          <strong><?= htmlspecialchars($item['name']) ?></strong>
+          <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · $<?= number_format((float)($item['estimated_value'] ?? 0)) ?> · <?= htmlspecialchars($item['next_action'] ?: 'Assign next action.') ?></span>
+        </div>
+      <?php endforeach; ?>
+      <?php if (!$opportunities): ?><div class="empty-state"><strong>No open opportunities</strong><span>Current opportunity queue is clear.</span></div><?php endif; ?>
+    </div>
   </div>
+
+  <?php if ($visualAlerts): ?>
   <div class="panel">
-    <div class="panel-title"><h2>Top Opportunities</h2><a class="btn secondary" href="/opportunities">Open Opportunities</a></div>
-    <div class="table-wrap"><table><thead><tr><th>Opportunity</th><th>Theater</th><th>Value</th><th>Next Action</th></tr></thead><tbody><?php foreach (array_slice($topOpportunities, 0, 5) as $item): ?><tr><td><strong><?= htmlspecialchars($item['name']) ?></strong><br><small><?= htmlspecialchars($item['market'] ?? '') ?></small></td><td><?= htmlspecialchars($item['region_name'] ?? 'National') ?></td><td>$<?= number_format((float)$item['estimated_value']) ?></td><td><?= htmlspecialchars($item['next_action'] ?: 'Assign next action.') ?></td></tr><?php endforeach; ?><?php if (!$topOpportunities): ?><tr><td colspan="4">No open opportunities are active.</td></tr><?php endif; ?></tbody></table></div>
+    <div class="panel-title"><h2>Executive Maps</h2><a class="btn secondary" href="/decision-visuals">Open Maps</a></div>
+    <div class="command-items">
+      <?php foreach ($visualAlerts as $alert): ?>
+        <div>
+          <strong><?= htmlspecialchars($alert['title']) ?></strong>
+          <span><?= htmlspecialchars($alert['why']) ?> · <?= htmlspecialchars($alert['action']) ?></span>
+        </div>
+      <?php endforeach; ?>
+    </div>
   </div>
+  <?php endif; ?>
 </section>
 
-<section class="grid two">
-  <div class="panel">
-    <div class="panel-title"><h2>Operating Rhythm</h2><a class="btn secondary" href="/operating-rhythm">Open Rhythm</a></div>
-    <div class="mini-metrics">
-      <div><span>Rhythm Score</span><strong><?= (int)($maturityWidgets['metrics']['avg_score'] ?? 0) ?></strong></div>
-      <div><span>Due Today</span><strong><?= (int)($maturityWidgets['metrics']['due_today'] ?? 0) ?></strong></div>
-      <div><span>Overdue</span><strong><?= (int)($maturityWidgets['metrics']['overdue'] ?? 0) ?></strong></div>
-      <div><span>Pressure Spikes</span><strong><?= (int)($maturityWidgets['metrics']['pressure_spikes'] ?? 0) ?></strong></div>
-    </div>
-    <div class="command-items">
-      <?php foreach (array_slice($maturityWidgets['overdue'] ?? [], 0, 3) as $review): ?><div><strong><?= htmlspecialchars($review['rhythm_name']) ?></strong><span><?= htmlspecialchars($review['owner']) ?> · <?= htmlspecialchars($review['region_name'] ?? 'National') ?> · <?= htmlspecialchars($review['status']) ?></span></div><?php endforeach; ?>
-      <?php if (empty($maturityWidgets['overdue'])): ?><div><strong>No overdue reviews</strong><span>Cadence is current for this operator view.</span></div><?php endif; ?>
-    </div>
+<section class="panel system-trust">
+  <div class="panel-title"><h2>System Trust</h2><a class="btn secondary" href="/platform-review">Open System Review</a></div>
+  <div class="health-grid">
+    <?php foreach ($healthChecks as $check): ?>
+      <div>
+        <span class="status <?= strtolower($check['status'] ?? 'pass') ?>"><?= htmlspecialchars($check['status'] ?? 'Pass') ?></span>
+        <strong><?= htmlspecialchars($check['check_type'] ?? 'System Check') ?></strong>
+        <small><?= htmlspecialchars($check['module_name'] ?? '') ?> · <?= (int)($check['issue_count'] ?? 0) ?> issues</small>
+      </div>
+    <?php endforeach; ?>
+    <?php if (!$healthChecks): ?><p>No system checks have been generated.</p><?php endif; ?>
   </div>
-  <div class="panel">
-    <div class="panel-title"><h2>Workforce / Competitive Watch</h2><a class="btn secondary" href="/strategic-account-intelligence">Open Intel</a></div>
-    <div class="command-items">
-      <?php foreach (array_slice($maturityWidgets['workforceMovers'] ?? [], 0, 2) as $mover): ?><div><strong><?= htmlspecialchars($mover['name']) ?></strong><span><?= htmlspecialchars($mover['movement_type']) ?> · recruitability <?= (int)$mover['recruitability_score'] ?></span></div><?php endforeach; ?>
-      <?php foreach (array_slice($maturityWidgets['pressureSpikes'] ?? [], 0, 2) as $spike): ?><div><strong><?= htmlspecialchars($spike['competitor_name']) ?></strong><span><?= htmlspecialchars($spike['market']) ?> · <?= htmlspecialchars($spike['threat_level']) ?> · <?= (int)$spike['competitive_pressure_score'] ?></span></div><?php endforeach; ?>
-    </div>
-  </div>
+  <?php if ($criticalHealth): ?><p class="muted">Review failed or warning checks before relying on stale or incomplete records.</p><?php endif; ?>
 </section>
-
-<?php $healthChecks = $platformData['health'] ?? []; require __DIR__ . '/../components/platform_health.php'; ?>
