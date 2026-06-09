@@ -18,8 +18,9 @@ button, input, select, textarea { font: inherit; }
 .brand-mark { display: grid; place-items: center; width: 96px; height: 86px; border: 2px solid var(--blue); color: #fff; font-weight: 900; font-size: 19px; background: #000; overflow: hidden; }
 .brand-mark.image { border-color: rgba(18,104,216,.72); padding: 4px; }
 .brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-copy { display: grid; gap: 7px; min-width: 0; }
 .brand strong { display: block; color: #fff; font-size: 17px; line-height: 1.1; }
-.brand em { display: block; color: #8fc0ff; font-size: 11px; font-style: normal; font-weight: 900; text-transform: uppercase; }
+.brand em { display: block; color: #8fc0ff; font-size: 12px; line-height: 1.15; font-style: normal; font-weight: 900; text-transform: none; }
 .sidebar nav { display: grid; gap: 6px; }
 .sidebar a { padding: 10px 11px; color: rgba(255,255,255,.78); font-weight: 800; }
 .sidebar a.active, .sidebar a:hover { background: rgba(18,104,216,.28); color: #fff; }
