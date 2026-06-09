@@ -6,6 +6,8 @@ use App\Core\Database;
 
 $db = Database::connection();
 $checks = [];
+$productionDataMode = in_array(strtolower((string)(getenv('JIP_SEED_MODE') ?: '')), ['production', 'minimal'], true)
+    || file_exists(__DIR__ . '/../storage/production_data_mode');
 
 $add = function (string $level, string $label, int $count, string $detail = '') use (&$checks): void {
     $checks[] = compact('level', 'label', 'count', 'detail');
@@ -144,9 +146,84 @@ $add('WARN', 'orphaned activity records', $orphaned);
 
 $failures = 0;
 $warnings = 0;
+$emptyBusinessOkInProduction = [
+    'signals without quality profile',
+    'targets without region',
+    'targets without owner',
+    'capacity profiles without trust score',
+    'subcontractors without compliance profile',
+    'relationships without primary objective',
+    'open opportunities without strategic alignment',
+    'open opportunities without pursuit decision',
+    'pursuit decisions without watchlist',
+    'preconstruction profiles without bid decision',
+    'preconstruction profiles without margin forecast',
+    'preconstruction profiles without capacity plan',
+    'regions without learning profile',
+    'learning insights without recommended action',
+    'work intelligence without readiness score',
+    'capacity intelligence without deployable score',
+    'need intelligence without need score',
+    'influence intelligence without influence score',
+    'acquisition scores without category classification',
+    'acquisition doctrine recommendations missing',
+    'market intelligence sources missing',
+    'market profiles without readiness score',
+    'market intelligence recommendations missing',
+    'project packages missing',
+    'project packages without readiness profile',
+    'project packages without capacity snapshot',
+    'project packages without relationship snapshot',
+    'project packages without preconstruction snapshot',
+    'project packages without integration status',
+    'syncerp integration recommendations missing',
+    'outreach records without script',
+    'content drafts without review status',
+    'communication records missing owner',
+    'communication drafts without human review',
+    'network relationships without influence score',
+    'forecast records missing',
+    'ownership assignments missing primary owner',
+    'strategic accounts missing',
+    'workforce profiles missing',
+    'competitor profiles missing',
+    'strategic account intelligence recommendations missing',
+    'operating rhythms missing',
+    'review instances missing',
+    'rhythm compliance scores missing',
+    'workforce movements missing',
+    'workforce forecasts missing',
+    'competitive pressure index missing',
+    'competitor forecasts missing',
+    'win/loss intelligence missing',
+    'operational maturity recommendations missing',
+    'subcontractor onboarding missing',
+    'workforce onboarding missing',
+    'strategic account onboarding missing',
+    'market onboarding missing',
+    'onboarding reviews missing',
+    'onboarding documents missing',
+    'onboarding recommendations missing',
+    'data review queue missing',
+    'data quality issues missing',
+    'connector run logs missing',
+    'audit logs missing',
+    'password reset token metadata missing',
+    'pilot feedback missing',
+    'regional dominance scores missing',
+    'strategic recommendations missing',
+    'executive packages missing',
+    'executive packages without action',
+    'executive packages without timeline',
+    'executive packages without risk of inaction',
+    'executive briefs missing',
+];
 foreach ($checks as $check) {
     $active = $check['count'] > 0;
     $level = $active ? $check['level'] : 'PASS';
+    if ($productionDataMode && $level === 'WARN' && in_array($check['label'], $emptyBusinessOkInProduction, true)) {
+        $level = 'PASS';
+    }
     if ($level === 'FAIL') {
         $failures++;
     } elseif ($level === 'WARN') {

@@ -231,7 +231,7 @@ class ProductionReadinessService
                     continue;
                 }
                 $db->prepare('INSERT INTO raw_signal_items (signal_source_id, raw_title, raw_description, raw_url, raw_company_name, raw_state, raw_city, raw_payload_json, processing_status, duplicate_key, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "Needs Review", ?, ?)')
-                    ->execute([$sourceId, $row['title'], $row['description'] ?? '', $row['url'] ?? '', $row['company'] ?? '', $row['state'] ?? '', $row['city'] ?? '', json_encode($row), $dup, 'Imported by first real connector path; human review required.']);
+                    ->execute([$sourceId, $row['title'], $row['description'] ?? '', $row['url'] ?? '', $row['company'] ?? '', $row['state'] ?? '', $row['city'] ?? '', json_encode($row), $dup, 'seed_source=connector; imported by first real connector path; human review required.']);
                 $imported++;
             }
             $status = 'Completed';

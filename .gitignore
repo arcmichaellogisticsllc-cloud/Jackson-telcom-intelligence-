@@ -1,6 +1,7 @@
 .DS_Store
 storage/*.sqlite
 storage/*.sqlite-*
+storage/production_data_mode
 storage/backups/
 storage/exports/
 *.log

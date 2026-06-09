@@ -175,7 +175,7 @@ foreach ($routes as $route) {
     }
 }
 
-foreach (['scripts/backup_database.php','scripts/restore_database.php','scripts/validate_erp_contract.php'] as $script) {
+foreach (['scripts/backup_database.php','scripts/restore_database.php','scripts/validate_erp_contract.php','scripts/purge_demo_data.php'] as $script) {
     if (is_file(__DIR__ . '/../' . $script)) {
         $results[] = 'PASS script exists ' . $script;
         continue;

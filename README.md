@@ -1991,6 +1991,47 @@ Validation scripts:
 - `php scripts/restore_database.php <backup> CONFIRM_RESTORE`
 - `php scripts/validate_erp_contract.php`
 
+## Production Data Transition
+
+Use production transition when the platform is ready to stop using demo business data and begin real hunting.
+
+Production seed mode creates system/reference data only:
+
+```bash
+JIP_SEED_MODE=production php scripts/seed.php
+```
+
+It creates users, theaters, capacity targets, operator modes, platform health definitions, connector registry, recommendation governance rules, and ERP contract validation metadata. It does not create fake contacts, companies, opportunities, subcontractors, recommendations, daily actions, strategic accounts, capacity records, visual data, executive packages, or onboarding records.
+
+Preview demo purge:
+
+```bash
+php scripts/purge_demo_data.php --dry-run
+```
+
+Confirm demo purge:
+
+```bash
+php scripts/purge_demo_data.php --confirm
+```
+
+Confirmed purge creates a database backup first, verifies the backup exists, removes demo business records in FK-safe order, preserves system/reference configuration, writes `storage/production_data_mode`, and runs integrity validation.
+
+Preserved data:
+
+- users
+- regions / theaters
+- capacity targets
+- operator modes
+- platform health checks
+- connector registry
+- recommendation tuning rules
+- ERP contract validation items
+
+Start real hunting by adding real strategic accounts first: Comcast, Charter, Frontier, AT&T, and Windstream. Then add real project managers, construction managers, OSP managers, aerial contractors, underground contractors, fiber splicing contractors, and directional boring contractors across Southeast, Great Lakes, and Southwest.
+
+Full transition details are in `docs/production-data-transition.md`.
+
 ## SyncERP Boundary
 
 SyncERP is intentionally not built in Phase 1. It remains the last integration layer only, after acquisition intelligence, capacity acquisition, relationship intelligence, opportunity intelligence, and decision support are working.

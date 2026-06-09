@@ -76,8 +76,36 @@ foreach ($targets as $regionName => $services) {
 }
 
 if (in_array($seedMode, ['production', 'minimal'], true)) {
+    (new PlatformReviewService())->rebuild();
+
+    $connectorStmt = $db->prepare('INSERT INTO connectors (connector_name, source_type, run_mode, source_url, status, notes) VALUES (?, ?, ?, ?, ?, ?)');
+    $connectorStmt->execute(['Official Broadband Source Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'Production connector registry entry. Imported raw items remain review-gated and must pass Signal Quality.']);
+
+    $tuningStmt = $db->prepare('INSERT INTO recommendation_tuning_rules (rule_name, source_module, category, owner_scope, region_id, min_priority_score, max_daily_actions, promote_to_daily_action, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)');
+    $tuningStmt->execute(['Executive top five guardrail', '', '', 'All', null, 72, 5, 1, 'Daily Actions remain executive priorities; recommendations can be broader.']);
+    $tuningStmt->execute(['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep Southeast capacity blockers visible during pilot.']);
+    $tuningStmt->execute(['Great Lakes relationship priority', 'Relationship & Influence', 'Relationship', 'Ron', $regions['Great Lakes'], 68, 3, 1, 'Keep Great Lakes relationship actions visible during pilot.']);
+
+    $erpStmt = $db->prepare('INSERT INTO erp_contract_validation_items (contract_area, field_name, required_for_handoff, source_record_type, source_field, validation_status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    foreach ([
+        ['Customer','customer_name',1,'project_packages','customer_name','Pending','Required customer handoff field.'],
+        ['Project','package_name',1,'project_packages','package_name','Pending','Future SyncERP project name.'],
+        ['Project','market',1,'project_packages','market','Pending','Confirm market naming with SyncERP import requirements.'],
+        ['Capacity','crews_assigned',1,'capacity_allocation_snapshots','crews_assigned','Pending','Confirm total count vs discipline-level assignment.'],
+        ['Subcontractors','subcontractors_selected',1,'capacity_allocation_snapshots','subcontractors_selected','Pending','Confirm subcontractor entity matching rules.'],
+        ['Margin Forecast','estimated_margin',1,'project_packages','estimated_margin','Pending','Forecast only; not billing/accounting.'],
+        ['Risk','risk_assessment',1,'preconstruction_snapshots','risk_assessment','Pending','Confirm risk format for execution handoff.'],
+        ['Scenario','scenario_selection',0,'preconstruction_snapshots','scenario_selection','Pending','Optional if SyncERP does not consume scenarios.'],
+        ['Relationships','key_contacts',1,'relationship_context_snapshots','key_contacts','Pending','Confirm relationship context handoff format.'],
+        ['Package Metadata','package_status',1,'project_packages','package_status','Pending','Readiness status owned by integration layer.'],
+    ] as $row) {
+        $erpStmt->execute($row);
+    }
+
     $db->commit();
-    echo "Seeded minimal production baseline: regions, users, and capacity targets only. No demo acquisition data was inserted.\n";
+    $marker = __DIR__ . '/../../storage/production_data_mode';
+    file_put_contents($marker, 'production-seed=' . date('c') . PHP_EOL);
+    echo "Seeded minimal production baseline: regions, users, capacity targets, operator modes, platform health definitions, connector registry, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
     exit;
 }
 
