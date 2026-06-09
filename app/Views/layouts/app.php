@@ -11,7 +11,11 @@
   <aside class="sidebar">
     <?php $brand = $app['brand'] ?? []; ?>
     <a class="brand" href="/">
-      <span class="brand-mark"><?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?></span>
+      <?php if (!empty($brand['logo_path'])): ?>
+        <span class="brand-mark image"><img src="<?= htmlspecialchars($brand['logo_path']) ?>" alt="<?= htmlspecialchars($brand['company_name'] ?? 'Jackson Telcom LLC') ?>"></span>
+      <?php else: ?>
+        <span class="brand-mark"><?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?></span>
+      <?php endif; ?>
       <strong><?= htmlspecialchars($brand['company_name'] ?? 'Jackson Telcom LLC') ?></strong>
       <em><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></em>
     </a>

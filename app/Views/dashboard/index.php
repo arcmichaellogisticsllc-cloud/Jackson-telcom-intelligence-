@@ -41,7 +41,13 @@ $widgets = [
 ];
 ?>
 <section class="command-hero">
-  <div class="command-mark"><?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?></div>
+  <div class="command-mark">
+    <?php if (!empty($brand['logo_path'])): ?>
+      <img src="<?= htmlspecialchars($brand['logo_path']) ?>" alt="<?= htmlspecialchars($brand['company_name'] ?? 'Jackson Telcom LLC') ?>">
+    <?php else: ?>
+      <?= htmlspecialchars($brand['logo_text'] ?? 'JT') ?>
+    <?php endif; ?>
+  </div>
   <div>
     <p class="eyebrow"><?= htmlspecialchars($brand['platform_name'] ?? 'Jackson Intelligence Platform') ?></p>
     <h1><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></h1>

@@ -14,8 +14,10 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, 
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; background: var(--dark); color: #fff; padding: 22px 16px; overflow-y: auto; }
-.brand { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; margin-bottom: 22px; }
-.brand-mark { display: grid; place-items: center; width: 46px; height: 46px; border: 2px solid var(--blue); color: #fff; font-weight: 900; font-size: 19px; }
+.brand { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; margin-bottom: 22px; }
+.brand-mark { display: grid; place-items: center; width: 96px; height: 86px; border: 2px solid var(--blue); color: #fff; font-weight: 900; font-size: 19px; background: #000; overflow: hidden; }
+.brand-mark.image { border-color: rgba(18,104,216,.72); padding: 4px; }
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .brand strong { display: block; color: #fff; font-size: 17px; line-height: 1.1; }
 .brand em { display: block; color: #8fc0ff; font-size: 11px; font-style: normal; font-weight: 900; text-transform: uppercase; }
 .sidebar nav { display: grid; gap: 6px; }
@@ -43,7 +45,8 @@ button, input, select, textarea { font: inherit; }
 .command-hero { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; background: linear-gradient(135deg, #05070a, #07111f); color: #fff; padding: 34px; margin-bottom: 18px; border-bottom: 5px solid var(--blue); }
 .command-hero h1 { margin: 0; font-size: clamp(34px, 6vw, 64px); line-height: .95; max-width: 1000px; }
 .command-hero p:last-child { max-width: 780px; color: rgba(255,255,255,.74); font-size: 17px; }
-.command-mark { display: grid; place-items: center; width: 82px; height: 82px; border: 3px solid var(--blue); font-weight: 900; font-size: 34px; box-shadow: 0 0 0 8px rgba(18,104,216,.12); }
+.command-mark { display: grid; place-items: center; width: 140px; height: 126px; border: 3px solid var(--blue); font-weight: 900; font-size: 34px; box-shadow: 0 0 0 8px rgba(18,104,216,.12); background: #000; overflow: hidden; padding: 7px; }
+.command-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .command-page-header { border-bottom: 5px solid var(--blue); }
 .eyebrow { margin: 0 0 8px; color: #8fc0ff; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .metrics, .region-grid, .grid.two { display: grid; gap: 14px; margin-bottom: 18px; }

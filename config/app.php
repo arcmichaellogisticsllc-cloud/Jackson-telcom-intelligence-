@@ -8,6 +8,7 @@ return [
         'platform_name' => 'Jackson Intelligence Platform',
         'command_center_title' => 'Jackson Telcom Command Center',
         'logo_text' => 'JT',
+        'logo_path' => '/assets/images/jackson-telcom-logo.png',
         'colors' => [
             'blue' => '#1268d8',
             'black' => '#05070a',
