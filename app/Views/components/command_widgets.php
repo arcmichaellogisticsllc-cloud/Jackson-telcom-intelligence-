@@ -22,6 +22,14 @@ $columns = $columns ?? 4;
             </div>
           <?php endforeach; ?>
         </div>
+      <?php else: ?>
+        <?php
+        $emptyTitle = $widget['empty_title'] ?? 'No real records yet';
+        $emptyBody = $widget['empty_body'] ?? 'This command category has no reviewed operating records. Create or import real data before making decisions here.';
+        $emptyActionHref = $widget['empty_href'] ?? ($widget['href'] ?? '');
+        $emptyActionLabel = $widget['empty_action'] ?? 'Open Workspace';
+        require __DIR__ . '/empty_state.php';
+        ?>
       <?php endif; ?>
       <?php if (!empty($widget['href'])): ?><a class="btn secondary" href="<?= htmlspecialchars($widget['href']) ?>"><?= htmlspecialchars($widget['cta'] ?? 'Open') ?></a><?php endif; ?>
     </article>

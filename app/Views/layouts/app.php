@@ -25,24 +25,44 @@
       <?php
       $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
       $navGroups = [
-        'COMMAND' => ['/' => 'Command Center','/decision-visuals' => 'Decision Visuals','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages'],
-        'WORK' => ['/acquisition-command' => 'Work Intelligence','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
-        'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/workforce-intelligence' => 'Workforce Intelligence','/targets' => 'Strategic Partners'],
-        'RELATIONSHIPS' => ['/contacts' => 'Contacts','/organizations' => 'Organizations','/strategic-account-intelligence' => 'Strategic Accounts','/communications' => 'Communications','/relationship-graph' => 'Relationship Graph'],
-        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence'],
-        'GROWTH' => ['/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
-        'ONBOARDING' => ['/onboarding' => 'Overview','/onboarding/subcontractors' => 'Subcontractors','/onboarding/workforce' => 'Workforce','/onboarding/strategic-accounts' => 'Strategic Accounts','/onboarding/markets' => 'Markets','/onboarding/documents' => 'Documents','/onboarding/reviews' => 'Reviews','/onboarding/metrics' => 'Metrics'],
-        'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness'],
-        'SYSTEM' => ['/settings' => 'Settings','/production-readiness' => 'Production Readiness','/data-quality' => 'Data Quality Review','/connector-runs' => 'Connector Runs','/audit-logs' => 'Audit Logs','/operating-rhythm' => 'Operating Rhythm','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
+        'COMMAND' => ['/' => 'Command Center','/executive-os' => 'Executive OS','/daily-brief' => 'Daily Brief','/executive-briefs' => 'Executive Brief','/executive-packages' => 'Decision Packages','/decision-visuals' => 'Decision Visuals','/strategic-review' => 'Strategic Review'],
+        'WORK' => ['/workspace/work' => 'Work Workspace','/acquisition-command' => 'Work Intelligence','/strategic-account-intelligence' => 'Strategic Accounts','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
+        'CAPACITY' => ['/workspace/capacity' => 'Capacity Workspace','/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/subcontractors' => 'Preferred Network','/targets' => 'Strategic Partners','/workforce-intelligence' => 'Workforce Intelligence'],
+        'RELATIONSHIPS' => ['/workspace/relationships' => 'Relationship Workspace','/communications' => 'Communications','/contacts' => 'Contacts','/organizations' => 'Organizations','/relationship-graph' => 'Relationship Graph','/network-intelligence' => 'Network Intelligence'],
+        'MARKET' => ['/workspace/market' => 'Market Workspace','/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence','/harvesters' => 'Acquisition Harvesters'],
+        'GROWTH' => ['/workspace/growth' => 'Growth Workspace','/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
+        'ONBOARDING' => ['/workspace/onboarding' => 'Onboarding Workspace','/onboarding' => 'Overview','/onboarding/subcontractors' => 'Subcontractors','/onboarding/workforce' => 'Workforce','/onboarding/strategic-accounts' => 'Strategic Accounts','/onboarding/markets' => 'Markets','/onboarding/documents' => 'Documents','/onboarding/reviews' => 'Reviews','/onboarding/metrics' => 'Metrics'],
+        'OPERATIONS' => ['/workspace/operations' => 'Operations Workspace','/syncerp-integration' => 'SyncERP Integration','/syncerp-handoff-brief' => 'Handoff Brief'],
+        'SYSTEM' => ['/workspace/system' => 'System Workspace','/production-readiness' => 'Production Readiness','/data-quality' => 'Data Quality Review','/connector-runs' => 'Connector Runs','/audit-logs' => 'Audit Logs','/operating-rhythm' => 'Operating Rhythm','/platform-review' => 'Platform Health','/settings' => 'Settings','/recommendations' => 'Recommendations','/activities' => 'Activities','/warehouse' => 'Intelligence Warehouse'],
       ];
+      $pathFor = function (string $href): string {
+        $path = parse_url($href, PHP_URL_PATH) ?: $href;
+        return $path;
+      };
+      $opensFor = function (string $href) use ($currentPath, $pathFor): bool {
+        $path = $pathFor($href);
+        return $currentPath === $path || ($path !== '/' && str_starts_with($currentPath, rtrim($path, '/') . '/'));
+      };
+      $activeFor = function (string $href, bool $groupHasExact) use ($currentPath, $pathFor): bool {
+        $path = $pathFor($href);
+        if ($currentPath === $path) {
+          return true;
+        }
+        return !$groupHasExact && $path !== '/' && str_starts_with($currentPath, rtrim($path, '/') . '/');
+      };
       ?>
       <?php foreach ($navGroups as $group => $links): ?>
-        <?php $isOpen = in_array($currentPath, array_keys($links), true) || ($group === 'COMMAND' && ($currentPath === '/' || str_starts_with($currentPath, '/decision-visuals'))); ?>
+        <?php
+        $paths = array_map($pathFor, array_keys($links));
+        $groupHasExact = in_array($currentPath, $paths, true);
+        $isOpen = $group === 'COMMAND' && $currentPath === '/';
+        foreach (array_keys($links) as $href) { $isOpen = $isOpen || $opensFor($href); }
+        ?>
         <details class="workspace-nav" <?= $isOpen ? 'open' : '' ?>>
           <summary><?= htmlspecialchars($group) ?></summary>
           <div>
             <?php foreach ($links as $href => $label): ?>
-              <a href="<?= $href ?>" class="<?= $currentPath === $href ? 'active' : '' ?>"><?= $label ?></a>
+              <a href="<?= $href ?>" class="<?= $activeFor($href, $groupHasExact) ? 'active' : '' ?>"><?= $label ?></a>
             <?php endforeach; ?>
           </div>
         </details>

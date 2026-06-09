@@ -68,6 +68,24 @@ The Command Center replaces module-first navigation with an action-first operati
 
 The platform still includes detailed modules, but they support the Command Center. They should not become the daily starting point.
 
+## Workspace UX Upgrade
+
+The platform UI is now organized around expandable workspaces instead of exposed engine layers:
+
+- Command
+- Work
+- Capacity
+- Relationships
+- Market
+- Growth
+- Onboarding
+- Operations
+- System
+
+The rule is: modules feed intelligence, workspaces organize action. Detailed routes remain available, but the daily operating path starts at the Command Center, moves into a workspace only when action is needed, and returns to the Command Center after outcomes are logged.
+
+The UI upgrade map lives at `docs/ui-upgrade-map.md`. It defines the route map, protected flows, shared components, empty-state rules, and verification gates for future UI work.
+
 ## Operator Modes
 
 Operator modes map each operator to the right default view and priorities:

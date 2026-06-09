@@ -37,7 +37,13 @@ $actionHref = function (array $action): string {
       </article>
     <?php endforeach; ?>
     <?php if (!$priorityActions): ?>
-      <p>No critical priorities are open. Run the acquisition cycle and review escalations.</p>
+      <?php
+      $emptyTitle = 'No top actions yet';
+      $emptyBody = 'No executive-level actions are open for this operator view. Run the acquisition cycle, review data quality, or create the first real action.';
+      $emptyActionHref = '/decision-support';
+      $emptyActionLabel = 'Open Decision Support';
+      require __DIR__ . '/empty_state.php';
+      ?>
     <?php endif; ?>
   </div>
 </section>

@@ -32,6 +32,7 @@ button, input, select, textarea { font: inherit; }
 .workspace-nav[open] summary::after { content: "-"; }
 .workspace-nav div { display: grid; padding: 0 0 7px; }
 .workspace-nav a { margin: 0 7px; border-left: 3px solid transparent; }
+.workspace-nav a:first-child { color: #fff; background: rgba(255,255,255,.04); }
 .workspace-nav a.active { border-left-color: var(--blue); }
 .main { margin-left: 280px; min-height: 100vh; padding: 24px; }
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
@@ -151,12 +152,16 @@ textarea { min-height: 90px; resize: vertical; }
 .timeline-list article { border: 1px solid var(--line); background: var(--bg); padding: 12px; border-left: 4px solid var(--blue); }
 .timeline-list h3 { margin: 8px 0 5px; color: var(--blue-dark); }
 .timeline-list p { margin: 0 0 6px; color: var(--muted); }
-.empty-state { background: #fff !important; border-style: dashed !important; }
+.empty-state { background: #fff !important; border-style: dashed !important; padding: 14px; }
+.empty-state h3 { margin: 0 0 6px; color: var(--blue-dark); }
+.empty-state p { margin: 0; color: var(--muted); }
+.empty-state .btn { margin-top: 12px; }
 .list-toolbar { display: grid; grid-template-columns: 1fr minmax(320px, 680px); gap: 14px; align-items: end; border: 1px solid var(--line); background: #fff; padding: 14px; margin-bottom: 12px; }
 .list-toolbar h2 { margin: 0; color: var(--blue-dark); }
 .list-controls { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; }
 .workspace-link-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
 .workspace-link { border: 1px solid var(--line); background: #fff; padding: 15px; border-left: 4px solid var(--blue); }
+.workspace-link:hover { border-color: var(--blue); box-shadow: 0 10px 24px rgba(7,17,31,.08); }
 .workspace-link strong, .workspace-link span { display: block; }
 .workspace-link span { color: var(--muted); font-size: 12px; font-weight: 800; margin-top: 4px; }
 .action-first { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }

@@ -9,6 +9,10 @@ $widgets = [
         'summary' => 'Utilities, primes, municipalities, and programs with active or future fiber backbone work.',
         'href' => '/acquisition-command',
         'cta' => 'Open Work Intelligence',
+        'empty_title' => 'No work-ready records yet',
+        'empty_body' => 'Start by adding strategic accounts, importing real signals, or running the first reviewed connector.',
+        'empty_href' => '/workspace/work',
+        'empty_action' => 'Open Work Workspace',
         'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Work signal', 'meta' => ($row['region_name'] ?? 'National') . ' · readiness ' . (int)($row['work_readiness_score'] ?? 0)], $command['work'] ?? []),
     ],
     [
@@ -18,6 +22,10 @@ $widgets = [
         'summary' => 'Approved, preferred, strategic, and internal deployable capacity that can support pursuit decisions.',
         'href' => '/capacity-radar',
         'cta' => 'Open Capacity Radar',
+        'empty_title' => 'No capacity providers yet',
+        'empty_body' => 'Create the first real capacity provider or onboard a subcontractor before relying on capacity decisions.',
+        'empty_href' => '/workspace/capacity',
+        'empty_action' => 'Open Capacity Workspace',
         'items' => array_map(fn($row) => ['title' => $row['profile_name'] ?? 'Capacity provider', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . (int)($row['available_crews'] ?? 0) . ' crews'], $command['capacity'] ?? []),
     ],
     [
@@ -27,6 +35,10 @@ $widgets = [
         'summary' => 'Underutilized contractors and crews that may become fast capacity wins for Jackson Telcom.',
         'href' => '/hunting-lists',
         'cta' => 'Open Hunting Lists',
+        'empty_title' => 'No capacity-seeking records yet',
+        'empty_body' => 'Run reviewed market signals or add contractor intelligence to identify who needs work.',
+        'empty_href' => '/workspace/market',
+        'empty_action' => 'Open Market Workspace',
         'items' => array_map(fn($row) => ['title' => $row['organization_name'] ?? 'Need signal', 'meta' => ($row['region_name'] ?? 'National') . ' · ' . ($row['workload_status'] ?? 'Unknown')], $command['need'] ?? []),
     ],
     [
@@ -36,6 +48,10 @@ $widgets = [
         'summary' => 'Project managers, construction leaders, utility contacts, and prime contacts who can create access.',
         'href' => '/relationship-graph',
         'cta' => 'Open Influence Network',
+        'empty_title' => 'No influence records yet',
+        'empty_body' => 'Add real contacts, map strategic accounts, and log conversations to build the influence network.',
+        'empty_href' => '/workspace/relationships',
+        'empty_action' => 'Open Relationship Workspace',
         'items' => array_map(fn($row) => ['title' => trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: 'Influence contact', 'meta' => ($row['region_name'] ?? 'National') . ' · influence ' . (int)($row['final_influence_score'] ?? 0)], $command['influence'] ?? []),
     ],
 ];

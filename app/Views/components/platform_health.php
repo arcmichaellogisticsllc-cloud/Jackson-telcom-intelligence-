@@ -16,7 +16,13 @@
       </div>
     <?php endforeach; ?>
     <?php if (!$healthChecks): ?>
-      <p>No platform health checks have been generated. Run the acquisition cycle and data integrity check.</p>
+      <?php
+      $emptyTitle = 'No health checks generated';
+      $emptyBody = 'Run the acquisition cycle and data integrity check before relying on pilot data.';
+      $emptyActionHref = '/production-readiness';
+      $emptyActionLabel = 'Open Production Readiness';
+      require __DIR__ . '/empty_state.php';
+      ?>
     <?php endif; ?>
   </div>
 </section>
