@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\OpportunityScoring;
 use App\Core\RecommendationEngine;
+use App\Services\OnboardingService;
 use App\Services\OpportunityPursuitService;
 
 class CrudController extends Controller
@@ -37,6 +38,17 @@ class CrudController extends Controller
         Auth::requireLogin();
         $fields = ['organization_id','region_id','company_name','legal_name','years_in_business','website','phone','email','owner_name','primary_contact','contact_title','states_served','markets_served','services_offered','crew_count','available_crew_count','aerial_crew_count','underground_crew_count','fiber_splicing_crew_count','directional_boring_crew_count','emergency_restoration_crew_count','traffic_control_crew_count','mowing_row_crew_count','inspection_crew_count','qc_crew_count','engineering_crew_count','make_ready_crew_count','drop_crew_count','bucket_trucks','digger_derricks','directional_drills','splicing_trailers','fusion_splicers','reel_trailers','vac_trucks','insurance_status','w9_status','approval_stage','availability','performance_score','notes'];
         $_POST['crew_count'] = (int)($_POST['aerial_crew_count'] ?? 0) + (int)($_POST['underground_crew_count'] ?? 0) + (int)($_POST['fiber_splicing_crew_count'] ?? 0) + (int)($_POST['directional_boring_crew_count'] ?? 0) + (int)($_POST['emergency_restoration_crew_count'] ?? 0) + (int)($_POST['traffic_control_crew_count'] ?? 0) + (int)($_POST['mowing_row_crew_count'] ?? 0) + (int)($_POST['inspection_crew_count'] ?? 0) + (int)($_POST['qc_crew_count'] ?? 0) + (int)($_POST['engineering_crew_count'] ?? 0) + (int)($_POST['make_ready_crew_count'] ?? 0) + (int)($_POST['drop_crew_count'] ?? 0);
+        $requestedStage = (string)($_POST['approval_stage'] ?? 'Prospect');
+        $subcontractorId = (int)($_POST['id'] ?? 0);
+        if (in_array($requestedStage, ['Approved','Preferred','Strategic Partner'], true)) {
+            $gate = $subcontractorId > 0
+                ? (new OnboardingService())->canSetSubcontractorApprovalLevel($subcontractorId, $requestedStage)
+                : ['ok' => false, 'message' => 'Approval blocked. New subcontractors must complete onboarding before approval.'];
+            if (!$gate['ok']) {
+                $_SESSION['flash'] = $gate['message'];
+                $_POST['approval_stage'] = 'Compliance Review';
+            }
+        }
         $this->upsert('subcontractors', $fields);
         RecommendationEngine::regenerate();
     }
@@ -157,6 +169,7 @@ class CrudController extends Controller
             'insurance' => ['Missing','Submitted','Approved','Expired'],
             'w9' => ['Missing','Submitted','Approved'],
             'approval' => ['Prospect','Researching','Qualified','Documents Requested','Compliance Review','Approved','Preferred','Strategic Partner','Inactive','Rejected'],
+            'approvalEntry' => ['Prospect','Researching','Qualified','Documents Requested','Compliance Review','Inactive','Rejected'],
             'availability' => ['Available Now','Available Soon','Limited','Not Available'],
             'stages' => ['Intelligence','Qualified','Pursuit','Proposal','Negotiation','Awarded','Lost'],
             'opportunityTypes' => ['Fiber Backbone Construction','Long Haul Fiber','Middle Mile Fiber','Metro Fiber','Backbone Expansion','Backbone Maintenance','Backbone Restoration','Fiber Splicing','Directional Boring','Underground Construction','Aerial Construction','Make Ready','Fiber Testing','Inspection','QC','Engineering','Traffic Control','ROW Clearing','Structured Cabling','Home Automation','Security Systems','General Low Voltage','Small Commercial Cabling'],

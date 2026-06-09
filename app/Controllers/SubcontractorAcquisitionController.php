@@ -54,6 +54,7 @@ class SubcontractorAcquisitionController extends Controller
     {
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
+        $this->requireSubcontractorAccess($id);
         (new SubcontractorAcquisitionService())->updateScorecard($id, $_POST, $_POST['notes'] ?? '');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
@@ -63,6 +64,7 @@ class SubcontractorAcquisitionController extends Controller
     {
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
+        $this->requireSubcontractorAccess($id);
         (new SubcontractorAcquisitionService())->saveCompliance($id, $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['review_date'] ?: date('Y-m-d'), Auth::user()['name'] ?? 'Admin', $_POST['notes'] ?? '');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
@@ -72,6 +74,7 @@ class SubcontractorAcquisitionController extends Controller
     {
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
+        $this->requireSubcontractorAccess($id);
         (new SubcontractorAcquisitionService())->saveDocument($id, $_POST['file_name'], $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['notes'] ?? '');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
@@ -82,10 +85,21 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         $level = $_POST['level'] ?? 'Prospect';
-        (new SubcontractorAcquisitionService())->promote($id, $level);
-        Database::connection()->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) SELECT "subcontractor", id, region_id, "Status Change", "Subcontractor promoted", ?, CURRENT_TIMESTAMP, ? FROM subcontractors WHERE id = ?')->execute(['Moved to ' . $level . '.', Auth::user()['name'] ?? 'Admin', $id]);
+        $this->requireSubcontractorAccess($id);
+        $result = (new SubcontractorAcquisitionService())->promote($id, $level);
+        $_SESSION['flash'] = $result['message'] ?? '';
+        $activityType = !empty($result['ok']) ? 'Status Change' : 'Approval Blocked';
+        $activityTitle = !empty($result['ok']) ? 'Subcontractor promoted' : 'Subcontractor approval blocked';
+        Database::connection()->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) SELECT "subcontractor", id, region_id, ?, ?, ?, CURRENT_TIMESTAMP, ? FROM subcontractors WHERE id = ?')->execute([$activityType, $activityTitle, $result['message'] ?? ('Moved to ' . $level . '.'), Auth::user()['name'] ?? 'Admin', $id]);
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
+    }
+
+    private function requireSubcontractorAccess(int $id): void
+    {
+        $stmt = Database::connection()->prepare('SELECT region_id FROM subcontractors WHERE id = ?');
+        $stmt->execute([$id]);
+        Auth::requireRegionAccess($stmt->fetchColumn() ?: null);
     }
 
     private function metrics($db): array

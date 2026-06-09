@@ -41,6 +41,7 @@ class SubcontractorAcquisitionService
         } else {
             $db->prepare('INSERT INTO subcontractor_compliance_profiles (subcontractor_id, document_type, status, expiration_date, review_date, reviewed_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?)')->execute([$subcontractorId, $documentType, $status, $expirationDate, $reviewDate, $reviewedBy, $notes]);
         }
+        (new OnboardingService())->syncSubcontractorComplianceDocument($subcontractorId, $documentType, $status, $expirationDate, $notes);
         $this->refreshOne($db, $subcontractorId);
     }
 
@@ -51,14 +52,19 @@ class SubcontractorAcquisitionService
         $this->saveCompliance($subcontractorId, $documentType, $status, $expirationDate, date('Y-m-d'), 'System', 'Updated from document record.');
     }
 
-    public function promote(int $subcontractorId, string $level): void
+    public function promote(int $subcontractorId, string $level): array
     {
         if (!in_array($level, self::PIPELINE, true)) {
-            return;
+            return ['ok' => false, 'message' => 'Invalid subcontractor network level.'];
         }
         $db = Database::connection();
+        $gate = (new OnboardingService())->canSetSubcontractorApprovalLevel($subcontractorId, $level);
+        if (!$gate['ok']) {
+            return $gate;
+        }
         $db->prepare('UPDATE subcontractors SET approval_stage = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$level, $subcontractorId]);
         $this->refreshOne($db, $subcontractorId);
+        return ['ok' => true, 'message' => 'Subcontractor moved to ' . $level . '.'];
     }
 
     public function canApprove(array $sub): bool

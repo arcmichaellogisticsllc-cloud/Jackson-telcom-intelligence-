@@ -15,10 +15,14 @@ $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Promot
 $recordEntityType = 'subcontractor';
 $recordEntityId = (int)$subcontractor['id'];
 $recordRegionId = (int)($subcontractor['region_id'] ?? 0);
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 require __DIR__ . '/../components/record_header.php';
 $tabs = ['Overview','Timeline','Conversations','Capacity','Tasks / Actions','Documents','Notes','History'];
 require __DIR__ . '/../components/record_tabs.php';
 ?>
+
+<?php if ($flash): ?><section class="panel"><strong>Workflow Notice</strong><p><?= htmlspecialchars($flash) ?></p></section><?php endif; ?>
 
 <?php
 $why = 'This subcontractor can become approved, preferred, or strategic deployable capacity for fiber backbone work.';
@@ -50,6 +54,7 @@ require __DIR__ . '/../components/action_first.php';
     <form method="post" action="/subcontractor-acquisition/promote" class="form-grid compact">
       <input type="hidden" name="subcontractor_id" value="<?= (int)$subcontractor['id'] ?>">
       <label>Network Level <select name="level"><?php foreach ($pipeline as $stage): ?><option <?= $stage === $subcontractor['approval_stage'] ? 'selected' : '' ?>><?= htmlspecialchars($stage) ?></option><?php endforeach; ?></select></label>
+      <p class="full"><small>Approved, Preferred, and Strategic Partner updates are blocked until Onboarding Review Gates are clear.</small></p>
       <button class="btn">Update Level</button>
     </form>
   </div>

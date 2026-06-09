@@ -21,7 +21,6 @@ class OnboardingService
 
     public function dashboardData(?string $section = null, ?int $regionId = null): array
     {
-        $this->rebuild();
         $db = Database::connection();
         [$where, $params] = $this->regionFilter('r.name', $regionId);
         $metricScope = $regionId ? 'region_id = ' . (int)$regionId : '1=1';
@@ -161,6 +160,71 @@ class OnboardingService
         $approvalGate = $this->subcontractorApprovalGate($db, $onboardingId);
 
         return compact('subcontractor', 'documents', 'reviews', 'activities', 'actions', 'intakeLinks', 'approvalGate');
+    }
+
+    public function subcontractorApprovalGateBySubcontractorId(int $subcontractorId): array
+    {
+        $db = Database::connection();
+        $onboardingId = $this->onboardingIdForSubcontractor($db, $subcontractorId);
+        if (!$onboardingId) {
+            return [
+                'canApprove' => false,
+                'blockers' => ['Subcontractor is not in onboarding'],
+                'documents' => [],
+                'reviews' => [],
+                'onboarding_id' => null,
+            ];
+        }
+        $gate = $this->subcontractorApprovalGate($db, $onboardingId);
+        $gate['onboarding_id'] = $onboardingId;
+        return $gate;
+    }
+
+    public function canSetSubcontractorApprovalLevel(int $subcontractorId, string $level): array
+    {
+        if (!in_array($level, ['Approved','Preferred','Strategic Partner'], true)) {
+            return ['ok' => true, 'message' => 'Approval gate not required for this stage.'];
+        }
+        $gate = $this->subcontractorApprovalGateBySubcontractorId($subcontractorId);
+        if ($gate['canApprove']) {
+            return ['ok' => true, 'message' => 'Approval gate clear.', 'gate' => $gate];
+        }
+        return [
+            'ok' => false,
+            'message' => 'Approval blocked. Missing: ' . implode('; ', $gate['blockers']),
+            'gate' => $gate,
+        ];
+    }
+
+    public function syncSubcontractorComplianceDocument(int $subcontractorId, string $documentType, string $status, ?string $expirationDate = null, string $notes = ''): void
+    {
+        $db = Database::connection();
+        $onboardingId = $this->onboardingIdForSubcontractor($db, $subcontractorId);
+        if (!$onboardingId) {
+            return;
+        }
+        $row = $this->subcontractorOnboarding($db, $onboardingId);
+        if (!$row) {
+            return;
+        }
+        $documentMap = [
+            'W9' => 'W9',
+            'COI' => 'COI',
+            'Insurance' => 'COI',
+            'MSA' => 'MSA',
+            'NDA' => 'NDA',
+            'Safety Program' => 'Safety Program',
+        ];
+        $onboardingType = $documentMap[$documentType] ?? null;
+        if (!$onboardingType) {
+            return;
+        }
+
+        $fileName = strtoupper($status) . ' - ' . ($row['company_name'] ?: 'Subcontractor') . ' - ' . $onboardingType;
+        $stmt = $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$onboardingId, $row['region_id'] ?? null, $onboardingType, $fileName, $status, $expirationDate, Auth::user()['name'] ?? 'Admin', trim($notes ?: 'Synced from Subcontractor Network compliance/document update.')]);
+        $this->syncSubcontractorDocumentStatus($db, $onboardingId, $onboardingType, $status);
+        $this->activity($db, 'subcontractor_onboarding', $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . $status, $onboardingType);
     }
 
     public function createSubcontractorIntakeLink(int $onboardingId, int $expiresDays = 14): ?string
@@ -693,6 +757,13 @@ class OnboardingService
             'documents' => $documents,
             'reviews' => $reviews,
         ];
+    }
+
+    private function onboardingIdForSubcontractor(PDO $db, int $subcontractorId): int
+    {
+        $stmt = $db->prepare('SELECT id FROM subcontractor_onboarding WHERE subcontractor_id = ? LIMIT 1');
+        $stmt->execute([$subcontractorId]);
+        return (int)($stmt->fetchColumn() ?: 0);
     }
 
     private function latestDocumentStatus(PDO $db, int $onboardingId, string $documentType): string

@@ -207,7 +207,12 @@ class Auth
             '/executive-packages/detail' => ['id' => ['executive_packages', 'region_id']],
             '/strategic-account-intelligence/detail' => ['id' => ['strategic_accounts', 'region_id']],
             '/outreach/detail' => ['id' => ['outreach_intelligence', 'region_id']],
+            '/subcontractors' => ['id' => ['subcontractors', 'region_id']],
             '/subcontractor-acquisition/detail' => ['id' => ['subcontractors', 'region_id']],
+            '/subcontractor-acquisition/scorecard' => ['subcontractor_id' => ['subcontractors', 'region_id']],
+            '/subcontractor-acquisition/compliance' => ['subcontractor_id' => ['subcontractors', 'region_id']],
+            '/subcontractor-acquisition/documents' => ['subcontractor_id' => ['subcontractors', 'region_id']],
+            '/subcontractor-acquisition/promote' => ['subcontractor_id' => ['subcontractors', 'region_id']],
             '/onboarding/subcontractors/detail' => ['id' => ['subcontractor_onboarding', 'region_id']],
             default => [],
         };
