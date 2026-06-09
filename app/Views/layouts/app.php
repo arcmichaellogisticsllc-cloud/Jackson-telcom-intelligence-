@@ -33,7 +33,7 @@
         'GROWTH' => ['/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
         'ONBOARDING' => ['/onboarding' => 'Overview','/onboarding/subcontractors' => 'Subcontractors','/onboarding/workforce' => 'Workforce','/onboarding/strategic-accounts' => 'Strategic Accounts','/onboarding/markets' => 'Markets','/onboarding/documents' => 'Documents','/onboarding/reviews' => 'Reviews','/onboarding/metrics' => 'Metrics'],
         'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness'],
-        'SYSTEM' => ['/settings' => 'Settings','/production-readiness' => 'Production Readiness','/data-quality' => 'Data Quality Review','/connector-runs' => 'Connector Runs','/audit-logs' => 'Audit Logs','/operating-rhythm' => 'Operating Rhythm','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
+        'SYSTEM' => ['/settings' => 'Settings','/production-readiness' => 'Production Readiness','/data-quality' => 'Data Quality Review','/connector-runs' => 'Connector Runs','/audit-logs' => 'Audit Logs','/operating-rhythm' => 'Operating Rhythm','/ownership' => 'Ownership','/platform-review' => 'Platform Health','/activities' => 'Activities','/recommendations' => 'Recommendations','/warehouse' => 'Intelligence Warehouse'],
       ];
       ?>
       <?php foreach ($navGroups as $group => $links): ?>

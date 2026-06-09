@@ -58,10 +58,10 @@ $widgets = [
 <nav class="dash-tabs">
   <a class="active" href="/">Command Center</a>
   <a href="/daily-brief">Executive Brief</a>
-  <a href="/command/southeast">Mike Mode</a>
-  <a href="/command/great-lakes">Ron Mode</a>
+  <a href="/command/southeast">Mike Perspective</a>
+  <a href="/command/great-lakes">Ron Perspective</a>
   <a href="/command/southwest">Shared Southwest</a>
-  <a href="/operator-modes">Operator Modes</a>
+  <a href="/ownership">Ownership</a>
 </nav>
 
 <?php
@@ -73,6 +73,23 @@ require __DIR__ . '/../components/action_first.php';
 ?>
 
 <?php $priorityActions = $decisionWidgets['topActions'] ?? []; require __DIR__ . '/../components/todays_priorities.php'; ?>
+
+<section class="grid three">
+  <?php foreach (['my' => 'My Priorities', 'shared' => 'Shared Priorities', 'company' => 'Company Priorities'] as $key => $label): ?>
+    <div class="panel">
+      <div class="panel-title"><h2><?= htmlspecialchars($label) ?></h2><a class="btn secondary" href="/ownership">Ownership</a></div>
+      <div class="command-items">
+        <?php foreach (array_slice($ownershipWidgets['priorities'][$key] ?? [], 0, 3) as $item): ?>
+          <div>
+            <strong><?= htmlspecialchars($item['action_title'] ?? 'Priority') ?></strong>
+            <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['primary_owner'] ?? $item['owner'] ?? 'Unassigned') ?> · <?= htmlspecialchars($item['recommended_next_step'] ?? 'Confirm next action.') ?></span>
+          </div>
+        <?php endforeach; ?>
+        <?php if (empty($ownershipWidgets['priorities'][$key] ?? [])): ?><div><strong>No active priorities</strong><span>This bucket is clear for the current perspective.</span></div><?php endif; ?>
+      </div>
+    </div>
+  <?php endforeach; ?>
+</section>
 
 <section class="panel command-priorities">
   <div class="panel-title"><h2>Decision Visuals</h2><a class="btn secondary" href="/decision-visuals">Open Visual Hub</a></div>

@@ -49,8 +49,8 @@ $widgets = [
 
 <nav class="dash-tabs">
   <a href="/">Command Center</a>
-  <a class="<?= $region['name'] === 'Southeast' ? 'active' : '' ?>" href="/command/southeast">Mike Mode</a>
-  <a class="<?= $region['name'] === 'Great Lakes' ? 'active' : '' ?>" href="/command/great-lakes">Ron Mode</a>
+  <a class="<?= $region['name'] === 'Southeast' ? 'active' : '' ?>" href="/command/southeast">Mike Perspective</a>
+  <a class="<?= $region['name'] === 'Great Lakes' ? 'active' : '' ?>" href="/command/great-lakes">Ron Perspective</a>
   <a class="<?= $region['name'] === 'Southwest' ? 'active' : '' ?>" href="/command/southwest">Shared Southwest</a>
   <a href="/daily-brief">Executive Brief</a>
 </nav>

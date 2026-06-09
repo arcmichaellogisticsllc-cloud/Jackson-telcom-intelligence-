@@ -16,6 +16,7 @@ use App\Controllers\HarvesterController;
 use App\Controllers\HuntController;
 use App\Controllers\MarketIntelligenceController;
 use App\Controllers\OutreachController;
+use App\Controllers\OwnershipController;
 use App\Controllers\OperationalMaturityController;
 use App\Controllers\OnboardingController;
 use App\Controllers\PlatformReviewController;
@@ -60,6 +61,9 @@ $router->get('/operating-view', [PlatformReviewController::class, 'operatingView
 $router->get('/platform-review', [PlatformReviewController::class, 'index']);
 $router->get('/operator-modes', [PlatformReviewController::class, 'modes']);
 $router->get('/operating-rhythm', [OperationalMaturityController::class, 'index']);
+$router->get('/ownership', [OwnershipController::class, 'index']);
+$router->post('/ownership/backfill', [OwnershipController::class, 'backfill']);
+$router->post('/ownership/update', [OwnershipController::class, 'update']);
 $router->get('/operating-rhythm/southeast', [OperationalMaturityController::class, 'southeast']);
 $router->get('/operating-rhythm/great-lakes', [OperationalMaturityController::class, 'greatLakes']);
 $router->get('/operating-rhythm/southwest', [OperationalMaturityController::class, 'southwest']);

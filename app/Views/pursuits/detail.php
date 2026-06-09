@@ -4,6 +4,10 @@ $recordName = $opportunity['name'];
 $recordType = $opportunity['classification'] ?? 'Opportunity';
 $recordRegion = $opportunity['region_name'] ?? 'National';
 $recordOwner = $opportunity['owner'] ?? 'Unassigned';
+$recordPrimaryOwner = $opportunity['primary_owner'] ?? $recordOwner;
+$recordSecondaryOwner = $opportunity['secondary_owner'] ?? '';
+$recordSharedOwnerFlag = (int)($opportunity['shared_owner_flag'] ?? 0);
+$recordOwnershipNotes = $opportunity['ownership_notes'] ?? '';
 $recordStatus = $opportunity['recommended_decision'] ?? 'Monitor';
 $recordScore = (int)($opportunity['pursuit_score'] ?? 0);
 $recordNextAction = $opportunity['next_best_action'] ?? $opportunity['next_action'] ?? '';
@@ -37,6 +41,7 @@ require __DIR__ . '/../components/action_first.php';
   <a href="/capacity-radar">Capacity Radar</a>
   <a href="/relationship-graph">Relationship Graph</a>
   <form method="post" action="/preconstruction/create">
+    <?= \App\Core\Auth::csrfInput() ?>
     <input type="hidden" name="opportunity_id" value="<?= (int)$opportunity['id'] ?>">
     <button class="btn secondary">Create Preconstruction Profile</button>
   </form>

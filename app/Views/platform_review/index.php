@@ -7,7 +7,7 @@
 <nav class="dash-tabs">
   <a href="/operating-view">Executive Operating View</a>
   <a class="active" href="/platform-review">Platform Health</a>
-  <a href="/operator-modes">Operator Modes</a>
+  <a href="/operator-modes">Perspective Filters</a>
 </nav>
 
 <section class="grid two">

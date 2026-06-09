@@ -6,6 +6,11 @@ $recordEntityId = (int)($recordEntityId ?? 0);
 $recordRegionId = (int)($recordRegionId ?? 0);
 $recordReturnTo = $recordReturnTo ?? ($_SERVER['REQUEST_URI'] ?? '/');
 $recordActionOwner = $recordOwner ?? 'Unassigned';
+$recordPrimaryOwner = $recordPrimaryOwner ?? $recordOwner ?? 'Unassigned';
+$recordSecondaryOwner = $recordSecondaryOwner ?? '';
+$recordSharedOwnerFlag = (int)($recordSharedOwnerFlag ?? 0);
+$recordOwnershipNotes = $recordOwnershipNotes ?? '';
+$recordSupportingAction = $recordSupportingAction ?? ($recordSecondaryOwner ? 'Support the primary owner on capacity, relationship, or readiness context.' : '');
 ?>
 <section class="record-header">
   <div>
@@ -14,11 +19,14 @@ $recordActionOwner = $recordOwner ?? 'Unassigned';
     <div class="record-meta">
       <span><?= htmlspecialchars($recordType ?? 'Record') ?></span>
       <span><?= htmlspecialchars($recordRegion ?? 'National') ?></span>
-      <span>Owner: <?= htmlspecialchars($recordOwner ?? 'Unassigned') ?></span>
+      <span>Primary Owner: <?= htmlspecialchars($recordPrimaryOwner ?: 'Unassigned') ?></span>
+      <span>Secondary Owner: <?= htmlspecialchars($recordSecondaryOwner ?: 'Unassigned') ?></span>
+      <span><?= $recordSharedOwnerFlag ? 'Shared Priority' : 'Not Shared' ?></span>
       <span>Status: <?= htmlspecialchars($recordStatus ?? 'Open') ?></span>
       <?php if ($recordScore > 0): ?><span>Score: <?= $recordScore ?></span><?php endif; ?>
     </div>
     <p><strong>Next best action:</strong> <?= htmlspecialchars($recordNextAction ?? 'Review record, confirm owner, and create the next action.') ?></p>
+    <?php if ($recordSupportingAction): ?><p><strong>Supporting owner action:</strong> <?= htmlspecialchars($recordSupportingAction) ?></p><?php endif; ?>
   </div>
   <div class="record-actions">
     <?php foreach ($recordActions as $action): ?>
@@ -26,6 +34,7 @@ $recordActionOwner = $recordOwner ?? 'Unassigned';
       <details class="record-action-panel">
         <summary class="btn <?= $primary ? '' : 'secondary' ?>"><?= htmlspecialchars($action) ?></summary>
         <form method="post" action="/record-actions" class="record-action-form">
+          <?= \App\Core\Auth::csrfInput() ?>
           <input type="hidden" name="record_type" value="<?= htmlspecialchars($recordEntityType) ?>">
           <input type="hidden" name="record_id" value="<?= $recordEntityId ?>">
           <input type="hidden" name="region_id" value="<?= $recordRegionId ?>">
@@ -45,5 +54,24 @@ $recordActionOwner = $recordOwner ?? 'Unassigned';
         </form>
       </details>
     <?php endforeach; ?>
+    <details class="record-action-panel">
+      <summary class="btn secondary">Assign Ownership</summary>
+      <form method="post" action="/ownership/update" class="record-action-form">
+        <?= \App\Core\Auth::csrfInput() ?>
+        <input type="hidden" name="record_type" value="<?= htmlspecialchars($recordEntityType) ?>">
+        <input type="hidden" name="record_id" value="<?= $recordEntityId ?>">
+        <input type="hidden" name="return_to" value="<?= htmlspecialchars($recordReturnTo) ?>">
+        <label>Primary Owner
+          <input name="primary_owner" value="<?= htmlspecialchars($recordPrimaryOwner ?: 'Unassigned') ?>" required>
+        </label>
+        <label>Secondary Owner
+          <input name="secondary_owner" value="<?= htmlspecialchars($recordSecondaryOwner) ?>">
+        </label>
+        <label><input type="checkbox" name="shared_owner_flag" value="1" <?= $recordSharedOwnerFlag ? 'checked' : '' ?>> Shared priority</label>
+        <label class="full">Ownership Notes <textarea name="ownership_notes"><?= htmlspecialchars($recordOwnershipNotes) ?></textarea></label>
+        <label class="full">Change Reason <input name="change_reason" value="Ownership updated from record header."></label>
+        <button class="btn" type="submit">Save Ownership</button>
+      </form>
+    </details>
   </div>
 </section>

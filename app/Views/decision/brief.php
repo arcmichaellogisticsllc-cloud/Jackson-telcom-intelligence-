@@ -26,8 +26,8 @@ foreach ($commandBriefs as $regionName => $command) {
   <a href="/">Command Center</a>
   <a href="/decision-support">Decision Support</a>
   <a class="active" href="/daily-brief">Executive Brief</a>
-  <a href="/command/southeast">Mike Mode</a>
-  <a href="/command/great-lakes">Ron Mode</a>
+  <a href="/command/southeast">Mike Perspective</a>
+  <a href="/command/great-lakes">Ron Perspective</a>
   <a href="/command/southwest">Shared Southwest</a>
 </nav>
 

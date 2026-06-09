@@ -17,6 +17,7 @@ use App\Services\MarketIntelligenceService;
 use App\Services\OnboardingService;
 use App\Services\OperationalMaturityService;
 use App\Services\OpportunityPursuitService;
+use App\Services\OwnershipService;
 use App\Services\PlatformReviewService;
 use App\Services\ProjectPackageAssemblyService;
 use App\Services\RelationshipIntelligenceService;
@@ -53,6 +54,7 @@ class DashboardController extends Controller
         $strategicIntel = (new StrategicWorkforceCompetitiveService())->dashboardData();
         $onboardingWidgets = (new OnboardingService())->dashboardData();
         $maturityWidgets = (new OperationalMaturityService())->dashboardData();
+        $ownershipWidgets = (new OwnershipService())->dashboardData();
         $allowedRegionIds = $this->allowedRegionIds();
         $visualWidgets = (new DecisionVisualService())->visualData($allowedRegionIds);
         $decisionWidgets = $this->filterDecisionWidgets($decisionWidgets, $allowedRegionIds);
@@ -91,6 +93,7 @@ class DashboardController extends Controller
             'strategicIntel' => $strategicIntel,
             'onboardingWidgets' => $onboardingWidgets,
             'maturityWidgets' => $maturityWidgets,
+            'ownershipWidgets' => $ownershipWidgets,
             'visualWidgets' => $visualWidgets,
             'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,

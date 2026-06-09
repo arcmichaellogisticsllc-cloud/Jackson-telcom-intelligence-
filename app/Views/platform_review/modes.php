@@ -1,5 +1,5 @@
 <section class="page-header">
-  <p class="eyebrow">Operator Modes</p>
+  <p class="eyebrow">Perspective Filters</p>
   <h1>Five ways to operate without module overload.</h1>
   <p>Modes simplify the platform by matching each operator intent to one screen, one workflow, and one set of metrics.</p>
 </section>
@@ -7,7 +7,7 @@
 <nav class="dash-tabs">
   <a href="/operating-view">Executive Operating View</a>
   <a href="/platform-review">Platform Health</a>
-  <a class="active" href="/operator-modes">Operator Modes</a>
+  <a class="active" href="/operator-modes">Perspective Filters</a>
 </nav>
 
 <section class="region-grid">

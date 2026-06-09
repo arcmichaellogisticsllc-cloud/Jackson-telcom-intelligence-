@@ -28,7 +28,7 @@ Jackson Intelligence Platform is structured as an acquisition intelligence syste
 - Jackson Telcom Command Center
 - Executive Brief
 - Daily Brief
-- Operator Modes
+- Perspective Filters
 - National Command Center
 - Regions / Theaters
 - Acquisition Harvesters
@@ -68,15 +68,36 @@ The Command Center replaces module-first navigation with an action-first operati
 
 The platform still includes detailed modules, but they support the Command Center. They should not become the daily starting point.
 
-## Operator Modes
+## Shared Operating System & Ownership
 
-Operator modes map each operator to the right default view and priorities:
+Jackson does not run separate Mike and Ron workflows.
 
-- Executive Mode: national Jackson Telcom Command Center and top five actions.
-- Mike Mode: Southeast Command Center plus shared Southwest and national actions.
-- Ron Mode: Great Lakes Command Center plus shared Southwest and national actions.
-- Regional Owner Mode: theater-specific work, capacity, need, influence, and actions.
-- Admin Mode: platform health, seed mode, backups, data integrity, navigation, and release readiness.
+The platform is one shared company operating system:
+
+- Company View: the complete operating state.
+- My Priorities: records and actions where the current operator is primary owner.
+- Shared Priorities: records where the current operator supports, or where the record is explicitly shared.
+- Company Priorities: executive-critical records regardless of owner.
+
+Major records support primary owner, secondary owner, shared ownership, and ownership notes. Ownership changes write to the record timeline, activities, and audit log.
+
+Responsibility defaults:
+
+- Mike: strategic accounts, relationships, opportunities, market intelligence, partnerships, and executive packages.
+- Ron: capacity, subcontractors, workforce, field readiness, preconstruction readiness, and SyncERP handoff readiness.
+- Shared: Southwest, National, strategic decisions, major pursuits, critical capacity gaps, and quarterly reviews.
+
+See [Shared Operating System & Ownership Model](docs/shared-operating-system-ownership.md).
+
+## Perspective Filters
+
+Perspective filters emphasize the right priorities without splitting the workflow:
+
+- Company View: national Jackson Telcom Command Center and top five company actions.
+- Mike Perspective: accounts, relationships, opportunities, market intelligence, and partnerships.
+- Ron Perspective: capacity, subcontractors, workforce, readiness, and handoff preparation.
+- Regional Owner Perspective: theater-specific work, capacity, need, influence, and actions.
+- Admin / Executive View: platform health, seed mode, backups, data integrity, navigation, and release readiness.
 
 ## Executive View
 
@@ -1820,8 +1841,8 @@ List views now support working search and filters for search text, owner, theate
 
 Operator mode filtering keeps the primary screens focused:
 
-- Mike Mode: Southeast, shared Southwest, and shared National work.
-- Ron Mode: Great Lakes, shared Southwest, and shared National work.
+- Mike Perspective: Southeast, shared Southwest, and shared National work.
+- Ron Perspective: Great Lakes, shared Southwest, and shared National work.
 - Admin / Executive: all regions.
 
 Operator mode filtering is a usability filter, not a security authorization model. It affects the Command Center, Daily Brief, Decision Support, workspace homes, global search, list views, Recent Conversations, and Top Actions so operators see the work most relevant to them first.

@@ -68,6 +68,7 @@ $routes = [
     '/ecosystem/great-lakes',
     '/ecosystem/southwest',
     '/forecasts',
+    '/ownership',
     '/ownership-matrix',
     '/strategic-accounts',
     '/strategic-review',

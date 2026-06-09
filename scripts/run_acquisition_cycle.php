@@ -14,6 +14,7 @@ use App\Services\OnboardingService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OpportunityPursuitService;
 use App\Services\OperationalMaturityService;
+use App\Services\OwnershipService;
 use App\Services\PlatformReviewService;
 use App\Services\PreconstructionIntelligenceService;
 use App\Services\ProjectPackageAssemblyService;
@@ -58,11 +59,13 @@ RecommendationEngine::regenerate();
 (new OnboardingService())->rebuild();
 (new DecisionSupportService())->rebuild();
 (new OperationalMaturityService())->rebuild();
+(new OwnershipService())->backfill();
 (new ProductionReadinessService())->rebuildReviewQueue();
 echo "PASS Decision Support rebuilt\n\n";
 
 echo "== Rebuild Outreach Intelligence ==\n";
 (new OutreachIntelligenceService())->rebuild();
+(new OwnershipService())->backfill();
 echo "PASS Outreach Intelligence rebuilt\n";
 
 echo "\nAcquisition cycle complete.\n";
