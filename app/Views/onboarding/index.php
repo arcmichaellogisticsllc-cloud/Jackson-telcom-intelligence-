@@ -62,6 +62,57 @@ require __DIR__ . '/../components/action_first.php';
 <?php endif; ?>
 
 <?php if (in_array($section, ['overview','subcontractors'], true)): ?>
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-title"><h2>Add Ground Crew To Onboarding</h2><span class="status">Tomorrow Ready</span></div>
+    <form method="post" action="/onboarding/ground-crew" class="form-grid compact">
+      <?= $csrf ?>
+      <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+      <label>Company Name <input name="company_name" required placeholder="Real ground crew company"></label>
+      <label>Region <select name="region_id" required><?php foreach ($regions as $region): ?><option value="<?= (int)$region['id'] ?>"><?= htmlspecialchars($region['name']) ?></option><?php endforeach; ?></select></label>
+      <label>Market <input name="market" placeholder="Atlanta, Houston, Detroit"></label>
+      <label>State <input name="state" placeholder="GA, TX, MI"></label>
+      <label>Primary Contact <input name="primary_contact" placeholder="Contact name"></label>
+      <label>Title <input name="contact_title" placeholder="Owner, PM, Foreman"></label>
+      <label>Phone <input name="phone" placeholder="Business phone"></label>
+      <label>Email <input name="email" placeholder="Business email"></label>
+      <label>Total Crews <input type="number" name="crew_count" min="0" value="1"></label>
+      <label>Available Crews <input type="number" name="available_crew_count" min="0" value="1"></label>
+      <label>Availability <input name="availability" placeholder="Now, 2 weeks, 30 days"></label>
+      <label>Assigned Owner <select name="assigned_owner"><option>Ron</option><option>Mike</option><option>Mike/Ron Shared</option><option>Admin</option></select></label>
+      <div class="full checklist-grid">
+        <strong>Services</strong>
+        <label><input type="checkbox" name="service_underground" value="1" checked> Underground</label>
+        <label><input type="checkbox" name="service_directional_boring" value="1"> Directional Boring</label>
+        <label><input type="checkbox" name="service_row_mowing" value="1"> ROW / Mowing</label>
+        <label><input type="checkbox" name="service_aerial" value="1"> Aerial</label>
+        <label><input type="checkbox" name="service_fiber_splicing" value="1"> Fiber Splicing</label>
+        <label><input type="checkbox" name="service_traffic_control" value="1"> Traffic Control</label>
+        <label><input type="checkbox" name="service_make_ready" value="1"> Make Ready</label>
+        <label><input type="checkbox" name="service_inspection" value="1"> Inspection</label>
+        <label><input type="checkbox" name="service_qc" value="1"> QC</label>
+      </div>
+      <label class="full">Other Services <input name="services_other" placeholder="Other self-performed work"></label>
+      <label class="full">Equipment Notes <textarea name="equipment_notes" placeholder="Trucks, trailers, drills, vacs, locating, compactors, tools"></textarea></label>
+      <label class="full">Onboarding Notes <textarea name="notes" placeholder="What do we know, what needs verified, who introduced them?"></textarea></label>
+      <button class="btn">Create Ground Crew Onboarding</button>
+    </form>
+  </div>
+  <div class="panel">
+    <div class="panel-title"><h2>Ground Crew Onboarding Queue</h2><span class="status"><?= count($groundCrewQueue ?? []) ?></span></div>
+    <div class="command-items">
+      <?php foreach (($groundCrewQueue ?? []) as $crew): ?>
+        <div id="ground-crew-<?= (int)$crew['id'] ?>">
+          <strong><?= htmlspecialchars($crew['company_name'] ?: 'Ground Crew #' . $crew['subcontractor_id']) ?></strong>
+          <span><?= htmlspecialchars($crew['region_name'] ?? 'National') ?> · <?= htmlspecialchars($crew['onboarding_status']) ?> · <?= (int)$crew['available_crew_count'] ?> available crews</span>
+          <span><?= htmlspecialchars($crew['missing_items'] ?: 'Ready for review') ?></span>
+        </div>
+      <?php endforeach; ?>
+      <?php if (empty($groundCrewQueue)): ?><div class="empty-state"><strong>No ground crews in onboarding yet.</strong><span>Add tomorrow's crews here, then request documents and complete compliance/capacity review.</span></div><?php endif; ?>
+    </div>
+  </div>
+</section>
+
 <section class="panel">
   <div class="panel-title"><h2>New Capacity Being Created</h2><span class="status">Subcontractor Onboarding</span></div>
   <div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Theater</th><th>Stage</th><th>Readiness</th><th>Missing / Risk</th><th>Action</th></tr></thead><tbody>
@@ -73,6 +124,7 @@ require __DIR__ . '/../components/action_first.php';
       <td><?= htmlspecialchars($row['missing_items'] ?: $row['risk_flags'] ?: 'Ready for review') ?></td>
       <td><form method="post" action="/onboarding/stage" class="inline-form"><?= $csrf ?><input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>"><input type="hidden" name="onboarding_type" value="Subcontractor"><input type="hidden" name="id" value="<?= (int)$row['id'] ?>"><select name="status"><option>Qualified</option><option>Documents Requested</option><option>Compliance Review</option><option>Capacity Review</option><option>Approved</option><option>Preferred</option><option>Strategic Partner</option><option>Rejected</option></select><input name="notes" placeholder="Notes"><button class="btn secondary">Move</button></form></td>
     </tr><?php endforeach; ?>
+    <?php if (!$subcontractors): ?><tr><td colspan="6">No subcontractors are in onboarding yet. Add a ground crew above to start real onboarding.</td></tr><?php endif; ?>
   </tbody></table></div>
 </section>
 <?php endif; ?>
@@ -156,7 +208,12 @@ require __DIR__ . '/../components/action_first.php';
       <?= $csrf ?>
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
       <label>Type <select name="onboarding_type"><option>Subcontractor</option><option>Workforce</option><option>Strategic Account</option><option>Market</option></select></label>
-      <label>Onboarding ID <input type="number" name="onboarding_id" required></label>
+      <label>Onboarding ID <select name="onboarding_id" required>
+        <?php foreach ($subcontractors as $row): ?><option value="<?= (int)$row['id'] ?>">Sub #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['company_name'] ?: 'Subcontractor') ?></option><?php endforeach; ?>
+        <?php foreach ($workforce as $row): ?><option value="<?= (int)$row['id'] ?>">Workforce #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['name']) ?></option><?php endforeach; ?>
+        <?php foreach ($accounts as $row): ?><option value="<?= (int)$row['id'] ?>">Account #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['account_name']) ?></option><?php endforeach; ?>
+        <?php foreach ($markets as $row): ?><option value="<?= (int)$row['id'] ?>">Market #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['market']) ?></option><?php endforeach; ?>
+      </select></label>
       <label>Document <select name="document_type"><option>W9</option><option>COI</option><option>NDA</option><option>MSA</option><option>Safety Program</option><option>Certifications</option><option>Coverage Maps</option><option>Workforce Documents</option><option>Other</option></select></label>
       <label>Status <select name="status"><option>Submitted</option><option>Requested</option><option>Approved</option><option>Expired</option><option>Rejected</option></select></label>
       <label>File Name <input name="file_name" required></label>
@@ -167,7 +224,7 @@ require __DIR__ . '/../components/action_first.php';
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Documents</h2><span class="status"><?= count($documents) ?></span></div>
-    <div class="table-wrap"><table><thead><tr><th>Document</th><th>Type</th><th>Status</th><th>Reviewed</th></tr></thead><tbody><?php foreach ($documents as $doc): ?><tr><td><strong><?= htmlspecialchars($doc['file_name']) ?></strong><br><small><?= htmlspecialchars($doc['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($doc['onboarding_type']) ?> #<?= (int)$doc['onboarding_id'] ?><br><small><?= htmlspecialchars($doc['document_type']) ?></small></td><td><?= htmlspecialchars($doc['status']) ?><br><small><?= htmlspecialchars($doc['expires_at'] ?? '') ?></small></td><td><?= htmlspecialchars($doc['reviewed_by'] ?? '') ?></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Document</th><th>Type</th><th>Status</th><th>Reviewed</th></tr></thead><tbody><?php foreach ($documents as $doc): ?><tr><td><strong><?= htmlspecialchars($doc['file_name']) ?></strong><br><small><?= htmlspecialchars($doc['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($doc['onboarding_type']) ?> #<?= (int)$doc['onboarding_id'] ?><br><small><?= htmlspecialchars($doc['document_type']) ?></small></td><td><?= htmlspecialchars($doc['status']) ?><br><small><?= htmlspecialchars($doc['expires_at'] ?? '') ?></small></td><td><?= htmlspecialchars($doc['reviewed_by'] ?? '') ?></td></tr><?php endforeach; ?><?php if (!$documents): ?><tr><td colspan="4">No real onboarding documents yet. Add a ground crew or record received documents here.</td></tr><?php endif; ?></tbody></table></div>
   </div>
 </section>
 <?php endif; ?>

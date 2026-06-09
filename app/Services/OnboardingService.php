@@ -43,8 +43,102 @@ class OnboardingService
             'reviews' => $this->rows($db, 'SELECT obr.*, r.name region_name FROM onboarding_reviews obr LEFT JOIN regions r ON r.id = obr.region_id WHERE ' . $where . ' ORDER BY CASE obr.status WHEN "Pending" THEN 1 WHEN "Needs Information" THEN 2 WHEN "Rejected" THEN 3 ELSE 4 END, obr.created_at DESC LIMIT 80', $params),
             'documents' => $this->rows($db, 'SELECT od.*, r.name region_name FROM onboarding_documents od LEFT JOIN regions r ON r.id = od.region_id WHERE ' . $where . ' ORDER BY CASE od.status WHEN "Missing" THEN 1 WHEN "Requested" THEN 2 WHEN "Expired" THEN 3 ELSE 4 END, od.created_at DESC LIMIT 80', $params),
             'recommendations' => $this->rows($db, 'SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.source_module = "Onboarding Workspace" AND ra.status = "Open" AND ' . $where . ' ORDER BY ra.priority_score DESC LIMIT 10', $params),
+            'groundCrewQueue' => $this->rows($db, 'SELECT so.*, s.company_name, s.phone, s.email, s.services_offered, s.available_crew_count, s.crew_count, s.primary_contact, s.markets_served, r.name region_name FROM subcontractor_onboarding so JOIN subcontractors s ON s.id = so.subcontractor_id LEFT JOIN regions r ON r.id = so.region_id WHERE ' . $where . ' AND (LOWER(COALESCE(s.services_offered,"")) LIKE "%underground%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%ground%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%boring%" OR LOWER(COALESCE(s.services_offered,"")) LIKE "%row%") ORDER BY CASE so.onboarding_status WHEN "Documents Requested" THEN 1 WHEN "Qualified" THEN 2 WHEN "Compliance Review" THEN 3 WHEN "Capacity Review" THEN 4 ELSE 5 END, so.updated_at DESC LIMIT 20', $params),
             'regions' => $db->query('SELECT * FROM regions ORDER BY CASE name WHEN "National" THEN 0 WHEN "Southeast" THEN 1 WHEN "Great Lakes" THEN 2 WHEN "Southwest" THEN 3 ELSE 4 END')->fetchAll(),
         ];
+    }
+
+    public function createGroundCrewOnboarding(array $input): int
+    {
+        $db = Database::connection();
+        $regionId = (int)($input['region_id'] ?? 0);
+        Auth::requireRegionAccess($regionId ?: null);
+
+        $company = trim((string)($input['company_name'] ?? ''));
+        if ($company === '' || $regionId <= 0) {
+            return 0;
+        }
+
+        $services = $this->groundCrewServices($input);
+        $market = trim((string)($input['market'] ?? ''));
+        $state = trim((string)($input['state'] ?? ''));
+        $owner = trim((string)($input['assigned_owner'] ?? '')) ?: $this->regionOwner($db, $regionId);
+        $contact = trim((string)($input['primary_contact'] ?? ''));
+        $phone = trim((string)($input['phone'] ?? ''));
+        $email = trim((string)($input['email'] ?? ''));
+        $crewCount = max(0, (int)($input['crew_count'] ?? 0));
+        $availableCrews = max(0, (int)($input['available_crew_count'] ?? 0));
+        $equipment = trim((string)($input['equipment_notes'] ?? ''));
+        $notes = trim((string)($input['notes'] ?? ''));
+
+        $existingOrg = $db->prepare('SELECT id FROM organizations WHERE LOWER(name) = LOWER(?) AND region_id = ? LIMIT 1');
+        $existingOrg->execute([$company, $regionId]);
+        $organizationId = (int)$existingOrg->fetchColumn();
+        if (!$organizationId) {
+            $org = $db->prepare('INSERT INTO organizations (name, type, region_id, state, city, website, phone, notes, status) VALUES (?, "Fiber Construction Contractor", ?, ?, ?, ?, ?, ?, "Active")');
+            $org->execute([$company, $regionId, $state, $market, trim((string)($input['website'] ?? '')), $phone, trim("Ground crew onboarding prospect.\n" . $notes)]);
+            $organizationId = (int)$db->lastInsertId();
+        }
+
+        $existingSub = $db->prepare('SELECT id FROM subcontractors WHERE organization_id = ? LIMIT 1');
+        $existingSub->execute([$organizationId]);
+        $subcontractorId = (int)$existingSub->fetchColumn();
+        if (!$subcontractorId) {
+            $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, phone, email, owner_name, primary_contact, contact_title, states_served, markets_served, services_offered, crew_count, available_crew_count, underground_crew_count, directional_boring_crew_count, mowing_row_crew_count, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Documents Requested", ?, ?)');
+            $stmt->execute([
+                $organizationId,
+                $regionId,
+                $company,
+                $phone,
+                $email,
+                $contact,
+                $contact,
+                trim((string)($input['contact_title'] ?? '')),
+                $state,
+                $market,
+                $services,
+                $crewCount,
+                $availableCrews,
+                $this->containsService($services, 'Underground') ? $availableCrews : 0,
+                $this->containsService($services, 'Directional Boring') ? $availableCrews : 0,
+                $this->containsService($services, 'ROW') ? $availableCrews : 0,
+                trim((string)($input['availability'] ?? 'Unknown')),
+                trim("Ground crew onboarding created from Onboarding workspace.\nEquipment: {$equipment}\n{$notes}"),
+            ]);
+            $subcontractorId = (int)$db->lastInsertId();
+        } else {
+            $db->prepare('UPDATE subcontractors SET phone = COALESCE(NULLIF(?, ""), phone), email = COALESCE(NULLIF(?, ""), email), primary_contact = COALESCE(NULLIF(?, ""), primary_contact), markets_served = COALESCE(NULLIF(?, ""), markets_served), services_offered = COALESCE(NULLIF(?, ""), services_offered), crew_count = CASE WHEN ? > 0 THEN ? ELSE crew_count END, available_crew_count = CASE WHEN ? > 0 THEN ? ELSE available_crew_count END, approval_stage = "Documents Requested", updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$phone, $email, $contact, $market, $services, $crewCount, $crewCount, $availableCrews, $availableCrews, $subcontractorId]);
+        }
+
+        $existingOnboarding = $db->prepare('SELECT id FROM subcontractor_onboarding WHERE subcontractor_id = ? LIMIT 1');
+        $existingOnboarding->execute([$subcontractorId]);
+        $onboardingId = (int)$existingOnboarding->fetchColumn();
+        $missing = 'W9; COI; MSA; NDA; Safety Program; Crew/equipment verification';
+        if (!$onboardingId) {
+            $stmt = $db->prepare('INSERT INTO subcontractor_onboarding (subcontractor_id, region_id, onboarding_status, onboarding_score, readiness_category, assigned_owner, w9_status, coi_status, msa_status, nda_status, safety_program_status, coverage_area, disciplines, crew_counts, equipment_counts, missing_items, approval_notes, risk_flags) VALUES (?, ?, "Documents Requested", 45, "Developing", ?, "Requested", "Requested", "Requested", "Requested", "Requested", ?, ?, ?, ?, ?, ?, "Document package required before approval.")');
+            $stmt->execute([$subcontractorId, $regionId, $owner, $state, $services, (string)$crewCount, $equipment ?: 'Verify trucks, trailers, tools, and specialty equipment.', $missing, 'Created for tomorrow ground crew onboarding.']);
+            $onboardingId = (int)$db->lastInsertId();
+        } else {
+            $db->prepare('UPDATE subcontractor_onboarding SET onboarding_status = "Documents Requested", assigned_owner = ?, w9_status = "Requested", coi_status = "Requested", msa_status = "Requested", nda_status = "Requested", safety_program_status = "Requested", coverage_area = ?, disciplines = ?, crew_counts = ?, equipment_counts = ?, missing_items = ?, risk_flags = "Document package required before approval.", updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+                ->execute([$owner, $state, $services, (string)$crewCount, $equipment ?: 'Verify trucks, trailers, tools, and specialty equipment.', $missing, $onboardingId]);
+        }
+
+        foreach (['W9','COI','MSA','NDA','Safety Program'] as $documentType) {
+            $exists = $db->prepare('SELECT id FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND document_type = ? AND status IN ("Missing","Requested") LIMIT 1');
+            $exists->execute([$onboardingId, $documentType]);
+            if ($exists->fetchColumn()) {
+                continue;
+            }
+            $fileName = 'REQUESTED - ' . $company . ' - ' . $documentType;
+            $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, "Requested", NULL, ?, ?)')
+                ->execute([$onboardingId, $regionId, $documentType, $fileName, Auth::user()['name'] ?? 'Admin', 'Requested during ground crew onboarding. Replace placeholder name when real document is received.']);
+        }
+
+        $this->activity($db, 'subcontractor_onboarding', $onboardingId, $regionId, 'Created', 'Ground crew onboarding started', "Company: {$company}\nServices: {$services}\nCrews: {$availableCrews} available / {$crewCount} total\nNext: request W9, COI, MSA, NDA, safety program, and verify equipment.");
+        $this->createDailyAction($db, $regionId, 'Complete ground crew onboarding package for ' . $company, 'Subcontractor', $onboardingId);
+        $this->generateRecommendations($db);
+        return $onboardingId;
     }
 
     public function updateStage(string $type, int $id, string $status, string $notes): void
@@ -264,6 +358,34 @@ class OnboardingService
             'Market' => ['market_onboarding', 'onboarding_status', 'market_onboarding'],
             default => ['subcontractor_onboarding', 'onboarding_status', 'subcontractor_onboarding'],
         };
+    }
+
+    private function groundCrewServices(array $input): string
+    {
+        $services = [];
+        foreach (['Underground','Directional Boring','ROW / Mowing','Aerial','Fiber Splicing','Traffic Control','Make Ready','Inspection','QC'] as $service) {
+            $key = strtolower(str_replace([' / ', ' '], ['_', '_'], $service));
+            if (!empty($input['service_' . $key])) {
+                $services[] = $service;
+            }
+        }
+        $other = trim((string)($input['services_other'] ?? ''));
+        if ($other !== '') {
+            $services[] = $other;
+        }
+        return $services ? implode(', ', array_unique($services)) : 'Underground';
+    }
+
+    private function containsService(string $services, string $needle): bool
+    {
+        return str_contains(strtolower($services), strtolower($needle));
+    }
+
+    private function regionOwner(PDO $db, int $regionId): string
+    {
+        $stmt = $db->prepare('SELECT owner FROM regions WHERE id = ?');
+        $stmt->execute([$regionId]);
+        return (string)($stmt->fetchColumn() ?: 'Admin');
     }
 
     private function find(PDO $db, string $table, int $id): ?array

@@ -31,6 +31,13 @@ class OnboardingController extends Controller
         $this->redirect($_POST['return_to'] ?? '/onboarding');
     }
 
+    public function groundCrew(): void
+    {
+        Auth::requireLogin();
+        $id = $this->service->createGroundCrewOnboarding($_POST);
+        $this->redirect($id ? '/onboarding/subcontractors#ground-crew-' . $id : ($_POST['return_to'] ?? '/onboarding/subcontractors'));
+    }
+
     public function stage(): void
     {
         Auth::requireLogin();

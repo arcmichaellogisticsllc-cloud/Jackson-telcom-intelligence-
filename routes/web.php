@@ -92,6 +92,7 @@ $router->get('/onboarding/documents', [OnboardingController::class, 'documents']
 $router->get('/onboarding/reviews', [OnboardingController::class, 'reviews']);
 $router->get('/onboarding/metrics', [OnboardingController::class, 'metrics']);
 $router->post('/onboarding/rebuild', [OnboardingController::class, 'rebuild']);
+$router->post('/onboarding/ground-crew', [OnboardingController::class, 'groundCrew']);
 $router->post('/onboarding/stage', [OnboardingController::class, 'stage']);
 $router->post('/onboarding/review', [OnboardingController::class, 'review']);
 $router->post('/onboarding/document', [OnboardingController::class, 'document']);
