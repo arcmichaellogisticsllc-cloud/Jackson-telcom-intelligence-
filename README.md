@@ -2058,6 +2058,28 @@ Supported datasets:
 
 The importer always creates raw signal items and signal records first, tags rows as `import_source=real_hunt`, records source URLs/confidence/review status in `real_hunt_import_records`, and creates Data Quality Issues for low-confidence, incomplete, or non-verified records.
 
+After importing, run research enrichment:
+
+```bash
+php scripts/enrich_real_hunt.php
+```
+
+The enrichment pass creates review-gated workflow context from imported public research:
+
+- Signal Quality Profiles
+- Source Quality Profiles
+- Work / Capacity / Need / Influence classifications
+- Acquisition Scores and specialized watchlists
+- Strategic account onboarding gaps
+- Subcontractor prospect onboarding gaps
+- Capacity intelligence with unknown crew/equipment counts
+- Opportunity alignment, pursuit context, and watch posture
+- Market onboarding/readiness context
+- Executive packages for review
+- Data review queue items
+
+The enrichment pass does **not** create call notes, completed outreach, communication history, or Daily Actions.
+
 Rules:
 
 - Do not add fake records to hit count targets.
@@ -2065,6 +2087,7 @@ Rules:
 - Do not mark capacity providers Approved from public research alone.
 - Do not bypass Signal Quality or Data Quality Review.
 - Treat contacts and workforce rows without public names as relationship/workforce targets until manually verified.
+- Treat enrichment as research context, not proof of relationship, approval, capacity, or pursuit readiness.
 
 First-pass results and shortfalls are documented in `docs/first-pass-real-hunt-report.md`.
 

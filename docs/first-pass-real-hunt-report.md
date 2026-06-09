@@ -105,6 +105,39 @@ The importer creates Data Quality Issues when:
 
 Most contact and workforce rows intentionally create review items because the first pass should not fabricate people or direct contact details.
 
+## Research Enrichment Pass
+
+Run:
+
+```bash
+php scripts/enrich_real_hunt.php
+```
+
+The enrichment pass converts imported public research into review-gated workflow context. It does not create call notes, completed outreach, communication history, or Daily Actions.
+
+Latest enrichment output:
+
+| Enrichment Area | Count |
+| --- | ---: |
+| Signal Quality Profiles | 167 |
+| Source Quality Profiles | 9 |
+| Strategic Account Onboarding | 5 |
+| Organization Work/Capacity/Influence Context | 75 |
+| Capacity Provider Prospect Context | 20 |
+| Opportunity Pursuit Context | 15 |
+| Market Onboarding Context | 10 |
+| Relationship Role Target Context | 20 |
+| Executive Review Packages | 24 |
+| Data Review Queue Items | 112 |
+
+Important boundaries:
+
+- Capacity providers remain prospects.
+- Crew counts and equipment counts remain unknown unless public/verified.
+- Relationship and workforce rows without public names remain role targets.
+- Opportunity decisions remain watch/research/selective context until relationship and capacity fit are verified.
+- Executive packages are review packages, not proof that outreach or qualification happened.
+
 ## Next Recommended Hunting Wave
 
 1. Manually verify named public contacts for strategic accounts in Georgia, Michigan, and Houston.

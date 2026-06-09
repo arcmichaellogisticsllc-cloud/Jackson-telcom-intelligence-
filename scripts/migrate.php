@@ -101,6 +101,9 @@ $columns = [
         'recent_signal_count' => 'INTEGER DEFAULT 0',
         'recommended_action' => 'TEXT',
     ],
+    'executive_packages' => [
+        'source_module' => 'TEXT',
+    ],
 ];
 
 foreach ($columns as $table => $defs) {
