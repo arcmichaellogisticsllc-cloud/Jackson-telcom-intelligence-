@@ -159,10 +159,22 @@ textarea { min-height: 90px; resize: vertical; }
 .workspace-link { border: 1px solid var(--line); background: #fff; padding: 15px; border-left: 4px solid var(--blue); }
 .workspace-link strong, .workspace-link span { display: block; }
 .workspace-link span { color: var(--muted); font-size: 12px; font-weight: 800; margin-top: 4px; }
+.workspace-link small { display: block; color: var(--muted); margin-top: 10px; font-weight: 800; }
 .action-first { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
 .action-first div { border: 1px solid var(--line); background: #fff; padding: 16px; }
 .action-first span { display: block; color: var(--blue-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
 .action-first p { margin: 6px 0 0; color: var(--muted); }
+.action-first-grid article { border: 1px solid var(--line); background: #fff; padding: 16px; }
+.action-first-grid span { display: block; color: var(--blue-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.action-first-grid p { margin: 6px 0 0; color: var(--muted); }
+.detail-list { display: grid; grid-template-columns: 150px 1fr; gap: 8px 12px; margin: 0; }
+.detail-list dt { color: var(--blue-dark); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.detail-list dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+.stack-list { display: grid; gap: 10px; }
+.stack-list article { border: 1px solid var(--line); background: var(--bg); padding: 12px; border-left: 4px solid var(--blue); }
+.stack-list strong, .stack-list small { display: block; }
+.stack-list p { margin: 6px 0; color: var(--muted); }
+.status-badge { display: inline-flex; align-items: center; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 3px 7px; font-size: 12px; font-weight: 900; }
 .command-priorities { border-left: 6px solid var(--blue); }
 .priority-list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .priority-list article { border: 1px solid var(--line); background: var(--bg); padding: 12px; min-height: 160px; }

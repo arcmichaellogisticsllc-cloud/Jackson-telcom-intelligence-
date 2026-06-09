@@ -2080,6 +2080,14 @@ The enrichment pass creates review-gated workflow context from imported public r
 
 The enrichment pass does **not** create call notes, completed outreach, communication history, or Daily Actions.
 
+Explore imported/enriched research in the UI:
+
+- `/real-intelligence`
+- `/real-intelligence/dataset?dataset=organizations`
+- `/real-intelligence/detail?id=1`
+
+The Real Intelligence Explorer is read-only. It shows source evidence, raw import payload, linked signal quality, created business record, enrichment trail, Data Quality / Data Review items, and executive review packages. It is intended for source inspection and human review before records are promoted into trusted operating workflows.
+
 Rules:
 
 - Do not add fake records to hit count targets.

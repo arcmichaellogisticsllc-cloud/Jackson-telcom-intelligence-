@@ -29,7 +29,7 @@
         'WORK' => ['/acquisition-command' => 'Work Intelligence','/opportunities' => 'Opportunities','/pursuits' => 'Pursuits','/preconstruction' => 'Preconstruction'],
         'CAPACITY' => ['/capacity-radar' => 'Capacity Radar','/subcontractor-acquisition' => 'Subcontractor Network','/workforce-intelligence' => 'Workforce Intelligence','/targets' => 'Strategic Partners'],
         'RELATIONSHIPS' => ['/contacts' => 'Contacts','/organizations' => 'Organizations','/strategic-account-intelligence' => 'Strategic Accounts','/communications' => 'Communications','/relationship-graph' => 'Relationship Graph'],
-        'MARKET' => ['/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence'],
+        'MARKET' => ['/real-intelligence' => 'Real Intelligence','/signals' => 'Signals','/escalations' => 'Escalations','/watchlists' => 'Watchlists','/market-intelligence' => 'Market Intelligence','/competitive-intelligence' => 'Competitive Intelligence'],
         'GROWTH' => ['/demand' => 'Demand','/traffic' => 'Content','/outreach' => 'Distribution','/demand-briefing' => 'Channels'],
         'ONBOARDING' => ['/onboarding' => 'Overview','/onboarding/subcontractors' => 'Subcontractors','/onboarding/workforce' => 'Workforce','/onboarding/strategic-accounts' => 'Strategic Accounts','/onboarding/markets' => 'Markets','/onboarding/documents' => 'Documents','/onboarding/reviews' => 'Reviews','/onboarding/metrics' => 'Metrics'],
         'OPERATIONS' => ['/syncerp-integration' => 'SyncERP Integration','/syncerp-integration#packages' => 'Project Packages','/syncerp-integration#readiness' => 'ERP Readiness'],
