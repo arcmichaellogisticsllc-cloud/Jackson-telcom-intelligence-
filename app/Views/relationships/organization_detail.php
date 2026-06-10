@@ -84,6 +84,145 @@ $count = fn($key) => (int)($associationCounts[$key] ?? 0);
       <?php endif; ?>
     </section>
 
+    <section class="panel org-action-workbench">
+      <div class="panel-title">
+        <div><p class="eyebrow">Move Forward</p><h2>Create the missing record from this organization</h2></div>
+        <span class="status">Actionable</span>
+      </div>
+      <?php $returnTo = $_SERVER['REQUEST_URI'] ?? ('/organizations/detail?id=' . (int)$organization['id']); ?>
+      <div class="org-action-grid">
+        <details>
+          <summary>Add Contact</summary>
+          <form method="post" action="/organizations/actions/contact" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>First Name <input name="first_name"></label>
+              <label>Last Name <input name="last_name"></label>
+              <label>Title <input name="title" placeholder="Project Manager, OSP Manager, Owner"></label>
+              <label>Email <input name="email" type="email"></label>
+              <label>Phone <input name="phone"></label>
+              <label>Owner <input name="owner" value="<?= $h($recordPrimaryOwner ?: 'Admin') ?>"></label>
+              <label>Role Type <select name="role_type"><option>Project Manager</option><option>Program Manager</option><option>Construction Manager</option><option>OSP Manager</option><option>Director of Construction</option><option>Broadband Director</option><option>Utility Manager</option><option>Engineering Manager</option><option>Procurement / Vendor Manager</option><option>Owner / President</option><option>Operations Manager</option><option>Foreman / Crew Lead</option></select></label>
+              <label>Access Category <select name="access_category"><option>Project Access</option><option>Prime Access</option><option>Utility Access</option><option>Market Intelligence</option><option>Capacity Access</option><option>Workforce Access</option><option>Future Opportunity</option></select></label>
+              <label>Influence <select name="influence_level"><option>Medium</option><option>High</option><option>Decision Maker</option><option>Low</option></select></label>
+              <label>Relationship <select name="relationship_strength"><option>Developing</option><option>Cold</option><option>Warm</option><option>Strong</option></select></label>
+              <label class="full">Next Action <input name="next_action" value="Log first conversation and confirm role/access."></label>
+              <label class="full">Notes <textarea name="notes" placeholder="Public source, relationship context, or reason this person matters."></textarea></label>
+            </div>
+            <button class="btn" type="submit">Add Contact</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Create Opportunity Watch</summary>
+          <form method="post" action="/organizations/actions/opportunity" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>Name <input name="name" value="<?= $h($organization['name']) ?> opportunity watch"></label>
+              <label>Market <input name="market" value="<?= $h($organization['city'] ?: $organization['state']) ?>"></label>
+              <label>Type <input name="opportunity_type" value="Fiber Backbone Infrastructure"></label>
+              <label>Customer Type <input name="customer_type" value="<?= $h($organization['type'] ?: 'Unknown') ?>"></label>
+              <label>Funding Source <input name="funding_source" value="Unknown"></label>
+              <label>Estimated Value <input name="estimated_value" type="number" min="0"></label>
+              <label>Stage <select name="stage"><option>Intelligence</option><option>Qualified</option><option>Pursuit</option><option>Proposal</option><option>Negotiation</option></select></label>
+              <label>Owner <input name="owner" value="<?= $h($recordPrimaryOwner ?: 'Admin') ?>"></label>
+              <label class="full">Next Action <input name="next_action" value="Validate work scope, timing, decision maker, and capacity fit."></label>
+              <label class="full">Notes <textarea name="notes" placeholder="Evidence, source, timing, or open questions."></textarea></label>
+            </div>
+            <button class="btn" type="submit">Create Watch</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Create Capacity Profile</summary>
+          <form method="post" action="/organizations/actions/capacity-profile" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>Profile Name <input name="profile_name" value="<?= $h($organization['name']) ?> Capacity Profile"></label>
+              <label>Profile Type <select name="profile_type"><option>Subcontractor</option><option>Vendor</option><option>Equipment Provider</option><option>Specialty Provider</option><option>Internal</option></select></label>
+              <label>Market <input name="market" value="<?= $h($organization['city'] ?? '') ?>"></label>
+              <label>State <input name="state" value="<?= $h($organization['state'] ?? '') ?>"></label>
+              <label>Owner <input name="owner" value="<?= $h($recordPrimaryOwner ?: 'Admin') ?>"></label>
+              <label>States Served <input name="states_served" value="<?= $h($organization['state'] ?? '') ?>"></label>
+              <label>Aerial Crews <input name="aerial_crews" type="number" min="0" value="0"></label>
+              <label>Underground Crews <input name="underground_crews" type="number" min="0" value="0"></label>
+              <label>Fiber Splicing Crews <input name="fiber_splicing_crews" type="number" min="0" value="0"></label>
+              <label>Directional Boring Crews <input name="directional_boring_crews" type="number" min="0" value="0"></label>
+              <label>Make Ready Crews <input name="make_ready_crews" type="number" min="0" value="0"></label>
+              <label>Inspection Crews <input name="inspection_crews" type="number" min="0" value="0"></label>
+              <label class="full">Notes <textarea name="notes" placeholder="Coverage, equipment, crew assumptions, or source notes."></textarea></label>
+            </div>
+            <button class="btn" type="submit">Create Capacity Profile</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Start Subcontractor Onboarding</summary>
+          <form method="post" action="/organizations/actions/onboarding" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>Company Name <input name="company_name" value="<?= $h($organization['name']) ?>"></label>
+              <label>Primary Contact <input name="primary_contact"></label>
+              <label>Contact Title <input name="contact_title"></label>
+              <label>Email <input name="email" type="email"></label>
+              <label>Phone <input name="phone" value="<?= $h($organization['phone'] ?? '') ?>"></label>
+              <label>States Served <input name="states_served" value="<?= $h($organization['state'] ?? '') ?>"></label>
+              <label>Markets Served <input name="markets_served" value="<?= $h($organization['city'] ?? '') ?>"></label>
+              <label>Services Offered <input name="services_offered" placeholder="Underground, boring, splicing"></label>
+              <label>Total Crews <input name="crew_count" type="number" min="0" value="0"></label>
+              <label>Available Crews <input name="available_crew_count" type="number" min="0" value="0"></label>
+              <label class="full">Notes <textarea name="notes" placeholder="What needs to be verified before approval?"></textarea></label>
+            </div>
+            <button class="btn" type="submit">Start Onboarding</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Add Data Quality Issue</summary>
+          <form method="post" action="/organizations/actions/data-quality" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>Issue Type <select name="issue_type"><option>Missing Contact Info</option><option>Duplicate Entity</option><option>Low Confidence Signal</option><option>Disputed Classification</option><option>Source Reliability Concern</option><option>Conflicting Data</option><option>Missing Region</option><option>Missing Owner</option><option>Other</option></select></label>
+              <label>Severity <select name="severity"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></label>
+              <label>Assigned Owner <input name="assigned_owner" value="<?= $h($recordPrimaryOwner ?: 'Admin') ?>"></label>
+              <label class="full">Title <input name="title" value="Organization needs data review"></label>
+              <label class="full">Description <textarea name="description" placeholder="What is missing, conflicting, stale, or untrusted?"></textarea></label>
+            </div>
+            <button class="btn" type="submit">Create Issue</button>
+          </form>
+        </details>
+
+        <details>
+          <summary>Add Source Evidence</summary>
+          <form method="post" action="/organizations/actions/source-evidence" class="form-card">
+            <input type="hidden" name="organization_id" value="<?= (int)$organization['id'] ?>">
+            <input type="hidden" name="region_id" value="<?= (int)($organization['region_id'] ?? 0) ?>">
+            <input type="hidden" name="return_to" value="<?= $h($returnTo) ?>">
+            <div class="form-grid">
+              <label>Source URL <input name="source_url" type="url" required></label>
+              <label>Source Name <input name="source_name" value="Manual source"></label>
+              <label>Source Type <select name="source_type"><option>Official Company Page</option><option>Official Government Source</option><option>Contractor Website</option><option>Directory</option><option>Manual Review</option></select></label>
+              <label>Confidence <input name="confidence_score" type="number" min="0" max="100" value="60"></label>
+              <label>Review Status <select name="review_status"><option>Pending Review</option><option>Verified</option><option>Needs Review</option><option>Rejected</option></select></label>
+              <label>Classification <select name="classification"><option value="">No classification change</option><?php foreach ($classificationOptions as $classification): ?><option><?= $h($classification) ?></option><?php endforeach; ?></select></label>
+              <label class="full">Evidence Summary <textarea name="evidence_summary" placeholder="What does this source prove about work, capacity, or influence?"></textarea></label>
+            </div>
+            <button class="btn" type="submit">Add Evidence</button>
+          </form>
+        </details>
+      </div>
+    </section>
+
     <section class="grid three" id="intelligence">
       <article class="panel intel-card">
         <p class="eyebrow">Work Fit</p>

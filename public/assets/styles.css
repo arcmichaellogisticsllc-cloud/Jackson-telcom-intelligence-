@@ -235,6 +235,14 @@ textarea { min-height: 90px; resize: vertical; }
 .intel-card h2 { margin: 0; font-size: 20px; }
 .intel-card strong { font-size: 34px; color: var(--ink); }
 .intel-card p { margin: 0; color: var(--muted); }
+.org-action-workbench { border-left: 6px solid var(--blue); }
+.org-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.org-action-grid details { border: 1px solid var(--line); background: var(--bg); }
+.org-action-grid summary { cursor: pointer; list-style: none; padding: 12px; color: var(--blue-dark); font-weight: 900; }
+.org-action-grid summary::-webkit-details-marker { display: none; }
+.org-action-grid summary::after { content: "+"; float: right; color: var(--blue); }
+.org-action-grid details[open] summary::after { content: "-"; }
+.org-action-grid form { margin: 0; padding: 0 12px 12px; background: transparent; border: 0; }
 .association-rail { display: grid; gap: 9px; }
 .association-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--bg); color: inherit; text-decoration: none; padding: 10px; }
 .association-row span { color: var(--muted); font-size: 12px; font-weight: 900; }
@@ -273,7 +281,7 @@ textarea { min-height: 90px; resize: vertical; }
   .main { margin-left: 0; }
   .topbar { display: grid; gap: 12px; }
   .global-search, .record-actions { min-width: 0; width: 100%; }
-  .metrics, .region-grid, .grid.two, .grid.three, .grid.five, .form-grid, .checklist-grid, .signal-metrics, .convert-grid, .module-grid, .action-first, .action-first-grid, .mission-lanes, .workflow-rail, .workflow-status-strip, .workflow-queue-grid, .priority-list, .command-widget-grid.cols-4, .command-widget-grid.cols-3, .region-strip, .health-grid, .command-hero, .record-header, .list-toolbar, .list-controls, .workspace-link-grid, .org-workspace { grid-template-columns: 1fr; }
+  .metrics, .region-grid, .grid.two, .grid.three, .grid.five, .form-grid, .checklist-grid, .signal-metrics, .convert-grid, .module-grid, .action-first, .action-first-grid, .mission-lanes, .workflow-rail, .workflow-status-strip, .workflow-queue-grid, .priority-list, .command-widget-grid.cols-4, .command-widget-grid.cols-3, .region-strip, .health-grid, .command-hero, .record-header, .list-toolbar, .list-controls, .workspace-link-grid, .org-workspace, .org-action-grid { grid-template-columns: 1fr; }
   .org-left-rail, .org-right-rail { position: static; }
   .operator-note { align-items: flex-start; flex-direction: column; gap: 4px; }
   .record-action-form { position: static; width: 100%; box-shadow: none; }

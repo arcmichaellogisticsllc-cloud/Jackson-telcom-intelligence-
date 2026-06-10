@@ -256,6 +256,12 @@ $router->get('/relationship-graph/great-lakes', [RelationshipController::class, 
 $router->get('/relationship-graph/southwest', [RelationshipController::class, 'southwest']);
 $router->get('/contacts/detail', [RelationshipController::class, 'contactDetail']);
 $router->get('/organizations/detail', [RelationshipController::class, 'organizationDetail']);
+$router->post('/organizations/actions/contact', [RelationshipController::class, 'createOrganizationContact']);
+$router->post('/organizations/actions/opportunity', [RelationshipController::class, 'createOrganizationOpportunity']);
+$router->post('/organizations/actions/capacity-profile', [RelationshipController::class, 'createOrganizationCapacityProfile']);
+$router->post('/organizations/actions/onboarding', [RelationshipController::class, 'startOrganizationOnboarding']);
+$router->post('/organizations/actions/data-quality', [RelationshipController::class, 'createOrganizationDataQualityIssue']);
+$router->post('/organizations/actions/source-evidence', [RelationshipController::class, 'addOrganizationSourceEvidence']);
 $router->post('/relationship-signals/convert', [RelationshipController::class, 'convertSignal']);
 $router->post('/relationship-actions/complete', [RelationshipController::class, 'completeAction']);
 $router->get('/organizations', [CrudController::class, 'organizations']);

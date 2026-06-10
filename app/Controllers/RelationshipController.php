@@ -3,9 +3,11 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Audit;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
+use App\Services\OnboardingService;
 use App\Services\RelationshipIntelligenceService;
 
 class RelationshipController extends Controller
@@ -93,6 +95,227 @@ class RelationshipController extends Controller
         Database::connection()->prepare('UPDATE relationship_actions SET status = ?, outcome = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$_POST['status'] ?? 'Completed', $_POST['outcome'] ?? '', $id]);
         RecommendationEngine::regenerate();
         $this->redirect($_POST['return_to'] ?? '/relationship-graph');
+    }
+
+    public function createOrganizationContact(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $first = trim((string)($_POST['first_name'] ?? ''));
+        $last = trim((string)($_POST['last_name'] ?? ''));
+        if ($first === '' && $last === '') {
+            $this->flashAndReturn('Contact needs a first or last name.');
+        }
+        $stmt = $db->prepare('INSERT INTO contacts (first_name, last_name, title, email, phone, organization_id, region_id, relationship_owner, influence_level, relationship_strength, next_action, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $first,
+            $last,
+            trim((string)($_POST['title'] ?? '')),
+            trim((string)($_POST['email'] ?? '')),
+            trim((string)($_POST['phone'] ?? '')),
+            (int)$organization['id'],
+            (int)($organization['region_id'] ?? 0),
+            trim((string)($_POST['owner'] ?? $organization['primary_owner'] ?? 'Admin')),
+            trim((string)($_POST['influence_level'] ?? 'Medium')),
+            trim((string)($_POST['relationship_strength'] ?? 'Developing')),
+            trim((string)($_POST['next_action'] ?? 'Log first conversation and confirm role/access.')),
+            trim((string)($_POST['notes'] ?? 'Created from organization workspace.')),
+        ]);
+        $contactId = (int)$db->lastInsertId();
+        $roleType = trim((string)($_POST['role_type'] ?? ''));
+        $accessCategory = trim((string)($_POST['access_category'] ?? ''));
+        if ($roleType !== '' || $accessCategory !== '') {
+            $db->prepare('INSERT INTO contact_role_access_profiles (contact_id, organization_id, role_type, access_category, confidence_score, source_url, review_status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                ->execute([$contactId, (int)$organization['id'], $roleType ?: 'Needs Review', $accessCategory ?: 'Needs Review', 50, trim((string)($_POST['source_url'] ?? '')), 'Pending Review']);
+        }
+        $this->activity($db, 'contact', $contactId, $organization['region_id'] ?? null, 'Created', 'Contact added from organization workspace', trim($first . ' ' . $last));
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Contact Added', 'Contact added', trim($first . ' ' . $last));
+        Audit::log('organization_contact_created', 'contact', $contactId, 'Success', 'Created from organization workspace.');
+        RecommendationEngine::regenerate();
+        $this->flashAndReturn('Contact added.');
+    }
+
+    public function createOrganizationOpportunity(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $name = trim((string)($_POST['name'] ?? ''));
+        if ($name === '') {
+            $name = ($organization['name'] ?? 'Organization') . ' opportunity watch';
+        }
+        $stmt = $db->prepare('INSERT INTO opportunities (name, organization_id, region_id, market, opportunity_type, customer_type, funding_source, estimated_value, estimated_margin, probability, stage, capacity_required, decision_makers, next_action, owner, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $name,
+            (int)$organization['id'],
+            (int)($organization['region_id'] ?? 0),
+            trim((string)($_POST['market'] ?? ($organization['city'] ?: $organization['state'] ?? ''))),
+            trim((string)($_POST['opportunity_type'] ?? 'Fiber Backbone Infrastructure')),
+            trim((string)($_POST['customer_type'] ?? ($organization['type'] ?: 'Unknown'))),
+            trim((string)($_POST['funding_source'] ?? 'Unknown')),
+            $this->nullableNumber($_POST['estimated_value'] ?? null),
+            $this->nullableNumber($_POST['estimated_margin'] ?? null),
+            $this->nullableNumber($_POST['probability'] ?? 20),
+            trim((string)($_POST['stage'] ?? 'Intelligence')),
+            trim((string)($_POST['capacity_required'] ?? 'Needs review')),
+            trim((string)($_POST['decision_makers'] ?? 'Needs relationship mapping')),
+            trim((string)($_POST['next_action'] ?? 'Validate work scope, timing, decision maker, and capacity fit.')),
+            trim((string)($_POST['owner'] ?? $organization['primary_owner'] ?? 'Admin')),
+            trim((string)($_POST['notes'] ?? 'Created from organization workspace as review-gated work intelligence.')),
+        ]);
+        $opportunityId = (int)$db->lastInsertId();
+        $this->activity($db, 'opportunity', $opportunityId, $organization['region_id'] ?? null, 'Created', 'Opportunity watch created from organization workspace', $name);
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Opportunity Watch', 'Opportunity watch created', $name);
+        Audit::log('organization_opportunity_created', 'opportunity', $opportunityId, 'Success', 'Created from organization workspace.');
+        (new \App\Services\OpportunityPursuitService())->rebuild();
+        RecommendationEngine::regenerate();
+        $this->flashAndReturn('Opportunity watch created.');
+    }
+
+    public function createOrganizationCapacityProfile(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $profileName = trim((string)($_POST['profile_name'] ?? '')) ?: ($organization['name'] . ' Capacity Profile');
+        $stmt = $db->prepare('INSERT INTO capacity_profiles (profile_name, profile_type, organization_id, region_id, market, state, owner, status, primary_mobilization_readiness, states_served, markets_served, notes) VALUES (?, ?, ?, ?, ?, ?, ?, "Prospect", "Needs Review", ?, ?, ?)');
+        $stmt->execute([
+            $profileName,
+            trim((string)($_POST['profile_type'] ?? 'Subcontractor')),
+            (int)$organization['id'],
+            (int)($organization['region_id'] ?? 0),
+            trim((string)($_POST['market'] ?? ($organization['city'] ?? ''))),
+            trim((string)($_POST['state'] ?? ($organization['state'] ?? ''))),
+            trim((string)($_POST['owner'] ?? $organization['primary_owner'] ?? 'Admin')),
+            trim((string)($_POST['states_served'] ?? ($organization['state'] ?? ''))),
+            trim((string)($_POST['markets_served'] ?? ($organization['city'] ?? ''))),
+            trim((string)($_POST['notes'] ?? 'Created from organization workspace. Review required before approval.')),
+        ]);
+        $profileId = (int)$db->lastInsertId();
+        $db->prepare('INSERT INTO capacity_trust_scores (capacity_profile_id, trust_category) VALUES (?, "Developing")')->execute([$profileId]);
+        foreach ($this->disciplineInputs() as $discipline => $count) {
+            if ($count <= 0) {
+                continue;
+            }
+            $db->prepare('INSERT INTO capacity_discipline_counts (capacity_profile_id, discipline, total_crews, available_now, available_30_days, available_60_days, unknown_count) VALUES (?, ?, ?, ?, ?, ?, 0)')
+                ->execute([$profileId, $discipline, $count, $count, $count, $count]);
+        }
+        $this->activity($db, 'capacity_profile', $profileId, $organization['region_id'] ?? null, 'Created', 'Capacity profile created from organization workspace', $profileName);
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Capacity Profile', 'Capacity profile created', $profileName);
+        Audit::log('organization_capacity_profile_created', 'capacity_profile', $profileId, 'Success', 'Created from organization workspace.');
+        RecommendationEngine::regenerate();
+        $this->flashAndReturn('Capacity profile created.');
+    }
+
+    public function startOrganizationOnboarding(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $existing = $db->prepare('SELECT id FROM subcontractors WHERE organization_id = ? ORDER BY id LIMIT 1');
+        $existing->execute([(int)$organization['id']]);
+        $subcontractorId = (int)$existing->fetchColumn();
+        if (!$subcontractorId) {
+            $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, website, phone, email, primary_contact, contact_title, states_served, markets_served, services_offered, crew_count, available_crew_count, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Prospect", "Unknown", ?)')
+                ->execute([
+                    (int)$organization['id'],
+                    (int)($organization['region_id'] ?? 0),
+                    trim((string)($_POST['company_name'] ?? $organization['name'])),
+                    trim((string)($_POST['website'] ?? $organization['website'] ?? '')),
+                    trim((string)($_POST['phone'] ?? $organization['phone'] ?? '')),
+                    trim((string)($_POST['email'] ?? '')),
+                    trim((string)($_POST['primary_contact'] ?? '')),
+                    trim((string)($_POST['contact_title'] ?? '')),
+                    trim((string)($_POST['states_served'] ?? $organization['state'] ?? '')),
+                    trim((string)($_POST['markets_served'] ?? $organization['city'] ?? '')),
+                    trim((string)($_POST['services_offered'] ?? 'Needs qualification')),
+                    (int)($_POST['crew_count'] ?? 0),
+                    (int)($_POST['available_crew_count'] ?? 0),
+                    trim((string)($_POST['notes'] ?? 'Created from organization workspace for onboarding review.')),
+                ]);
+            $subcontractorId = (int)$db->lastInsertId();
+            $this->activity($db, 'subcontractor', $subcontractorId, $organization['region_id'] ?? null, 'Created', 'Subcontractor prospect created from organization workspace', $organization['name'] ?? '');
+        }
+        $onboardingId = (new OnboardingService())->ensureSubcontractorOnboarding($subcontractorId);
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Onboarding Started', 'Subcontractor onboarding started', 'Onboarding #' . $onboardingId);
+        Audit::log('organization_onboarding_started', 'subcontractor_onboarding', $onboardingId, 'Success', 'Started from organization workspace.');
+        RecommendationEngine::regenerate();
+        $this->flashAndReturn($onboardingId ? 'Subcontractor onboarding started.' : 'Unable to start onboarding.');
+    }
+
+    public function createOrganizationDataQualityIssue(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $title = trim((string)($_POST['title'] ?? 'Organization needs data review'));
+        $stmt = $db->prepare('INSERT INTO data_quality_issues (issue_type, linked_record_type, linked_record_id, region_id, title, description, severity, status, assigned_owner) VALUES (?, "organization", ?, ?, ?, ?, ?, "Open", ?)');
+        $stmt->execute([
+            trim((string)($_POST['issue_type'] ?? 'Other')),
+            (int)$organization['id'],
+            (int)($organization['region_id'] ?? 0),
+            $title,
+            trim((string)($_POST['description'] ?? 'Created from organization workspace.')),
+            trim((string)($_POST['severity'] ?? 'Medium')),
+            trim((string)($_POST['assigned_owner'] ?? $organization['primary_owner'] ?? 'Admin')),
+        ]);
+        $issueId = (int)$db->lastInsertId();
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Data Quality', 'Data quality issue created', $title);
+        Audit::log('organization_data_quality_issue_created', 'data_quality_issue', $issueId, 'Success', 'Created from organization workspace.');
+        $this->flashAndReturn('Data quality issue created.');
+    }
+
+    public function addOrganizationSourceEvidence(): void
+    {
+        Auth::requireLogin();
+        $db = Database::connection();
+        $organization = $this->organizationForAction($db);
+        if (!$organization) {
+            $this->redirect('/organizations');
+        }
+        $sourceUrl = trim((string)($_POST['source_url'] ?? ''));
+        if ($sourceUrl === '') {
+            $this->flashAndReturn('Source URL is required.');
+        }
+        $stmt = $db->prepare('INSERT INTO source_evidence_records (linked_record_type, linked_record_id, source_url, source_name, source_type, confidence_score, evidence_summary, review_status) VALUES ("organization", ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            (int)$organization['id'],
+            $sourceUrl,
+            trim((string)($_POST['source_name'] ?? 'Manual source')),
+            trim((string)($_POST['source_type'] ?? 'Manual Review')),
+            max(0, min(100, (int)($_POST['confidence_score'] ?? 60))),
+            trim((string)($_POST['evidence_summary'] ?? 'Added from organization workspace.')),
+            trim((string)($_POST['review_status'] ?? 'Pending Review')),
+        ]);
+        $evidenceId = (int)$db->lastInsertId();
+        $classification = trim((string)($_POST['classification'] ?? ''));
+        if ($classification !== '') {
+            $exists = $db->prepare('SELECT id FROM organization_classifications WHERE organization_id = ? AND classification = ? LIMIT 1');
+            $exists->execute([(int)$organization['id'], $classification]);
+            if (!$exists->fetchColumn()) {
+                $db->prepare('INSERT INTO organization_classifications (organization_id, classification, confidence_score, source_url, review_status) VALUES (?, ?, ?, ?, ?)')
+                    ->execute([(int)$organization['id'], $classification, max(0, min(100, (int)($_POST['confidence_score'] ?? 60))), $sourceUrl, trim((string)($_POST['review_status'] ?? 'Pending Review'))]);
+            }
+        }
+        $this->activity($db, 'organization', (int)$organization['id'], $organization['region_id'] ?? null, 'Source Evidence', 'Source evidence added', $sourceUrl);
+        Audit::log('organization_source_evidence_added', 'source_evidence', $evidenceId, 'Success', 'Added from organization workspace.');
+        $this->flashAndReturn('Source evidence added.');
     }
 
     private function graph(?string $regionName, string $title, string $subtitle): void
@@ -302,6 +525,55 @@ class RelationshipController extends Controller
         }
         $first = $rows[0];
         return (string)($first[$field] ?? $first['name'] ?? $first['profile_name'] ?? $first['company_name'] ?? 'Review associated records.');
+    }
+
+    private function organizationForAction($db): ?array
+    {
+        $organizationId = (int)($_POST['organization_id'] ?? 0);
+        if ($organizationId <= 0) {
+            return null;
+        }
+        $stmt = $db->prepare('SELECT o.*, r.name region_name FROM organizations o LEFT JOIN regions r ON r.id = o.region_id WHERE o.id = ? LIMIT 1');
+        $stmt->execute([$organizationId]);
+        $organization = $stmt->fetch();
+        if (!$organization) {
+            return null;
+        }
+        Auth::requireRegionAccess($organization['region_id'] ?? null);
+        return $organization;
+    }
+
+    private function activity($db, string $entityType, int $entityId, mixed $regionId, string $activityType, string $title, string $notes = ''): void
+    {
+        $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)')
+            ->execute([$entityType, $entityId, $regionId ?: null, $activityType, $title, $notes, Auth::user()['name'] ?? 'Admin']);
+    }
+
+    private function nullableNumber(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        return is_numeric($value) ? $value : null;
+    }
+
+    private function disciplineInputs(): array
+    {
+        return [
+            'Aerial' => (int)($_POST['aerial_crews'] ?? 0),
+            'Underground' => (int)($_POST['underground_crews'] ?? 0),
+            'Fiber Splicing' => (int)($_POST['fiber_splicing_crews'] ?? 0),
+            'Directional Boring' => (int)($_POST['directional_boring_crews'] ?? 0),
+            'Make Ready' => (int)($_POST['make_ready_crews'] ?? 0),
+            'Inspection' => (int)($_POST['inspection_crews'] ?? 0),
+            'QC' => (int)($_POST['qc_crews'] ?? 0),
+        ];
+    }
+
+    private function flashAndReturn(string $message): void
+    {
+        $_SESSION['flash'] = $message;
+        $this->redirect($_POST['return_to'] ?? '/organizations');
     }
 
     private function profileDetail($db, int $profileId): array
