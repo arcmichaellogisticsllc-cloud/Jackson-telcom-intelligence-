@@ -18,6 +18,7 @@ use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OnboardingService;
+use App\Services\OwnerModelService;
 use App\Services\OpportunityPursuitService;
 use App\Services\OperationalMaturityService;
 use App\Services\PlatformReviewService;
@@ -31,7 +32,133 @@ use App\Services\RelationshipIntelligenceService;
 $db = Database::connection();
 $db->exec('PRAGMA foreign_keys = OFF');
 $db->beginTransaction();
-$seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'demo'));
+$seedMode = strtolower((string)(getenv('JIP_SEED_MODE') ?: 'production'));
+$demoAllowed = in_array($seedMode, ['demo','training'], true);
+$productionMarker = __DIR__ . '/../../storage/production_data_mode';
+$hasRealData = (int)$db->query("SELECT COALESCE((SELECT COUNT(*) FROM real_hunt_import_records),0) + COALESCE((SELECT COUNT(*) FROM organizations),0) + COALESCE((SELECT COUNT(*) FROM contacts),0) + COALESCE((SELECT COUNT(*) FROM subcontractors),0) + COALESCE((SELECT COUNT(*) FROM opportunities),0)")->fetchColumn();
+if ($demoAllowed && (is_file($productionMarker) || $hasRealData > 0) && getenv('JIP_ALLOW_DEMO_SEED') !== 'YES') {
+    $db->rollBack();
+    $db->exec('PRAGMA foreign_keys = ON');
+    fwrite(STDERR, "FAIL demo seed blocked. Existing production/real operating data was detected.\n");
+    fwrite(STDERR, "Use JIP_SEED_MODE=production for safe baseline config, or set JIP_ALLOW_DEMO_SEED=YES only on a throwaway local database.\n");
+    exit(1);
+}
+
+if (in_array($seedMode, ['production', 'minimal'], true)) {
+    $db->commit();
+    $db->exec('PRAGMA foreign_keys = ON');
+    seedProductionBaseline($db);
+    echo "Seeded minimal production baseline without deleting operating data: regions, users, capacity targets, operator modes, platform health definitions, connector registry, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
+    exit;
+}
+
+function seedProductionBaseline(PDO $db): void
+{
+    $regionRows = [
+        'National' => ['National', 'National', 'National', 'admin@jacksontelcom.com', '', '', 'National', 'National / Multi-region', 'National', 'Active', 'National layer for organizations, content, signals, and opportunities that span multiple theaters.', 82, 64, 66, 58, 62],
+        'Southeast' => ['Southeast', 'Mike', 'Mike', 'mike@jacksontlcom.com', 'Atlanta', 'GA', 'GA, AL, FL, TN, NC, SC', 'GA, AL, FL, TN, NC, SC', 'Tier 1', 'Active', 'Tier 1 growth theater for broadband, aerial, underground, splicing, and restoration capacity.', 76, 58, 61, 64, 54],
+        'Great Lakes' => ['Great Lakes', 'Ron', 'Ron', 'ron@jacksontelcom.com', 'Detroit', 'MI', 'MI, OH, IN, WI, IL', 'MI, OH, IN, WI, IL', 'Tier 1', 'Active', 'Tier 1 relationship and opportunity theater across Great Lakes broadband and utility markets.', 72, 55, 63, 60, 52],
+        'Southwest' => ['Southwest', 'Mike/Ron Shared', 'Mike/Ron Shared', '', 'Houston', 'TX', 'TX, OK, LA, NM', 'TX, OK, LA, NM', 'Tier 2', 'Expansion', 'Tier 2 Houston-centered capacity and traffic foundation theater.', 38, 34, 28, 32, 26],
+    ];
+    $regions = [];
+    foreach ($regionRows as $key => $row) {
+        $existing = $db->prepare('SELECT id FROM regions WHERE name = ? LIMIT 1');
+        $existing->execute([$key]);
+        $id = (int)$existing->fetchColumn();
+        if (!$id) {
+            $stmt = $db->prepare('INSERT INTO regions (name, owner, owner_name, owner_email, hub_city, hub_state, states, states_covered, priority_tier, operating_status, strategic_notes, coverage_score, capacity_score, relationship_score, opportunity_score, traffic_score, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)');
+            $stmt->execute($row);
+            $id = (int)$db->lastInsertId();
+        }
+        $regions[$key] = $id;
+    }
+
+    $password = password_hash('password', PASSWORD_DEFAULT);
+    $users = [
+        ['Admin', 'admin@jacksontelcom.com', 'Admin', null],
+        ['Executive', 'executive@jacksontelcom.com', 'Executive', null],
+        ['Mike', 'mike@jacksontlcom.com', 'Mike', $regions['Southeast']],
+        ['Ron', 'ron@jacksontelcom.com', 'Ron', $regions['Great Lakes']],
+        ['Southeast Operator', 'operator@jacksontelcom.com', 'Operator', $regions['Southeast']],
+        ['Southeast Viewer', 'viewer@jacksontelcom.com', 'Viewer', $regions['Southeast']],
+    ];
+    foreach ($users as [$name, $email, $role, $regionId]) {
+        $exists = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $exists->execute([$email]);
+        if ($exists->fetchColumn()) {
+            continue;
+        }
+        $db->prepare('INSERT INTO users (name, email, password_hash, role, region_id, must_change_password) VALUES (?, ?, ?, ?, ?, 1)')
+            ->execute([$name, $email, $password, $role, $regionId]);
+    }
+
+    (new OwnerModelService())->ensureBaseline($db);
+
+    $targets = [
+        'Southeast' => ['Aerial' => 10, 'Underground' => 6, 'Fiber Splicing' => 5, 'Emergency Restoration' => 3, 'Traffic Control' => 3],
+        'Great Lakes' => ['Aerial' => 8, 'Underground' => 5, 'Fiber Splicing' => 4, 'Emergency Restoration' => 3, 'Traffic Control' => 2],
+        'Southwest' => ['Aerial' => 8, 'Underground' => 6, 'Fiber Splicing' => 4, 'Emergency Restoration' => 3, 'Traffic Control' => 3],
+    ];
+    foreach ($targets as $regionName => $services) {
+        foreach ($services as $service => $target) {
+            $exists = $db->prepare('SELECT id FROM capacity_targets WHERE region_id = ? AND service_type = ? LIMIT 1');
+            $exists->execute([$regions[$regionName], $service]);
+            if ($exists->fetchColumn()) {
+                continue;
+            }
+            $db->prepare('INSERT INTO capacity_targets (region_id, service_type, target_crews, active) VALUES (?, ?, ?, 1)')
+                ->execute([$regions[$regionName], $service, $target]);
+        }
+    }
+
+    (new PlatformReviewService())->rebuild();
+
+    $connectorExists = $db->prepare('SELECT id FROM connectors WHERE connector_name = ? LIMIT 1');
+    $connectorExists->execute(['Official Broadband Source Connector']);
+    if (!$connectorExists->fetchColumn()) {
+        $db->prepare('INSERT INTO connectors (connector_name, source_type, run_mode, source_url, status, notes, region_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute(['Official Broadband Source Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'Production connector registry entry. Imported raw items remain review-gated and must pass Signal Quality.', $regions['National'] ?? null]);
+    }
+
+    $tuningRows = [
+        ['Executive top five guardrail', '', '', 'All', null, 72, 5, 1, 'Daily Actions remain executive priorities; recommendations can be broader.'],
+        ['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep Southeast capacity blockers visible.'],
+        ['Great Lakes relationship priority', 'Relationship & Influence', 'Relationship', 'Ron', $regions['Great Lakes'], 68, 3, 1, 'Keep Great Lakes relationship actions visible.'],
+    ];
+    foreach ($tuningRows as $row) {
+        $exists = $db->prepare('SELECT id FROM recommendation_tuning_rules WHERE rule_name = ? LIMIT 1');
+        $exists->execute([$row[0]]);
+        if ($exists->fetchColumn()) {
+            continue;
+        }
+        $db->prepare('INSERT INTO recommendation_tuning_rules (rule_name, source_module, category, owner_scope, region_id, min_priority_score, max_daily_actions, promote_to_daily_action, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)')
+            ->execute($row);
+    }
+
+    $erpRows = [
+        ['Customer','customer_name',1,'project_packages','customer_name','Pending','Required customer handoff field.'],
+        ['Project','package_name',1,'project_packages','package_name','Pending','Future SyncERP project name.'],
+        ['Project','market',1,'project_packages','market','Pending','Confirm market naming with SyncERP import requirements.'],
+        ['Capacity','crews_assigned',1,'capacity_allocation_snapshots','crews_assigned','Pending','Confirm total count vs discipline-level assignment.'],
+        ['Subcontractors','subcontractors_selected',1,'capacity_allocation_snapshots','subcontractors_selected','Pending','Confirm subcontractor entity matching rules.'],
+        ['Margin Forecast','estimated_margin',1,'project_packages','estimated_margin','Pending','Forecast only; not billing/accounting.'],
+        ['Risk','risk_assessment',1,'preconstruction_snapshots','risk_assessment','Pending','Confirm risk format for execution handoff.'],
+        ['Scenario','scenario_selection',0,'preconstruction_snapshots','scenario_selection','Pending','Optional if SyncERP does not consume scenarios.'],
+        ['Relationships','key_contacts',1,'relationship_context_snapshots','key_contacts','Pending','Confirm relationship context handoff format.'],
+        ['Package Metadata','package_status',1,'project_packages','package_status','Pending','Readiness status owned by integration layer.'],
+    ];
+    foreach ($erpRows as $row) {
+        $exists = $db->prepare('SELECT id FROM erp_contract_validation_items WHERE contract_area = ? AND field_name = ? LIMIT 1');
+        $exists->execute([$row[0], $row[1]]);
+        if ($exists->fetchColumn()) {
+            continue;
+        }
+        $db->prepare('INSERT INTO erp_contract_validation_items (contract_area, field_name, required_for_handoff, source_record_type, source_field, validation_status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute($row);
+    }
+
+    file_put_contents(__DIR__ . '/../../storage/production_data_mode', 'production-seed=' . date('c') . PHP_EOL);
+}
 
 foreach (['real_hunt_enrichment_records','real_hunt_import_records','ownership_change_log','audit_logs','password_reset_tokens','connector_run_logs','connectors','data_quality_issues','onboarding_intake_links','onboarding_documents','onboarding_reviews','market_onboarding','strategic_account_onboarding','workforce_onboarding','subcontractor_onboarding','activities','erp_contract_validation_items','recommendation_tuning_rules','operator_pilot_feedback','data_review_items','win_loss_intelligence','competitor_forecasts','competitive_pressure_indexes','competitor_movements','workforce_forecasts','workforce_influence_relationships','workforce_movements','rhythm_compliance_scores','review_instances','operating_rhythms','package_actions','executive_briefs','package_timeline_events','decision_packages','influence_packages','need_packages','capacity_packages','work_packages','executive_packages','competitor_profiles','workforce_profiles','communication_records','strategic_recommendations','regional_dominance_scores','strategic_accounts','ownership_assignments','forecast_records','network_relationships','integration_statuses','preconstruction_snapshots','relationship_context_snapshots','capacity_allocation_snapshots','erp_readiness_profiles','project_packages','platform_health_checks','operator_modes','market_readiness_scores','market_intelligence_profiles','market_intelligence_sources','acquisition_watchlists','acquisition_scores','acquisition_classifications','influence_intelligence','need_intelligence','capacity_intelligence','work_intelligence','learning_insights','lessons_learned','regional_learning_profiles','pursuit_performance_profiles','demand_performance_profiles','hunt_performance_profiles','subcontractor_performance_profiles','relationship_performance_profiles','outcome_records','outreach_outcomes','outreach_scripts','outreach_discovery_questions','outreach_intelligence','daily_actions','regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions','scenario_plans','preconstruction_risks','margin_forecasts','subcontractor_fit_plans','capacity_consumption_plans','bid_decisions','preconstruction_profiles','opportunity_watchlists','opportunity_pursuit_decisions','pursuit_scores','strategic_alignment_profiles','recommended_actions','content_attributions','distribution_plans','content_drafts','content_opportunities','demand_signals','channels','relationship_actions','relationship_risks','relationship_wins','influence_roles','relationship_objectives','relationship_creation_signals','relationship_intelligence_profiles','watchlist_items','source_quality_profiles','signal_quality_profiles','signal_accumulation_profiles','hunt_tasks','hunt_targets','playbook_steps','acquisition_playbooks','hunts','subcontractor_network_scores','subcontractor_documents','subcontractor_compliance_profiles','subcontractor_qualification_scorecards','capacity_trust_scores','capacity_equipment','capacity_discipline_counts','capacity_profiles','regional_capacity_targets','acquisition_targets','raw_signal_items','harvester_runs','signal_sources','outreach_sequences','outreach_targets','content_ideas','keywords','intelligence_records','signals','opportunities','subcontractors','contacts','organizations','users','capacity_targets','regions'] as $table) {
     $db->exec("DELETE FROM {$table}");
@@ -54,7 +181,7 @@ foreach ($regionRows as $key => $row) {
     $regions[$key] = (int)$db->lastInsertId();
 }
 
-$userStmt = $db->prepare('INSERT INTO users (name, email, password_hash, role, region_id) VALUES (?, ?, ?, ?, ?)');
+$userStmt = $db->prepare('INSERT INTO users (name, email, password_hash, role, region_id, must_change_password) VALUES (?, ?, ?, ?, ?, 1)');
 $password = password_hash('password', PASSWORD_DEFAULT);
 $userStmt->execute(['Admin', 'admin@jacksontelcom.com', $password, 'Admin', null]);
 $userStmt->execute(['Executive', 'executive@jacksontelcom.com', $password, 'Executive', null]);
@@ -83,8 +210,8 @@ if (in_array($seedMode, ['production', 'minimal'], true)) {
 
     $tuningStmt = $db->prepare('INSERT INTO recommendation_tuning_rules (rule_name, source_module, category, owner_scope, region_id, min_priority_score, max_daily_actions, promote_to_daily_action, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)');
     $tuningStmt->execute(['Executive top five guardrail', '', '', 'All', null, 72, 5, 1, 'Daily Actions remain executive priorities; recommendations can be broader.']);
-    $tuningStmt->execute(['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep Southeast capacity blockers visible during pilot.']);
-    $tuningStmt->execute(['Great Lakes relationship priority', 'Relationship & Influence', 'Relationship', 'Ron', $regions['Great Lakes'], 68, 3, 1, 'Keep Great Lakes relationship actions visible during pilot.']);
+    $tuningStmt->execute(['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep Southeast capacity blockers visible during operations.']);
+    $tuningStmt->execute(['Great Lakes relationship priority', 'Relationship & Influence', 'Relationship', 'Ron', $regions['Great Lakes'], 68, 3, 1, 'Keep Great Lakes relationship actions visible during operations.']);
 
     $erpStmt = $db->prepare('INSERT INTO erp_contract_validation_items (contract_area, field_name, required_for_handoff, source_record_type, source_field, validation_status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
     foreach ([
@@ -267,7 +394,7 @@ $sourceRows = [
     ['Industry Forum - OSP contractor mentions','Industry Forum','National','','','Outreach','Semi-Automated','','OSP contractor subcontractor discussion','Weekly','Active'],
     ['Facebook Marketplace - telecom equipment national','Facebook Marketplace','National','','','Capacity','Semi-Automated','','bucket truck splicing trailer telecom','Daily','Active'],
     ['Google Business Profile - local contractor reviews','Google Business Profile','National','','','Outreach','Semi-Automated','','fiber contractor Google Business Profile','Monthly','Active'],
-    ['Pilot RSS - FCC broadband news feed','Industry News','National','','','Market','RSS','https://www.fcc.gov/news-events/headlines/rss','broadband infrastructure policy and funding','Weekly','Paused'],
+    ['Operations RSS - FCC broadband news feed','Industry News','National','','','Market','RSS','https://www.fcc.gov/news-events/headlines/rss','broadband infrastructure policy and funding','Weekly','Paused'],
 ];
 $sourceIds = [];
 foreach ($sourceRows as $row) {
@@ -891,27 +1018,27 @@ foreach ($outcomeRows as $index => $row) {
 $feedbackStmt = $db->prepare('INSERT INTO operator_pilot_feedback (owner, region_id, feedback_area, feedback_summary, friction_score, impact_score, status, recommended_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 $feedbackStmt->execute(['Mike', $regions['Southeast'], 'Daily Actions', 'Top actions are useful, but capacity recruiting actions should stay above content review during morning execution.', 38, 84, 'Triaged', 'Tune Southeast capacity actions above demand/content unless demand item is Critical.']);
 $feedbackStmt->execute(['Ron', $regions['Great Lakes'], 'Data Quality', 'Relationship records need fast review when a project manager changes company.', 45, 78, 'New', 'Add job-change signals to weekly relationship review.']);
-$feedbackStmt->execute(['Admin', $regions['National'], 'Security', 'Pilot requires clear role access rules before external team members are added.', 30, 90, 'Planned', 'Validate role/region access before pilot expansion.']);
+$feedbackStmt->execute(['Admin', $regions['National'], 'Security', 'Operations require clear role access rules before external team members are added.', 30, 90, 'Planned', 'Validate role/region access before operational expansion.']);
 
 $qualityStmt = $db->prepare('INSERT INTO data_quality_issues (issue_type, linked_record_type, linked_record_id, region_id, title, description, severity, assigned_owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-$qualityStmt->execute(['Missing Contact Info', 'contact', 1, $regions['Southeast'], 'Comcast Southeast PM missing direct phone', 'Pilot operator should verify the phone number before using this contact for pursuit action.', 'High', 'Mike']);
+$qualityStmt->execute(['Missing Contact Info', 'contact', 1, $regions['Southeast'], 'Comcast Southeast PM missing direct phone', 'Operator should verify the phone number before using this contact for pursuit action.', 'High', 'Mike']);
 $qualityStmt->execute(['Source Reliability Concern', 'signal_source', 1, $regions['Great Lakes'], 'Michigan broadband source needs review', 'Confirm source quality before using harvested items for executive decisions.', 'Medium', 'Ron']);
 $qualityStmt->execute(['Duplicate Entity', 'organization', 2, $regions['Southwest'], 'Potential duplicate Houston contractor organization', 'Review before creating capacity provider records.', 'Medium', 'Admin']);
 
 $connectorStmt = $db->prepare('INSERT INTO connectors (connector_name, source_type, run_mode, source_url, status, notes) VALUES (?, ?, ?, ?, ?, ?)');
-$connectorStmt->execute(['Pilot Official Broadband RSS Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'First safe connector path. Uses RSS/static-source contract or local fallback rows; all imports require review.']);
+$connectorStmt->execute(['Official Broadband RSS Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'First safe connector path. Uses RSS/static-source contract or local fallback rows; all imports require review.']);
 $connectorId = (int)$db->lastInsertId();
 $db->prepare('INSERT INTO connector_run_logs (connector_id, connector_name, started_at, finished_at, status, imported_count, skipped_count, error_count, review_status) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, "Completed", 2, 0, 0, "Needs Data Review")')
-    ->execute([$connectorId, 'Pilot Official Broadband RSS Connector']);
+    ->execute([$connectorId, 'Official Broadband RSS Connector']);
 
 $db->prepare('INSERT INTO audit_logs (user_name, role, action, record_type, record_id, outcome, details) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    ->execute(['System', 'Admin', 'seed_audit_baseline', 'production_readiness', null, 'Success', 'Seeded audit baseline for pilot readiness view.']);
+    ->execute(['System', 'Admin', 'seed_audit_baseline', 'production_readiness', null, 'Success', 'Seeded audit baseline for operational readiness view.']);
 $db->prepare('INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, used_at, requested_ip) VALUES (1, ?, datetime("now", "-1 hour"), datetime("now", "-30 minutes"), "127.0.0.1")')
     ->execute([hash('sha256', 'expired-demo-token')]);
 
 $tuningStmt = $db->prepare('INSERT INTO recommendation_tuning_rules (rule_name, source_module, category, owner_scope, region_id, min_priority_score, max_daily_actions, promote_to_daily_action, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)');
 $tuningStmt->execute(['Executive top five guardrail', '', '', 'All', null, 72, 5, 1, 'Daily Actions should remain executive priorities, not every open recommendation.']);
-$tuningStmt->execute(['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep capacity blockers visible for Mike during pilot.']);
+$tuningStmt->execute(['Southeast capacity priority', 'Capacity / Subcontractor Acquisition', 'Capacity', 'Mike', $regions['Southeast'], 65, 3, 1, 'Keep capacity blockers visible for Mike during operations.']);
 $tuningStmt->execute(['Great Lakes relationship priority', 'Relationship & Influence', 'Relationship', 'Ron', $regions['Great Lakes'], 68, 3, 1, 'Keep project manager and utility relationship actions visible for Ron.']);
 
 $erpStmt = $db->prepare('INSERT INTO erp_contract_validation_items (contract_area, field_name, required_for_handoff, source_record_type, source_field, validation_status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');

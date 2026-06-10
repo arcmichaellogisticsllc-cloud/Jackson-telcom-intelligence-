@@ -1,6 +1,6 @@
-# Operator Pilot Production Readiness
+# Operational Production Readiness
 
-Objective: move Jackson Intelligence Platform from architecturally complete to pilot-ready and production-safe.
+Objective: move Jackson Intelligence Platform from architecturally complete to operational-ready and production-safe.
 
 ## Focus Order
 
@@ -8,17 +8,17 @@ Objective: move Jackson Intelligence Platform from architecturally complete to p
 2. Security hardening
 3. Data review queue
 4. First real connector
-5. Operator pilot feedback loop
+5. Operator feedback loop
 6. Recommendation/action tuning
 7. Deployment readiness
 8. SyncERP contract validation
 
 ## Authorization
 
-Operator-mode filtering remains a user experience feature, but pilot readiness now adds server-side region and write checks:
+Operator-mode filtering remains a user experience feature, but operational readiness now adds server-side region and write checks:
 
-- Mike: Southeast, shared Southwest, shared National
-- Ron: Great Lakes, shared Southwest, shared National
+- Relationship / Opportunity Owner: assigned account, relationship, opportunity, market, and partnership work plus shared Southwest/National work
+- Capacity / Readiness Owner: assigned capacity, subcontractor, workforce, readiness, preconstruction, and handoff work plus shared Southwest/National work
 - Regional Owner / Operator / Viewer: assigned region
 - Southwest Owner: Southwest, National
 - Admin / Executive: all regions
@@ -34,6 +34,8 @@ Security controls now include:
 - Session timeout enforcement
 - CSRF token rotation on login
 - Session regeneration on login
+- Forced password-change support for seeded or rotated one-time credentials
+- Default-password rotation script for launch preparation
 - Basic login attempt throttling
 - Password reset token foundation with expiry and one-time use
 - Security headers for frame, content type, referrer, and content security policy
@@ -44,7 +46,7 @@ Security controls now include:
 
 Audit logs are available at `/audit-logs` and inside `/production-readiness`.
 
-Tracked events include login, logout, failed login, unauthorized access, CSRF failure, data quality updates, connector runs, recommendation suppression, pilot feedback, SyncERP validation updates, and generic POST route attempts where available.
+Tracked events include login, logout, failed login, unauthorized access, CSRF failure, data quality updates, connector runs, recommendation suppression, operator feedback, SyncERP validation updates, and generic POST route attempts where available.
 
 ## Data Review Queue
 
@@ -52,7 +54,7 @@ The Data Review Queue is available at `/production-readiness`.
 
 It creates human review items from:
 
-- Raw signals marked Needs Review, Duplicate, or Rejected
+- Source items marked Needs Review, Duplicate, or Rejected
 - High/Critical signals that were archived by quality classification
 - Low-score open recommendations that may be creating noise
 
@@ -75,7 +77,7 @@ Rules:
 - RSS connector only runs when a Signal Source has `collection_method = RSS` and a non-empty `source_url`.
 - Connector framework records connector configuration and connector run logs.
 - Connector runs create or reuse source records.
-- It reads RSS or Atom feeds into Raw Signal Items.
+- It reads RSS or Atom feeds into review-gated source items.
 - Fallback connector rows are supported when local HTTP is unavailable.
 - It does not scrape pages.
 - It does not send outreach.
@@ -84,9 +86,9 @@ Rules:
 
 Seed data includes a paused FCC broadband RSS example. It is intentionally not active by default so local verification does not depend on network access.
 
-## Operator Pilot Feedback Loop
+## Operator Feedback Loop
 
-The pilot feedback form captures:
+The operator feedback form captures:
 
 - Owner
 - Theater
@@ -96,7 +98,7 @@ The pilot feedback form captures:
 - Impact score
 - Recommended change
 
-Use this during the first 30 days to tune the interface and action logic around Mike and Ron's actual workflow.
+Use this during the live operating cycle to tune the interface and action logic around the actual ownership model and operating perspectives.
 
 ## Recommendation / Action Tuning
 
@@ -110,13 +112,13 @@ Tuning rules track:
 - Maximum daily actions
 - Whether a recommendation can promote to Daily Action
 
-These rules are pilot controls. They document the desired behavior before deeper recommendation governance is added.
+These rules are operational controls. They document the desired behavior before deeper recommendation governance is added.
 
 Operators can also mark a recommendation as not useful. That suppresses the recommendation, lowers usefulness score, tracks the reason, and prevents it from remaining in the executive action path.
 
 ## Deployment Readiness
 
-Before a pilot session:
+Before an operating session:
 
 1. Run `php scripts/migrate.php`.
 2. Run `php scripts/run_acquisition_cycle.php`.
@@ -126,11 +128,22 @@ Before a pilot session:
 6. Run `git diff --check`.
 7. Run `php scripts/validate_erp_contract.php`.
 8. Create a database backup with `php scripts/backup_database.php`.
-9. Verify the backup can be restored in a non-production location with `php scripts/restore_database.php <backup> CONFIRM_RESTORE`.
+9. Verify the backup can be restored in a non-production location with `php scripts/verify_backup_restore.php`.
+10. Confirm launch gates with `php scripts/check_production_launch.php`.
+11. Run strict launch gates with `APP_ENV=production JIP_ASSUME_HTTPS=1 JIP_STRICT_PRODUCTION=1 php scripts/check_production_launch.php`.
 
 SQLite DB-writing scripts must run sequentially.
 
-See `docs/deployment-readiness.md` and `docs/operator-pilot-guide.md`.
+See `docs/deployment-readiness.md` and `docs/operator-operations-guide.md`.
+
+## Onboarding Document Storage
+
+Onboarding document records now support both:
+
+- source references for manually received files
+- uploaded document files stored outside public web assets under `storage/onboarding_documents`
+
+Uploaded files remain review-gated. A document can be submitted without approving the subcontractor; approval still requires document review and the onboarding review gates.
 
 ## SyncERP Contract Validation
 

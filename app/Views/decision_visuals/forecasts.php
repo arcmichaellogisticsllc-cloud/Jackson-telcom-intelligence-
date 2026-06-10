@@ -1,6 +1,9 @@
 <section class="page-header command-page-header"><p class="eyebrow">What Is Likely To Happen?</p><h1><?= htmlspecialchars($title) ?></h1><p><?= htmlspecialchars($subtitle) ?></p></section>
 <nav class="dash-tabs"><a href="/decision-visuals">Visual Hub</a><a class="active" href="/decision-visuals/forecasts">Forecasts</a><a href="/forecasts">Executive Forecasts</a></nav>
-<?php $why='Forecasts let leaders act before capacity gaps, competitive pressure, or market movement becomes urgent.'; $recommended='Prioritize 90-180 day risks with high confidence and clear recommended action.'; $next='Assign the highest-confidence forecast to the next weekly or monthly operating rhythm.'; $risk='Waiting for forecasts to become facts narrows options and raises cost.'; require __DIR__ . '/../components/action_first.php'; ?>
+<section class="operator-note">
+  <strong>Forecast use:</strong>
+  <span>Prioritize high-confidence 90-180 day risks and assign the strongest forecast to the next operating rhythm.</span>
+</section>
 <section class="grid two">
   <?php foreach ($forecasts as $row): ?>
     <article class="panel">

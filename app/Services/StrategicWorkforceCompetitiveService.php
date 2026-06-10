@@ -323,9 +323,6 @@ class StrategicWorkforceCompetitiveService
 
     private function owner(string $owner): string
     {
-        return match ($owner) {
-            'Mike', 'Ron', 'Mike/Ron Shared' => $owner,
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->normalizeOwner($owner, 'Admin');
     }
 }

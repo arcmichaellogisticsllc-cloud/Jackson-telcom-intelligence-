@@ -387,6 +387,6 @@ class RelationshipIntelligenceService
 
     private function normalizeOwner(string $owner): string
     {
-        return in_array($owner, ['Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin','Unassigned'], true) ? $owner : 'Admin';
+        return (new OwnerModelService())->normalizeOwner($owner, 'Admin');
     }
 }

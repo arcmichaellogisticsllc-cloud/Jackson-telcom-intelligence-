@@ -41,6 +41,8 @@ $router = new Router();
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
 $router->post('/logout', [AuthController::class, 'logout']);
+$router->get('/change-password', [AuthController::class, 'showChangePassword']);
+$router->post('/change-password', [AuthController::class, 'changePassword']);
 $router->get('/password-reset', [AuthController::class, 'showResetRequest']);
 $router->post('/password-reset', [AuthController::class, 'requestReset']);
 $router->get('/password-reset/confirm', [AuthController::class, 'showResetForm']);
@@ -81,6 +83,7 @@ $router->post('/production-readiness/data-quality', [ProductionReadinessControll
 $router->post('/production-readiness/data-quality/update', [ProductionReadinessController::class, 'updateDataQualityIssue']);
 $router->post('/production-readiness/connectors/run', [ProductionReadinessController::class, 'runConnector']);
 $router->post('/production-readiness/recommendations/not-useful', [ProductionReadinessController::class, 'recommendationGovernance']);
+$router->post('/production-readiness/tuning/apply', [ProductionReadinessController::class, 'applyTuning']);
 $router->post('/production-readiness/tuning', [ProductionReadinessController::class, 'tuning']);
 $router->post('/production-readiness/erp-validation', [ProductionReadinessController::class, 'erpValidation']);
 $router->get('/onboarding', [OnboardingController::class, 'index']);

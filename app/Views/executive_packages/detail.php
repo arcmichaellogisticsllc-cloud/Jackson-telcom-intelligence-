@@ -11,11 +11,9 @@
   <a href="/daily-brief">Daily Brief</a>
 </nav>
 
-<section class="action-first">
-  <div><span>What Is This?</span><p><?= htmlspecialchars($package['decision_required']) ?></p></div>
-  <div><span>Why It Matters</span><p><?= htmlspecialchars($package['executive_summary']) ?></p></div>
-  <div><span>What Should I Do?</span><p><?= htmlspecialchars($package['recommended_action']) ?></p></div>
-  <div><span>What Happens If I Do Nothing?</span><p><?= htmlspecialchars($package['risk_of_inaction']) ?></p></div>
+<section class="operator-note">
+  <strong>Decision:</strong>
+  <span><?= htmlspecialchars($package['decision_required']) ?> Next: <?= htmlspecialchars($package['recommended_action']) ?> Risk: <?= htmlspecialchars($package['risk_of_inaction']) ?></span>
 </section>
 
 <section class="metrics command-metrics">

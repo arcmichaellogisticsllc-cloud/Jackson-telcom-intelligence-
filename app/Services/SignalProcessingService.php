@@ -103,18 +103,7 @@ class SignalProcessingService
 
     private function ownerForRegion(PDO $db, int $regionId): string
     {
-        $stmt = $db->prepare('SELECT name, owner_name, owner FROM regions WHERE id = ?');
-        $stmt->execute([$regionId]);
-        $region = $stmt->fetch();
-        if (!$region) {
-            return 'Admin';
-        }
-        return match ($region['name']) {
-            'Southeast' => 'Mike',
-            'Great Lakes' => 'Ron',
-            'Southwest' => 'Unassigned',
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->ownerForRegionId($regionId, 'relationship_opportunity');
     }
 
     private function normalizeSourceType(string $sourceType): string

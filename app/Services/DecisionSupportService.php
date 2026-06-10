@@ -69,7 +69,7 @@ class DecisionSupportService
             'confidence_score' => $confidence,
             'strategic_value' => (int)$source['decision_score'],
         ]);
-        $db->prepare('INSERT INTO daily_actions (action_title, action_category, region_id, owner, priority, reason, recommended_next_step, linked_record_type, linked_record_id, due_date, impact_score, urgency_score, confidence_score, decision_score) VALUES (?, ?, ?, ?, ?, ?, ?, "daily_action", ?, ?, ?, ?, ?, ?)')->execute([
+        $db->prepare('INSERT INTO daily_actions (action_title, action_category, region_id, owner, priority, reason, recommended_next_step, linked_record_type, linked_record_id, due_date, impact_score, urgency_score, confidence_score, decision_score, generated_by) VALUES (?, ?, ?, ?, ?, ?, ?, "daily_action", ?, ?, ?, ?, ?, ?, "operator_follow_up")')->execute([
             $title,
             $source['action_category'],
             $source['region_id'],
@@ -106,7 +106,16 @@ class DecisionSupportService
 
     private function clearGenerated(PDO $db): void
     {
-        $db->exec("DELETE FROM daily_actions WHERE status IN ('Open','In Progress') AND COALESCE(linked_record_type,'') NOT IN ('daily_action','outreach_intelligence')");
+        $generatedTypes = [
+            'recommended_action',
+            'capacity_recruitment_recommendation',
+            'relationship_decision',
+            'content_decision',
+            'opportunity_pursuit_decision',
+            'growth_blocker',
+        ];
+        $quoted = implode(',', array_map(fn($type) => $db->quote($type), $generatedTypes));
+        $db->exec("DELETE FROM daily_actions WHERE status IN ('Open','In Progress') AND linked_record_type IN ({$quoted}) AND COALESCE(generated_by, 'decision_support') IN ('system','decision_support','production_readiness')");
         foreach (['regional_strategy_scorecards','growth_blockers','opportunity_decisions','capacity_recruitment_recommendations','content_decisions','relationship_decisions'] as $table) {
             $db->exec("DELETE FROM {$table}");
             $db->exec("DELETE FROM sqlite_sequence WHERE name = '{$table}'");
@@ -418,7 +427,7 @@ class DecisionSupportService
             ]);
             return;
         }
-        $db->prepare('INSERT INTO daily_actions (action_title, action_category, region_id, owner, priority, reason, recommended_next_step, linked_record_type, linked_record_id, due_date, impact_score, urgency_score, confidence_score, decision_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')->execute([
+        $db->prepare('INSERT INTO daily_actions (action_title, action_category, region_id, owner, priority, reason, recommended_next_step, linked_record_type, linked_record_id, due_date, impact_score, urgency_score, confidence_score, decision_score, generated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "decision_support")')->execute([
             $data['title'],
             $data['category'],
             $data['region_id'],
@@ -532,12 +541,9 @@ class DecisionSupportService
     private function ownerForRegion(PDO $db, mixed $regionId): string
     {
         if (!$regionId) {
-            return 'Admin';
+            return (new OwnerModelService())->sharedOwnerValue();
         }
-        $stmt = $db->prepare('SELECT owner FROM regions WHERE id = ?');
-        $stmt->execute([(int)$regionId]);
-        $owner = $stmt->fetchColumn();
-        return $owner ?: 'Admin';
+        return (new OwnerModelService())->ownerForRegionId((int)$regionId, 'general');
     }
 
     private function findAction(PDO $db, int $id): ?array

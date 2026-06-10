@@ -102,7 +102,7 @@ class OnboardingController extends Controller
             $_POST['onboarding_type'] = $type;
             $_POST['onboarding_id'] = $id;
         }
-        $result = $this->service->saveDocument($_POST);
+        $result = $this->service->saveDocument($_POST, $_FILES['document_file'] ?? null);
         if ($result['message'] ?? '') {
             $_SESSION['flash'] = $result['message'];
         }

@@ -482,11 +482,6 @@ class ExecutivePackagingService
 
     private function owner(string $owner): string
     {
-        return match ($owner) {
-            'Mike' => 'Mike',
-            'Ron' => 'Ron',
-            'Mike/Ron Shared' => 'Mike/Ron Shared',
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->normalizeOwner($owner, 'Admin');
     }
 }

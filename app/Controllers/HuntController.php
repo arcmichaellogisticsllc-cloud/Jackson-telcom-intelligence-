@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Services\HuntService;
+use App\Services\OwnerModelService;
 
 class HuntController extends Controller
 {
@@ -14,13 +15,16 @@ class HuntController extends Controller
         Auth::requireLogin();
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
-        $hunts = $db->query('SELECT h.*, r.name region_name, COUNT(ht.id) assigned_targets, SUM(CASE WHEN ht.hunt_status = "Converted" THEN 1 ELSE 0 END) converted_targets, SUM(CASE WHEN ht.hunt_status = "Not Fit" THEN 1 ELSE 0 END) not_fit_targets,
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT h.*, r.name region_name, COUNT(ht.id) assigned_targets, SUM(CASE WHEN ht.hunt_status = "Converted" THEN 1 ELSE 0 END) converted_targets, SUM(CASE WHEN ht.hunt_status = "Not Fit" THEN 1 ELSE 0 END) not_fit_targets,
             (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage NOT IN ("Inactive","Rejected")) subcontractors_discovered,
             (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Qualified","Documents Requested","Compliance Review","Approved","Preferred","Strategic Partner")) subcontractors_qualified,
             (SELECT COUNT(*) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Approved","Preferred","Strategic Partner")) subcontractors_approved,
             (SELECT COALESCE(SUM(s.available_crew_count),0) FROM subcontractors s WHERE s.region_id = h.region_id AND s.approval_stage IN ("Approved","Preferred","Strategic Partner")) capacity_added
-            FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id GROUP BY h.id ORDER BY h.status, h.start_date DESC')->fetchAll();
-        $metrics = $this->metrics();
+            FROM hunts h LEFT JOIN regions r ON r.id = h.region_id LEFT JOIN hunt_targets ht ON ht.hunt_id = h.id WHERE ' . $regionWhere . ' GROUP BY h.id ORDER BY h.status, h.start_date DESC');
+        $stmt->execute($regionParams);
+        $hunts = $stmt->fetchAll();
+        $metrics = $this->metrics($regionWhere, $regionParams);
         $this->view('hunts/index', ['hunts' => $hunts, 'regions' => $regions, 'metrics' => $metrics, 'options' => $this->options()]);
     }
 
@@ -29,7 +33,10 @@ class HuntController extends Controller
         Auth::requireLogin();
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
-        $playbooks = $db->query('SELECT p.*, r.name region_name, COUNT(ps.id) step_count FROM acquisition_playbooks p LEFT JOIN regions r ON r.id = p.region_id LEFT JOIN playbook_steps ps ON ps.playbook_id = p.id GROUP BY p.id ORDER BY p.playbook_type, p.playbook_name')->fetchAll();
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT p.*, r.name region_name, COUNT(ps.id) step_count FROM acquisition_playbooks p LEFT JOIN regions r ON r.id = p.region_id LEFT JOIN playbook_steps ps ON ps.playbook_id = p.id WHERE ' . $regionWhere . ' GROUP BY p.id ORDER BY p.playbook_type, p.playbook_name');
+        $stmt->execute($regionParams);
+        $playbooks = $stmt->fetchAll();
         $steps = $db->query('SELECT ps.*, p.playbook_name FROM playbook_steps ps JOIN acquisition_playbooks p ON p.id = ps.playbook_id ORDER BY p.playbook_name, ps.step_number')->fetchAll();
         $this->view('hunts/playbooks', ['playbooks' => $playbooks, 'steps' => $steps, 'regions' => $regions, 'options' => $this->options()]);
     }
@@ -39,16 +46,23 @@ class HuntController extends Controller
         Auth::requireLogin();
         $db = Database::connection();
         $region = $_GET['region'] ?? '';
-        $where = "WHERE t.status IN ('Open','In Progress')";
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $params = $regionParams;
+        $where = "WHERE t.status IN ('Open','In Progress') AND {$regionWhere}";
         if ($region) {
-            $where .= ' AND r.name = ' . $db->quote(match ($region) {
+            $regionName = match ($region) {
                 'southeast' => 'Southeast',
                 'great-lakes' => 'Great Lakes',
                 'southwest' => 'Southwest',
                 default => $region,
-            });
+            };
+            Auth::requireRegionAccess($db->query('SELECT id FROM regions WHERE name = ' . $db->quote($regionName))->fetchColumn() ?: null);
+            $where .= ' AND r.name = ?';
+            $params[] = $regionName;
         }
-        $tasks = $db->query("SELECT t.*, at.target_name, at.target_type, h.hunt_name, p.opening_script, p.qualification_questions, ps.step_name, ps.channel, r.name region_name FROM hunt_tasks t JOIN hunt_targets ht ON ht.id = t.hunt_target_id JOIN hunts h ON h.id = ht.hunt_id LEFT JOIN acquisition_playbooks p ON p.id = ht.playbook_id LEFT JOIN playbook_steps ps ON ps.id = t.playbook_step_id JOIN acquisition_targets at ON at.id = t.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id {$where} ORDER BY t.due_date ASC, CASE at.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 100")->fetchAll();
+        $stmt = $db->prepare("SELECT t.*, at.target_name, at.target_type, h.hunt_name, p.opening_script, p.qualification_questions, ps.step_name, ps.channel, r.name region_name FROM hunt_tasks t JOIN hunt_targets ht ON ht.id = t.hunt_target_id JOIN hunts h ON h.id = ht.hunt_id LEFT JOIN acquisition_playbooks p ON p.id = ht.playbook_id LEFT JOIN playbook_steps ps ON ps.id = t.playbook_step_id JOIN acquisition_targets at ON at.id = t.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id {$where} ORDER BY t.due_date ASC, CASE at.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END LIMIT 100");
+        $stmt->execute($params);
+        $tasks = $stmt->fetchAll();
         $this->view('hunts/actions', ['tasks' => $tasks]);
     }
 
@@ -103,16 +117,33 @@ class HuntController extends Controller
         $this->redirect($_POST['return_to'] ?? '/hunt-actions');
     }
 
-    private function metrics(): array
+    private function metrics(string $regionWhere, array $regionParams): array
     {
         $db = Database::connection();
+        $count = function (string $sql) use ($db, $regionWhere, $regionParams): int {
+            $stmt = $db->prepare($sql . ' AND ' . $regionWhere);
+            $stmt->execute($regionParams);
+            return (int)$stmt->fetchColumn();
+        };
         return [
-            'active_hunts' => (int)$db->query("SELECT COUNT(*) FROM hunts WHERE status = 'Active'")->fetchColumn(),
-            'active_targets' => (int)$db->query("SELECT COUNT(*) FROM hunt_targets WHERE hunt_status NOT IN ('Converted','Not Fit')")->fetchColumn(),
-            'overdue_tasks' => (int)$db->query("SELECT COUNT(*) FROM hunt_tasks WHERE status IN ('Open','In Progress') AND due_date < date('now')")->fetchColumn(),
-            'converted' => (int)$db->query("SELECT COUNT(*) FROM hunt_targets WHERE hunt_status = 'Converted'")->fetchColumn(),
-            'not_fit' => (int)$db->query("SELECT COUNT(*) FROM hunt_targets WHERE hunt_status = 'Not Fit'")->fetchColumn(),
+            'active_hunts' => $count("SELECT COUNT(*) FROM hunts h LEFT JOIN regions r ON r.id = h.region_id WHERE h.status = 'Active'"),
+            'active_targets' => $count("SELECT COUNT(*) FROM hunt_targets ht JOIN acquisition_targets at ON at.id = ht.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE ht.hunt_status NOT IN ('Converted','Not Fit')"),
+            'overdue_tasks' => $count("SELECT COUNT(*) FROM hunt_tasks t JOIN acquisition_targets at ON at.id = t.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE t.status IN ('Open','In Progress') AND t.due_date < date('now')"),
+            'converted' => $count("SELECT COUNT(*) FROM hunt_targets ht JOIN acquisition_targets at ON at.id = ht.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE ht.hunt_status = 'Converted'"),
+            'not_fit' => $count("SELECT COUNT(*) FROM hunt_targets ht JOIN acquisition_targets at ON at.id = ht.acquisition_target_id LEFT JOIN regions r ON r.id = at.region_id WHERE ht.hunt_status = 'Not Fit'"),
         ];
+    }
+
+    private function regionFilter(string $column): array
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
+        $allowed = Auth::allowedRegionNames();
+        if (!$allowed) {
+            return ['1=0', []];
+        }
+        return [$column . ' IN (' . implode(',', array_fill(0, count($allowed), '?')) . ')', $allowed];
     }
 
     private function options(): array
@@ -120,7 +151,7 @@ class HuntController extends Controller
         return [
             'huntTypes' => ['Capacity Hunt','Opportunity Hunt','Prime Contractor Hunt','Workforce Hunt','Influence Hunt','Equipment Seller Hunt','Vendor Hunt'],
             'huntStatuses' => ['Draft','Active','Paused','Completed','Archived'],
-            'owners' => ['Mike','Ron','Future Southwest Owner','Admin','Unassigned'],
+            'owners' => (new OwnerModelService())->ownerValues(true),
             'playbookTypes' => ['Subcontractor Recruitment','Equipment Seller Outreach','Prime Contractor Introduction','Utility Relationship Development','Workforce Recruiting','Vendor Qualification'],
             'targetTypes' => ['Subcontractor','Utility','Prime Contractor','Vendor','Equipment Seller','Workforce Candidate','Engineering Firm','Municipality','Other'],
             'channels' => ['Phone','Email','LinkedIn','Facebook Message','In Person','Research','Document Request'],

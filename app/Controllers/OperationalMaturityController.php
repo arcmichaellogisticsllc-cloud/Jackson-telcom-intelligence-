@@ -90,13 +90,14 @@ class OperationalMaturityController extends Controller
 
     private function filterForOperator(array $data): array
     {
-        $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
+        if (Auth::hasGlobalRegionAccess()) {
+            return $data;
+        }
+        $allowed = Auth::allowedRegionNames();
         if (!$allowed) {
+            foreach (['dueToday','thisWeek','overdue','scores','workforceMovers','workforceForecasts','pressureSpikes','competitorForecasts','winLoss','recommendations'] as $key) {
+                $data[$key] = [];
+            }
             return $data;
         }
         foreach (['dueToday','thisWeek','overdue','scores','workforceMovers','workforceForecasts','pressureSpikes','competitorForecasts','winLoss','recommendations'] as $key) {

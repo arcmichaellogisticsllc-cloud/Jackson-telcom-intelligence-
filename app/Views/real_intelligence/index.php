@@ -4,23 +4,9 @@
   <p>Click into imported public research, source evidence, enrichment, data quality status, and workflow context without treating it as approved operating truth.</p>
 </section>
 
-<section class="grid four action-first-grid">
-  <article>
-    <span>What This Is</span>
-    <p>A read-only explorer for the real-hunt import and enrichment records.</p>
-  </article>
-  <article>
-    <span>Why It Matters</span>
-    <p>Operators can inspect the source trail before trusting a record.</p>
-  </article>
-  <article>
-    <span>Next Step</span>
-    <p>Open a dataset, inspect source evidence, and resolve review items.</p>
-  </article>
-  <article>
-    <span>Risk Of Inaction</span>
-    <p>Useful public intelligence can sit unverified and never become work, capacity, or influence.</p>
-  </article>
+<section class="operator-note">
+  <strong>Review first:</strong>
+  <span>Open a dataset, inspect source evidence, and resolve review items before using imported intelligence operationally.</span>
 </section>
 
 <section class="metrics">

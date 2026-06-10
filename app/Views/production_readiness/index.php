@@ -1,7 +1,7 @@
 <section class="page-header command-page-header">
-  <p class="eyebrow">Operator Pilot / Production Readiness</p>
-  <h1>Pilot-ready and production-safe</h1>
-  <p>Authorization, security hardening, data review, connector readiness, pilot feedback, action tuning, deployment readiness, and SyncERP contract validation.</p>
+  <p class="eyebrow">Operational Control / Production Readiness</p>
+  <h1>Operational-ready and production-safe</h1>
+  <p>Authorization, security hardening, data review, connector readiness, operator feedback, action tuning, deployment readiness, and SyncERP contract validation.</p>
 </section>
 
 <nav class="dash-tabs">
@@ -10,16 +10,16 @@
   <a href="#quality-issues">Quality Issues</a>
   <a href="#connector">Connector</a>
   <a href="#audit">Audit</a>
-  <a href="#feedback">Pilot Feedback</a>
+  <a href="#feedback">Operator Feedback</a>
   <a href="#tuning">Action Tuning</a>
   <a href="#deployment">Deployment</a>
   <a href="#syncerp-contract">SyncERP Contract</a>
 </nav>
 
 <?php
-$why = 'The platform is architecturally complete. This page controls the remaining work to make it safe for a real operator pilot.';
+$why = 'This page controls the live safeguards that keep real operators, real data, and real handoffs trustworthy.';
 $recommended = 'Start with open Critical/High data review items, then tune noisy actions and validate SyncERP handoff fields.';
-$next = 'Resolve one data review item, record one pilot feedback item, and validate one SyncERP contract field during each weekly readiness review.';
+$next = 'Resolve one data review item, record one operator feedback item, and validate one SyncERP contract field during each weekly readiness review.';
 $risk = 'Without this layer, bad data, weak permissions, noisy actions, or unclear handoff fields can damage operator trust.';
 require __DIR__ . '/../components/action_first.php';
 ?>
@@ -28,7 +28,7 @@ require __DIR__ . '/../components/action_first.php';
   <div><span>Open Reviews</span><strong><?= (int)$metrics['open_reviews'] ?></strong></div>
   <div><span>Critical Reviews</span><strong><?= (int)$metrics['critical_reviews'] ?></strong></div>
   <div><span>Quality Issues</span><strong><?= (int)$metrics['data_quality_issues'] ?></strong></div>
-  <div><span>Pilot Feedback</span><strong><?= (int)$metrics['pilot_feedback'] ?></strong></div>
+  <div><span>Operator Feedback</span><strong><?= (int)$metrics['pilot_feedback'] ?></strong></div>
   <div><span>Connector Reviews</span><strong><?= (int)$metrics['connector_runs_pending_review'] ?></strong></div>
   <div><span>Contract Pending</span><strong><?= (int)$metrics['contract_pending'] ?></strong></div>
   <div><span>CSRF / Session</span><strong>On</strong></div>
@@ -38,7 +38,7 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel-title"><h2>Authorization / Security Hardening</h2><span class="status">Active</span></div>
   <div class="command-items">
     <div><strong>Route Protection</strong><span>Authenticated routes require login; POST routes require CSRF tokens.</span></div>
-    <div><strong>Server-Side Region Access</strong><span>Direct regional URLs and mapped detail records are checked against Mike/Ron/Regional Owner scope; unauthorized attempts return 403 and write audit logs.</span></div>
+    <div><strong>Server-Side Region Access</strong><span>Direct regional URLs and mapped detail records are checked against role, ownership, and regional scope; unauthorized attempts return 403 and write audit logs.</span></div>
     <div><strong>Read-Only Role</strong><span>Viewer accounts are blocked from POST workflows server-side, not only hidden in the UI.</span></div>
     <div><strong>Session Hardening</strong><span>Session timeout, CSRF rotation on login, secure headers, HTTP-only same-site cookies, login throttling, and password reset token foundation.</span></div>
   </div>
@@ -81,7 +81,25 @@ require __DIR__ . '/../components/action_first.php';
         <td><strong><?= htmlspecialchars($issue['title']) ?></strong><br><small><?= htmlspecialchars($issue['description'] ?? '') ?></small></td>
         <td><?= htmlspecialchars($issue['issue_type']) ?><br><span class="priority <?= strtolower($issue['severity']) ?>"><?= htmlspecialchars($issue['severity']) ?></span></td>
         <td><?= htmlspecialchars($issue['region_name'] ?? 'National') ?></td>
-        <td><form method="post" action="/production-readiness/data-quality/update" class="inline-form"><input type="hidden" name="id" value="<?= (int)$issue['id'] ?>"><select name="status"><option>In Review</option><option>Resolved</option><option>Dismissed</option></select><input name="resolution_outcome" placeholder="Outcome"><input name="resolution_notes" placeholder="Notes"><button class="btn secondary">Update</button></form></td>
+        <td>
+          <form method="post" action="/production-readiness/data-quality/update" class="inline-form stacked-inline">
+            <input type="hidden" name="id" value="<?= (int)$issue['id'] ?>">
+            <select name="status"><option>In Review</option><option>Resolved</option><option>Dismissed</option></select>
+            <input name="correction_owner" placeholder="Owner">
+            <input name="correction_region" placeholder="Theater">
+            <input name="correction_email" placeholder="Business email">
+            <input name="correction_phone" placeholder="Business phone">
+            <input name="correction_website" placeholder="Website">
+            <input name="correction_status" placeholder="Status">
+            <input name="correction_market" placeholder="Market">
+            <input name="correction_classification" placeholder="Signal classification">
+            <input name="correction_recommended_action" placeholder="Recommended action">
+            <input name="correction_notes" placeholder="Correction note">
+            <input name="resolution_outcome" placeholder="Outcome summary">
+            <input name="resolution_notes" placeholder="Resolution notes">
+            <button class="btn secondary">Apply</button>
+          </form>
+        </td>
       </tr><?php endforeach; ?>
       <?php if (!$dataQualityIssues): ?><tr><td colspan="4">No open data quality issues.</td></tr><?php endif; ?>
     </tbody></table></div>
@@ -90,12 +108,12 @@ require __DIR__ . '/../components/action_first.php';
 
 <section id="connector" class="panel">
   <div class="panel-title"><h2>First Real Connector Path</h2><span class="status">Review-Gated</span></div>
-  <p>The connector framework supports an opt-in RSS/static-source path and a CSV/source-file fallback. Connector rows write to Raw Signal Items as <strong>Needs Review</strong> and never bypass signal quality.</p>
+  <p>The connector framework supports an opt-in RSS/static-source path and a CSV/source-file fallback. Connector rows write to review-gated source items as <strong>Needs Review</strong> and never bypass signal quality.</p>
   <div class="grid two">
     <div class="table-wrap"><table><thead><tr><th>Connector</th><th>Status</th><th>Imported</th><th>Run</th></tr></thead><tbody>
-      <?php foreach ($connectors as $connector): ?><tr><td><strong><?= htmlspecialchars($connector['connector_name']) ?></strong><br><small><?= htmlspecialchars($connector['source_type']) ?> · <?= htmlspecialchars($connector['run_mode']) ?></small></td><td><?= htmlspecialchars($connector['status']) ?></td><td><?= (int)$connector['records_imported'] ?> / <?= (int)$connector['records_found'] ?></td><td><form method="post" action="/production-readiness/connectors/run"><input type="hidden" name="connector_id" value="<?= (int)$connector['id'] ?>"><button class="btn secondary">Run</button></form></td></tr><?php endforeach; ?></tbody></table></div>
+      <?php foreach ($connectors as $connector): ?><tr><td><strong><?= htmlspecialchars($connector['connector_name']) ?></strong><br><small><?= htmlspecialchars($connector['source_type']) ?> · <?= htmlspecialchars($connector['run_mode']) ?> · <?= htmlspecialchars($connector['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($connector['status']) ?></td><td><?= (int)$connector['records_imported'] ?> / <?= (int)$connector['records_found'] ?></td><td><form method="post" action="/production-readiness/connectors/run"><input type="hidden" name="connector_id" value="<?= (int)$connector['id'] ?>"><button class="btn secondary">Run</button></form></td></tr><?php endforeach; ?></tbody></table></div>
     <div class="table-wrap"><table><thead><tr><th>Run</th><th>Status</th><th>Review</th></tr></thead><tbody>
-      <?php foreach ($connectorRuns as $run): ?><tr><td><?= htmlspecialchars($run['connector_name']) ?><br><small><?= htmlspecialchars($run['started_at']) ?></small></td><td><?= htmlspecialchars($run['status']) ?> · imported <?= (int)$run['imported_count'] ?> · skipped <?= (int)$run['skipped_count'] ?></td><td><?= htmlspecialchars($run['review_status']) ?></td></tr><?php endforeach; ?>
+      <?php foreach ($connectorRuns as $run): ?><tr><td><?= htmlspecialchars($run['connector_name']) ?><br><small><?= htmlspecialchars($run['started_at']) ?> · <?= htmlspecialchars($run['region_name'] ?? 'National') ?></small></td><td><?= htmlspecialchars($run['status']) ?> · imported <?= (int)$run['imported_count'] ?> · skipped <?= (int)$run['skipped_count'] ?></td><td><?= htmlspecialchars($run['review_status']) ?></td></tr><?php endforeach; ?>
       <?php if (!$connectorRuns): ?><tr><td colspan="3">No connector runs yet.</td></tr><?php endif; ?>
     </tbody></table></div>
   </div>
@@ -103,7 +121,7 @@ require __DIR__ . '/../components/action_first.php';
 
 <section id="feedback" class="grid two">
   <div class="panel">
-    <div class="panel-title"><h2>Operator Pilot Feedback</h2><span class="status">30-Day Pilot</span></div>
+    <div class="panel-title"><h2>Operator Feedback</h2><span class="status">Live Operations</span></div>
     <form method="post" action="/production-readiness/feedback" class="form-grid compact">
       <label>Owner <input name="owner" value="<?= htmlspecialchars($user['name'] ?? 'Admin') ?>"></label>
       <label>Theater <select name="region_id"><option value="">National / Shared</option><?php foreach ($regions as $region): ?><option value="<?= (int)$region['id'] ?>"><?= htmlspecialchars($region['name']) ?></option><?php endforeach; ?></select></label>
@@ -117,7 +135,7 @@ require __DIR__ . '/../components/action_first.php';
   </div>
   <div class="panel">
     <div class="panel-title"><h2>Recent Feedback</h2><span class="status">Operator Input</span></div>
-    <div class="command-items"><?php foreach ($feedback as $item): ?><div><strong><?= htmlspecialchars($item['feedback_area']) ?> - <?= htmlspecialchars($item['owner']) ?></strong><span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · friction <?= (int)$item['friction_score'] ?> · impact <?= (int)$item['impact_score'] ?> · <?= htmlspecialchars($item['status']) ?></span><small><?= htmlspecialchars($item['feedback_summary']) ?></small></div><?php endforeach; ?><?php if (!$feedback): ?><div><strong>No pilot feedback yet</strong><span>Capture operator friction during the 30-day pilot.</span></div><?php endif; ?></div>
+    <div class="command-items"><?php foreach ($feedback as $item): ?><div><strong><?= htmlspecialchars($item['feedback_area']) ?> - <?= htmlspecialchars($item['owner']) ?></strong><span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · friction <?= (int)$item['friction_score'] ?> · impact <?= (int)$item['impact_score'] ?> · <?= htmlspecialchars($item['status']) ?></span><small><?= htmlspecialchars($item['feedback_summary']) ?></small></div><?php endforeach; ?><?php if (!$feedback): ?><div><strong>No operator feedback yet</strong><span>Capture real workflow friction as operators use the platform.</span></div><?php endif; ?></div>
   </div>
 </section>
 
@@ -138,7 +156,7 @@ require __DIR__ . '/../components/action_first.php';
     </form>
   </div>
   <div class="panel">
-    <div class="panel-title"><h2>Active Tuning Rules</h2><span class="status">Pilot Controls</span></div>
+    <div class="panel-title"><h2>Active Tuning Rules</h2><form method="post" action="/production-readiness/tuning/apply"><button class="btn secondary">Apply Action Tuning</button></form></div>
     <div class="table-wrap"><table><thead><tr><th>Rule</th><th>Module</th><th>Category</th><th>Min</th><th>Max</th></tr></thead><tbody><?php foreach ($tuningRules as $rule): ?><tr><td><?= htmlspecialchars($rule['rule_name']) ?><br><small><?= htmlspecialchars($rule['region_name'] ?? 'All') ?></small></td><td><?= htmlspecialchars($rule['source_module'] ?? '') ?></td><td><?= htmlspecialchars($rule['category'] ?? '') ?></td><td><?= (int)$rule['min_priority_score'] ?></td><td><?= (int)$rule['max_daily_actions'] ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
 </section>
@@ -159,8 +177,8 @@ require __DIR__ . '/../components/action_first.php';
   <div class="panel-title"><h2>Deployment Readiness</h2><span class="status">Checklist</span></div>
   <div class="command-items">
     <div><strong>Sequential Cycle</strong><span>Use <code>php scripts/run_acquisition_cycle.php</code>. Do not run DB-writing scripts in parallel on SQLite.</span></div>
-    <div><strong>Integrity Gate</strong><span>Run migrate, seed/cycle, integrity, route smoke, PHP lint, and backup/restore checks before pilot sessions.</span></div>
-    <div><strong>Backup / Restore / Export</strong><span>Use <code>scripts/backup_database.php</code>, <code>scripts/restore_database.php</code>, and <code>scripts/export_operating_data.php</code>; verify restore before pilot kickoff.</span></div>
+    <div><strong>Integrity Gate</strong><span>Run migrate, production seed/cycle, integrity, route smoke, PHP lint, and backup/restore checks before operating sessions.</span></div>
+    <div><strong>Backup / Restore / Export</strong><span>Use <code>scripts/backup_database.php</code>, <code>scripts/restore_database.php</code>, and <code>scripts/export_operating_data.php</code>; verify restore before real-data work.</span></div>
     <div><strong>Password Recovery</strong><span>Reset tokens expire after 60 minutes and are one-time use. Production must configure a mailer; local/dev logs tokens only for controlled testing.</span></div>
     <div><strong>Error Logs</strong><span>Application errors write to <code>storage/logs/app.log</code>. Production mode hides stack traces from operators.</span></div>
   </div>
@@ -168,6 +186,18 @@ require __DIR__ . '/../components/action_first.php';
 
 <section id="audit" class="panel">
   <div class="panel-title"><h2>Audit Log</h2><span class="status">Admin Control</span></div>
+  <form method="get" action="/production-readiness" class="list-toolbar">
+    <input type="hidden" name="section" value="audit">
+    <input name="audit_q" value="<?= htmlspecialchars($auditFilters['audit_q'] ?? '') ?>" placeholder="Search audit">
+    <input name="audit_user_name" value="<?= htmlspecialchars($auditFilters['audit_user_name'] ?? '') ?>" placeholder="User">
+    <input name="audit_action" value="<?= htmlspecialchars($auditFilters['audit_action'] ?? '') ?>" placeholder="Action">
+    <input name="audit_record_type" value="<?= htmlspecialchars($auditFilters['audit_record_type'] ?? '') ?>" placeholder="Record type">
+    <input name="audit_outcome" value="<?= htmlspecialchars($auditFilters['audit_outcome'] ?? '') ?>" placeholder="Outcome">
+    <input type="date" name="audit_from" value="<?= htmlspecialchars($auditFilters['audit_from'] ?? '') ?>">
+    <input type="date" name="audit_to" value="<?= htmlspecialchars($auditFilters['audit_to'] ?? '') ?>">
+    <button class="btn secondary">Filter Audit</button>
+    <a class="btn ghost" href="/production-readiness#audit">Clear</a>
+  </form>
   <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Outcome</th></tr></thead><tbody>
     <?php foreach ($auditLogs as $log): ?><tr><td><?= htmlspecialchars($log['created_at']) ?></td><td><?= htmlspecialchars(($log['user_name'] ?? 'System') . ' ' . ($log['role'] ? '(' . $log['role'] . ')' : '')) ?></td><td><?= htmlspecialchars($log['action']) ?><br><small><?= htmlspecialchars($log['details'] ?? '') ?></small></td><td><?= htmlspecialchars(($log['record_type'] ?? '') . ($log['record_id'] ? ' #' . $log['record_id'] : '')) ?></td><td><?= htmlspecialchars($log['outcome']) ?></td></tr><?php endforeach; ?>
     <?php if (!$auditLogs): ?><tr><td colspan="5">No audit events yet.</td></tr><?php endif; ?>

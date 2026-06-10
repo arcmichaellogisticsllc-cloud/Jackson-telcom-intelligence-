@@ -39,7 +39,7 @@ class RealIntelligenceController extends Controller
 
         $metrics = [
             'Imported Rows' => $this->countDataset($db, null),
-            'Raw Signals' => $this->count($db, 'raw_signal_items', 'id IN (SELECT raw_signal_item_id FROM real_hunt_import_records WHERE raw_signal_item_id IS NOT NULL)'),
+            'Source Items' => $this->count($db, 'raw_signal_items', 'id IN (SELECT raw_signal_item_id FROM real_hunt_import_records WHERE raw_signal_item_id IS NOT NULL)'),
             'Review Items' => $this->count($db, 'data_review_items', 'linked_record_type LIKE "real_hunt_%"'),
             'Executive Packages' => $this->count($db, 'executive_packages', 'source_module = "Real Hunt Enrichment"'),
         ];

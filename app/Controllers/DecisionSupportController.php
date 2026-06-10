@@ -45,7 +45,7 @@ class DecisionSupportController extends Controller
         $commandService = new AcquisitionCommandService();
         $commandService->rebuild();
         foreach ($regions as $region) {
-            if ($allowed && !in_array($region['name'], $allowed, true)) {
+            if (!Auth::hasGlobalRegionAccess() && (!$allowed || !in_array($region['name'], $allowed, true))) {
                 continue;
             }
             $briefs[$region['name']] = $service->dashboardData((int)$region['id']);
@@ -107,19 +107,19 @@ class DecisionSupportController extends Controller
 
     private function allowedBriefRegions(): array
     {
-        $role = Auth::user()['role'] ?? 'Admin';
-        return match ($role) {
-            'Southeast Owner' => ['National', 'Southeast', 'Southwest'],
-            'Great Lakes Owner' => ['National', 'Great Lakes', 'Southwest'],
-            'Southwest Owner' => ['National', 'Southwest'],
-            default => [],
-        };
+        return Auth::hasGlobalRegionAccess() ? [] : Auth::allowedRegionNames();
     }
 
     private function filterDashboardData(array $data): array
     {
         $allowed = $this->allowedBriefRegions();
+        if (Auth::hasGlobalRegionAccess()) {
+            return $data;
+        }
         if (!$allowed) {
+            foreach (['topActions', 'actions', 'blockers', 'capacityGaps', 'relationshipActions', 'hunts', 'contentActions', 'opportunityDecisions'] as $key) {
+                $data[$key] = [];
+            }
             return $data;
         }
 

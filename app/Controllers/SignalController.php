@@ -7,6 +7,8 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Core\SignalScoring;
+use App\Services\OnboardingService;
+use App\Services\OwnerModelService;
 use App\Services\SignalQualityService;
 use PDO;
 
@@ -15,7 +17,6 @@ class SignalController extends Controller
     private array $types = ['Capacity','Opportunity','Relationship','Market','SEO','Content','Outreach'];
     private array $sources = ['Google Search','Google Business Profile','Facebook Marketplace','LinkedIn','Industry Forum','YouTube','Broadband Grant','Utility Announcement','Equipment Listing','New Business Filing','Hiring Activity','Manual Entry','Industry News','Referral','Conference','Website Form','Government Data','Contractor Intelligence','Other'];
     private array $statuses = ['New','Reviewed','Assigned','Converted','Ignored'];
-    private array $owners = ['Admin','Mike','Ron','Unassigned'];
     private array $states = ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL','TX','OK','LA','NM'];
 
     public function index(): void
@@ -24,8 +25,11 @@ class SignalController extends Controller
         (new SignalQualityService())->rebuild();
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
-        $signals = $db->query('SELECT s.*, r.name region_name, sqp.classification, sqp.signal_value_score, sqp.reason_for_classification FROM signals s JOIN regions r ON r.id = s.region_id LEFT JOIN signal_quality_profiles sqp ON sqp.signal_id = s.id ORDER BY CASE sqp.classification WHEN "Escalate" THEN 1 WHEN "Hunt" THEN 2 WHEN "Watch" THEN 3 ELSE 4 END, CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.created_at DESC')->fetchAll();
-        $metrics = $this->metrics();
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT s.*, r.name region_name, sqp.classification, sqp.signal_value_score, sqp.reason_for_classification FROM signals s JOIN regions r ON r.id = s.region_id LEFT JOIN signal_quality_profiles sqp ON sqp.signal_id = s.id WHERE ' . $regionWhere . ' ORDER BY CASE sqp.classification WHEN "Escalate" THEN 1 WHEN "Hunt" THEN 2 WHEN "Watch" THEN 3 ELSE 4 END, CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.created_at DESC');
+        $stmt->execute($regionParams);
+        $signals = $stmt->fetchAll();
+        $metrics = $this->metrics($regionWhere, $regionParams);
         $kanban = [];
         foreach ($this->statuses as $status) {
             $kanban[$status] = array_values(array_filter($signals, fn($signal) => $signal['status'] === $status));
@@ -139,7 +143,9 @@ class SignalController extends Controller
         $orgId = $this->ensureOrganization($db, $signal, 'Subcontractor');
         $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, "Missing", "Missing", "Prospect", "Limited", ?)');
         $stmt->execute([$orgId, $signal['region_id'], $signal['state'], $this->servicesFromSignal($signal), 'Created from capacity signal #' . $signal['id'] . ': ' . $signal['title']]);
-        return 'subcontractor #' . $db->lastInsertId();
+        $subId = (int)$db->lastInsertId();
+        (new OnboardingService())->ensureSubcontractorOnboarding($subId);
+        return 'subcontractor #' . $subId;
     }
 
     private function convertOpportunity(PDO $db, array $signal): string
@@ -171,16 +177,43 @@ class SignalController extends Controller
         return (int)$db->lastInsertId();
     }
 
-    private function metrics(): array
+    private function metrics(string $regionWhere, array $regionParams): array
     {
         $db = Database::connection();
+        $count = function (string $sql, array $params = []) use ($db, $regionWhere, $regionParams): array|int {
+            $stmt = $db->prepare($sql . ' AND ' . $regionWhere);
+            $stmt->execute(array_merge($params, $regionParams));
+            if (str_starts_with($sql, 'SELECT COUNT')) {
+                return (int)$stmt->fetchColumn();
+            }
+            return $stmt->fetchAll();
+        };
         return [
-            'new_today' => (int)$db->query("SELECT COUNT(*) FROM signals WHERE status = 'New' AND date(created_at) = date('now')")->fetchColumn(),
-            'by_classification' => $db->query('SELECT classification, COUNT(*) count FROM signal_quality_profiles GROUP BY classification')->fetchAll(),
-            'by_type' => $db->query('SELECT signal_type, COUNT(*) count FROM signals GROUP BY signal_type')->fetchAll(),
-            'by_region' => $db->query('SELECT r.name region_name, COUNT(s.id) count FROM regions r LEFT JOIN signals s ON s.region_id = r.id GROUP BY r.id')->fetchAll(),
-            'by_priority' => $db->query('SELECT priority, COUNT(*) count FROM signals GROUP BY priority')->fetchAll(),
+            'new_today' => $count("SELECT COUNT(*) FROM signals s JOIN regions r ON r.id = s.region_id WHERE s.status = 'New' AND date(s.created_at) = date('now')"),
+            'by_classification' => $this->groupMetric($db, 'SELECT sqp.classification, COUNT(*) count FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id JOIN regions r ON r.id = s.region_id WHERE ' . $regionWhere . ' GROUP BY sqp.classification', $regionParams),
+            'by_type' => $this->groupMetric($db, 'SELECT s.signal_type, COUNT(*) count FROM signals s JOIN regions r ON r.id = s.region_id WHERE ' . $regionWhere . ' GROUP BY s.signal_type', $regionParams),
+            'by_region' => $this->groupMetric($db, 'SELECT r.name region_name, COUNT(s.id) count FROM regions r LEFT JOIN signals s ON s.region_id = r.id WHERE ' . $regionWhere . ' GROUP BY r.id', $regionParams),
+            'by_priority' => $this->groupMetric($db, 'SELECT s.priority, COUNT(*) count FROM signals s JOIN regions r ON r.id = s.region_id WHERE ' . $regionWhere . ' GROUP BY s.priority', $regionParams),
         ];
+    }
+
+    private function groupMetric(PDO $db, string $sql, array $params): array
+    {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    private function regionFilter(string $column): array
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
+        $allowed = Auth::allowedRegionNames();
+        if (!$allowed) {
+            return ['1=0', []];
+        }
+        return [$column . ' IN (' . implode(',', array_fill(0, count($allowed), '?')) . ')', $allowed];
     }
 
     private function payload(): array
@@ -196,7 +229,7 @@ class SignalController extends Controller
             'city' => trim((string)($_POST['city'] ?? '')),
             'organization_name' => trim((string)($_POST['organization_name'] ?? '')),
             'contact_name' => trim((string)($_POST['contact_name'] ?? '')),
-            'owner' => $_POST['owner'] ?? 'Unassigned',
+            'owner' => $this->signalOwner($_POST['owner'] ?? ''),
             'status' => $_POST['status'] ?? 'New',
             'recommended_next_action' => trim((string)($_POST['recommended_next_action'] ?? '')),
             'notes' => trim((string)($_POST['notes'] ?? '')),
@@ -209,7 +242,7 @@ class SignalController extends Controller
             'types' => $this->types,
             'sources' => $this->sources,
             'statuses' => $this->statuses,
-            'owners' => $this->owners,
+            'owners' => $this->signalOwners(),
             'states' => $this->states,
         ];
     }
@@ -219,6 +252,20 @@ class SignalController extends Controller
         $stmt = $db->prepare('SELECT s.*, r.name region_name FROM signals s JOIN regions r ON r.id = s.region_id WHERE s.id = ?');
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
+    }
+
+    private function signalOwner(string $owner): string
+    {
+        $normalized = (new OwnerModelService())->normalizeOwner($owner, 'Unassigned');
+        return in_array($normalized, $this->signalOwners(), true) ? $normalized : 'Admin';
+    }
+
+    private function signalOwners(): array
+    {
+        return array_values(array_filter(
+            (new OwnerModelService())->ownerValues(true),
+            fn($owner) => in_array($owner, ['Admin', 'Mike', 'Ron', 'Unassigned'], true)
+        ));
     }
 
     private function activity(int $signalId, int $regionId, string $type, string $title, string $notes): void

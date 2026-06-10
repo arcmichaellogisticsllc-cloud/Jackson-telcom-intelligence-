@@ -13,6 +13,7 @@ $tabs = [
   'metrics' => ['/onboarding/metrics', 'Metrics'],
 ];
 $csrf = \App\Core\Auth::csrfInput();
+$ownerOptions = (new \App\Services\OwnerModelService())->ownerOptions(false, true);
 ?>
 
 <section class="page-header command-page-header">
@@ -34,13 +35,10 @@ $csrf = \App\Core\Auth::csrfInput();
 </section>
 <?php endif; ?>
 
-<?php
-$why = 'Onboarding is the missing workflow between discovery, qualification, and operational readiness.';
-$recommended = 'Work the highest-score items with missing documents, pending reviews, or readiness risks.';
-$next = 'Pick one onboarding action, complete the missing review or document, and log the outcome.';
-$risk = 'Without onboarding discipline, intelligence never becomes approved capacity, strategic account coverage, workforce bench, or market readiness.';
-require __DIR__ . '/../components/action_first.php';
-?>
+<section class="operator-note">
+  <strong>Onboarding flow:</strong>
+  <span>Create the record, send intake, review documents, complete reviews, then approve, hold, or reject.</span>
+</section>
 
 <section class="metrics">
   <?php foreach ($metrics as $label => $value): ?><div><span><?= htmlspecialchars($label) ?></span><strong><?= (int)$value ?></strong></div><?php endforeach; ?>
@@ -127,7 +125,7 @@ require __DIR__ . '/../components/action_first.php';
       <label>Total Crews <input type="number" name="crew_count" min="0" value="1"></label>
       <label>Available Crews <input type="number" name="available_crew_count" min="0" value="1"></label>
       <label>Availability <input name="availability" placeholder="Now, 2 weeks, 30 days"></label>
-      <label>Assigned Owner <select name="assigned_owner"><option>Ron</option><option>Mike</option><option>Mike/Ron Shared</option><option>Admin</option></select></label>
+      <label>Assigned Owner <select name="assigned_owner"><?php foreach ($ownerOptions as $ownerOption): ?><option value="<?= htmlspecialchars($ownerOption['value']) ?>"><?= htmlspecialchars($ownerOption['label']) ?></option><?php endforeach; ?></select></label>
       <div class="full checklist-grid">
         <strong>Services</strong>
         <label><input type="checkbox" name="service_underground" value="1" checked> Underground</label>

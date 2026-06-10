@@ -13,6 +13,7 @@ $_SESSION['user'] = [
 
 $router = require __DIR__ . '/../routes/web.php';
 $routes = [
+    '/',
     '/operating-view',
     '/platform-review',
     '/operator-modes',
@@ -24,6 +25,7 @@ $routes = [
     '/data-quality',
     '/connector-runs',
     '/audit-logs',
+    '/change-password',
     '/password-reset',
     '/password-reset/confirm',
     '/decision-visuals',
@@ -184,7 +186,7 @@ foreach ($routes as $route) {
     }
 }
 
-foreach (['scripts/backup_database.php','scripts/restore_database.php','scripts/validate_erp_contract.php','scripts/purge_demo_data.php'] as $script) {
+foreach (['scripts/backup_database.php','scripts/restore_database.php','scripts/validate_erp_contract.php','scripts/purge_demo_data.php','scripts/check_operational_workflows.php'] as $script) {
     if (is_file(__DIR__ . '/../' . $script)) {
         $results[] = 'PASS script exists ' . $script;
         continue;

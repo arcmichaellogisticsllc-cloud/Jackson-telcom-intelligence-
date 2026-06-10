@@ -1,12 +1,12 @@
 <section class="page-header">
   <p class="eyebrow">Acquisition Harvesters</p>
   <h1>Automated acquisition fuel.</h1>
-  <p>Automated and semi-automated sources feed raw items, raw items become scored signals, and signals create recommended actions. Manual entry is reserved for physical traffic: referrals, conferences, jobsite conversations, phone calls, and face-to-face networking.</p>
+  <p>Automated and semi-automated sources capture review-gated source items. Reviewed items become scored signals, and signals create recommended actions. Manual entry is reserved for physical traffic: referrals, conferences, jobsite conversations, phone calls, and face-to-face networking.</p>
 </section>
 
 <section class="metrics">
   <div><span>Active Sources</span><strong><?= $metrics['active_sources'] ?></strong></div>
-  <div><span>Waiting Raw Signals</span><strong><?= $metrics['waiting'] ?></strong></div>
+  <div><span>Source Items Waiting Review</span><strong><?= $metrics['waiting'] ?></strong></div>
   <div><span>Signals This Week</span><strong><?= $metrics['signals_week'] ?></strong></div>
   <div><span>Recommendations This Week</span><strong><?= $metrics['recommendations_week'] ?></strong></div>
   <div><span>Failed Sources</span><strong><?= $metrics['failed_sources'] ?></strong></div>
@@ -39,7 +39,7 @@
       <button class="btn">Run Harvesters</button>
     </form>
     <form method="post" action="/harvesters/process" class="form-card">
-      <button class="btn secondary">Process Raw Signals</button>
+      <button class="btn secondary">Review Source Items</button>
     </form>
     <hr>
     <h2>CSV Import</h2>
@@ -74,7 +74,7 @@
     <div class="table-wrap"><table><thead><tr><th>Status</th><th>Source</th><th>Found</th><th>Created</th><th>Errors</th><th>Summary</th></tr></thead><tbody><?php foreach ($runs as $run): ?><tr><td><?= htmlspecialchars($run['status']) ?></td><td><?= htmlspecialchars($run['source_name']) ?><br><small><?= htmlspecialchars($run['source_type']) ?></small></td><td><?= (int)$run['records_found'] ?></td><td><?= (int)$run['records_created'] ?></td><td><?= (int)$run['errors_count'] ?></td><td><?= htmlspecialchars($run['summary']) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
   <div class="panel">
-    <h2>Raw Signal Queue</h2>
-    <div class="table-wrap"><table><thead><tr><th>Status</th><th>Raw Signal</th><th>Source</th><th>Location</th></tr></thead><tbody><?php foreach ($rawItems as $item): ?><tr><td><?= htmlspecialchars($item['processing_status']) ?></td><td><strong><?= htmlspecialchars($item['raw_title']) ?></strong><br><small><?= htmlspecialchars($item['raw_company_name']) ?></small></td><td><?= htmlspecialchars($item['source_name']) ?></td><td><?= htmlspecialchars(trim(($item['raw_city'] ?? '') . ' ' . ($item['raw_state'] ?? ''))) ?></td></tr><?php endforeach; ?></tbody></table></div>
+    <h2>Source Item Queue</h2>
+    <div class="table-wrap"><table><thead><tr><th>Status</th><th>Source Item</th><th>Source</th><th>Location</th></tr></thead><tbody><?php foreach ($rawItems as $item): ?><tr><td><?= htmlspecialchars($item['processing_status']) ?></td><td><strong><?= htmlspecialchars($item['raw_title']) ?></strong><br><small><?= htmlspecialchars($item['raw_company_name']) ?></small></td><td><?= htmlspecialchars($item['source_name']) ?></td><td><?= htmlspecialchars(trim(($item['raw_city'] ?? '') . ' ' . ($item['raw_state'] ?? ''))) ?></td></tr><?php endforeach; ?></tbody></table></div>
   </div>
 </section>

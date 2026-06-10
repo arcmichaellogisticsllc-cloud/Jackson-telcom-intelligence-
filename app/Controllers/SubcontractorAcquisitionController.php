@@ -15,12 +15,15 @@ class SubcontractorAcquisitionController extends Controller
     {
         Auth::requireLogin();
         $db = Database::connection();
-        $rows = $db->query('SELECT s.*, o.name organization_name, r.name region_name, sq.qualification_score, sq.qualification_result, sns.network_level, sns.capacity_contribution_score, sns.capacity_contribution_category, sns.promotion_recommendation FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id LEFT JOIN subcontractor_qualification_scorecards sq ON sq.subcontractor_id = s.id LEFT JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id ORDER BY CASE s.approval_stage WHEN "Prospect" THEN 1 WHEN "Researching" THEN 2 WHEN "Qualified" THEN 3 WHEN "Documents Requested" THEN 4 WHEN "Compliance Review" THEN 5 WHEN "Approved" THEN 6 WHEN "Preferred" THEN 7 WHEN "Strategic Partner" THEN 8 WHEN "Inactive" THEN 9 ELSE 10 END, sns.capacity_contribution_score DESC')->fetchAll();
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT s.*, o.name organization_name, r.name region_name, sq.qualification_score, sq.qualification_result, sns.network_level, sns.capacity_contribution_score, sns.capacity_contribution_category, sns.promotion_recommendation FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id LEFT JOIN subcontractor_qualification_scorecards sq ON sq.subcontractor_id = s.id LEFT JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id WHERE ' . $regionWhere . ' ORDER BY CASE s.approval_stage WHEN "Prospect" THEN 1 WHEN "Researching" THEN 2 WHEN "Qualified" THEN 3 WHEN "Documents Requested" THEN 4 WHEN "Compliance Review" THEN 5 WHEN "Approved" THEN 6 WHEN "Preferred" THEN 7 WHEN "Strategic Partner" THEN 8 WHEN "Inactive" THEN 9 ELSE 10 END, sns.capacity_contribution_score DESC');
+        $stmt->execute($regionParams);
+        $rows = $stmt->fetchAll();
         $kanban = [];
         foreach (SubcontractorAcquisitionService::PIPELINE as $stage) {
             $kanban[$stage] = array_values(array_filter($rows, fn($row) => $row['approval_stage'] === $stage));
         }
-        $metrics = $this->metrics($db);
+        $metrics = $this->metrics($db, $regionWhere, $regionParams);
         $this->view('subcontractors/acquisition', compact('rows', 'kanban', 'metrics'));
     }
 
@@ -109,14 +112,36 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireRegionAccess($stmt->fetchColumn() ?: null);
     }
 
-    private function metrics($db): array
+    private function metrics($db, string $regionWhere, array $regionParams): array
     {
+        $count = function (string $sql) use ($db, $regionWhere, $regionParams): int {
+            $stmt = $db->prepare($sql . ' AND ' . $regionWhere);
+            $stmt->execute($regionParams);
+            return (int)$stmt->fetchColumn();
+        };
+        $sum = function (string $sql) use ($db, $regionWhere, $regionParams): int {
+            $stmt = $db->prepare($sql . ' AND ' . $regionWhere);
+            $stmt->execute($regionParams);
+            return (int)$stmt->fetchColumn();
+        };
         return [
-            'new_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractors WHERE created_at >= datetime('now','-7 days')")->fetchColumn(),
-            'compliance_issues' => (int)$db->query("SELECT COUNT(*) FROM subcontractor_compliance_profiles WHERE status IN ('Missing','Requested','Expired')")->fetchColumn(),
-            'capacity_added_month' => (int)$db->query("SELECT COALESCE(SUM(available_crew_count),0) FROM subcontractors WHERE approval_stage IN ('Approved','Preferred','Strategic Partner') AND strftime('%Y-%m', updated_at) = strftime('%Y-%m','now')")->fetchColumn(),
-            'strategic_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractor_network_scores WHERE promotion_recommendation LIKE '%Strategic Partner%'")->fetchColumn(),
-            'preferred_growth' => (int)$db->query("SELECT COUNT(*) FROM subcontractors WHERE approval_stage IN ('Preferred','Strategic Partner')")->fetchColumn(),
+            'new_candidates' => $count("SELECT COUNT(*) FROM subcontractors s JOIN regions r ON r.id = s.region_id WHERE s.created_at >= datetime('now','-7 days')"),
+            'compliance_issues' => $count("SELECT COUNT(*) FROM subcontractor_compliance_profiles scp JOIN subcontractors s ON s.id = scp.subcontractor_id JOIN regions r ON r.id = s.region_id WHERE scp.status IN ('Missing','Requested','Expired')"),
+            'capacity_added_month' => $sum("SELECT COALESCE(SUM(s.available_crew_count),0) FROM subcontractors s JOIN regions r ON r.id = s.region_id WHERE s.approval_stage IN ('Approved','Preferred','Strategic Partner') AND strftime('%Y-%m', s.updated_at) = strftime('%Y-%m','now')"),
+            'strategic_candidates' => $count("SELECT COUNT(*) FROM subcontractor_network_scores sns JOIN subcontractors s ON s.id = sns.subcontractor_id JOIN regions r ON r.id = s.region_id WHERE sns.promotion_recommendation LIKE '%Strategic Partner%'"),
+            'preferred_growth' => $count("SELECT COUNT(*) FROM subcontractors s JOIN regions r ON r.id = s.region_id WHERE s.approval_stage IN ('Preferred','Strategic Partner')"),
         ];
+    }
+
+    private function regionFilter(string $column): array
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
+        $allowed = Auth::allowedRegionNames();
+        if (!$allowed) {
+            return ['1=0', []];
+        }
+        return [$column . ' IN (' . implode(',', array_fill(0, count($allowed), '?')) . ')', $allowed];
     }
 }

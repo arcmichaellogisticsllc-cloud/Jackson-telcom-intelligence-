@@ -1139,8 +1139,6 @@ class RecommendationEngine
 
     private static function ownerForRegion(PDO $db, int $regionId): string
     {
-        $stmt = $db->prepare('SELECT owner FROM regions WHERE id = ?');
-        $stmt->execute([$regionId]);
-        return (string)($stmt->fetchColumn() ?: 'Admin');
+        return (new \App\Services\OwnerModelService())->ownerForRegionId($regionId, 'general');
     }
 }

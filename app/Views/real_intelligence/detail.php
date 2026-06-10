@@ -8,11 +8,9 @@ $sourceUrl = $import['source_url'] ?? '';
   <p><?= htmlspecialchars($import['dataset']) ?> · <?= htmlspecialchars($import['review_status']) ?> · Confidence <?= (int)$import['confidence_score'] ?></p>
 </section>
 
-<section class="grid four action-first-grid">
-  <article><span>What This Is</span><p>Imported public research linked to raw source, signal, enrichment, and review context.</p></article>
-  <article><span>Why It Matters</span><p>This record may become work, capacity, need, or influence only after review.</p></article>
-  <article><span>Next Step</span><p>Verify source evidence, resolve review items, and fill missing fields.</p></article>
-  <article><span>Risk Of Inaction</span><p>Unreviewed intelligence cannot safely drive pursuit, onboarding, or relationship action.</p></article>
+<section class="operator-note">
+  <strong>Review gate:</strong>
+  <span>Verify the source evidence, resolve review items, and fill missing fields before this record drives pursuit, onboarding, or relationship action.</span>
 </section>
 
 <section class="grid two">

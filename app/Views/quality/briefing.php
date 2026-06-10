@@ -6,8 +6,8 @@
 
 <nav class="dash-tabs">
   <a class="<?= $regionSlug === 'national' ? 'active' : '' ?>" href="/briefing">National</a>
-  <a class="<?= $regionSlug === 'southeast' ? 'active' : '' ?>" href="/briefing?region=southeast">Mike: Southeast</a>
-  <a class="<?= $regionSlug === 'great-lakes' ? 'active' : '' ?>" href="/briefing?region=great-lakes">Ron: Great Lakes</a>
+  <a class="<?= $regionSlug === 'southeast' ? 'active' : '' ?>" href="/briefing?region=southeast">Southeast</a>
+  <a class="<?= $regionSlug === 'great-lakes' ? 'active' : '' ?>" href="/briefing?region=great-lakes">Great Lakes</a>
   <a class="<?= $regionSlug === 'southwest' ? 'active' : '' ?>" href="/briefing?region=southwest">Southwest</a>
 </nav>
 

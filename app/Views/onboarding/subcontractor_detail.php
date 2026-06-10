@@ -102,13 +102,15 @@ $latestDocumentFor = function (array $documents, string $docType): ?array {
           <td><?= htmlspecialchars($approvalGate['documents'][$docType] ?? 'Missing') ?></td>
           <td><?= $latest ? htmlspecialchars($latest['file_name']) . '<br><small>' . htmlspecialchars($latest['status']) . '</small>' : 'No record yet' ?></td>
           <td>
-            <form method="post" action="/onboarding/document" class="inline-form">
+            <form method="post" action="/onboarding/document" class="inline-form" enctype="multipart/form-data">
               <?= $csrf ?>
               <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
               <input type="hidden" name="onboarding_type" value="Subcontractor">
               <input type="hidden" name="onboarding_id" value="<?= (int)$sub['onboarding_id'] ?>">
               <input type="hidden" name="document_type" value="<?= htmlspecialchars($docType) ?>">
-	              <input name="file_name" value="<?= htmlspecialchars(($latest['file_name'] ?? '')) ?>" placeholder="received-w9.pdf or source reference" required>
+	              <input name="file_name" value="<?= htmlspecialchars(($latest['file_name'] ?? '')) ?>" placeholder="received-w9.pdf">
+              <input type="file" name="document_file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+              <input name="source_reference" value="<?= htmlspecialchars(($latest['source_reference'] ?? '')) ?>" placeholder="Source reference">
 	              <select name="status"><option>Approved</option><option>Submitted</option><option>Requested</option><option>Rejected</option><option>Expired</option></select>
               <input name="notes" placeholder="Review notes">
               <button class="btn secondary">Save</button>

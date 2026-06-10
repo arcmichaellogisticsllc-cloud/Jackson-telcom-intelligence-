@@ -1,3 +1,7 @@
+<?php
+$ownerModel = new \App\Services\OwnerModelService();
+$ownerOptions = $ownerModel->ownerOptions(false, true);
+?>
 <section class="page-header">
   <p class="eyebrow">Decision Support Layer V2</p>
   <h1><?= htmlspecialchars($title) ?></h1>
@@ -76,7 +80,7 @@
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
       <label>Source Action<select name="source_action_id"><?php foreach ($actions as $action): ?><option value="<?= (int)$action['id'] ?>"><?= htmlspecialchars($action['action_title']) ?></option><?php endforeach; ?></select></label>
       <label>Action Title<input name="action_title" required></label>
-      <label>Owner<select name="owner"><option>Mike</option><option>Ron</option><option>Mike/Ron Shared</option><option>Future Southwest Owner</option><option>Admin</option></select></label>
+      <label>Owner<select name="owner"><?php foreach ($ownerOptions as $ownerOption): ?><option value="<?= htmlspecialchars($ownerOption['value']) ?>"><?= htmlspecialchars($ownerOption['label']) ?></option><?php endforeach; ?></select></label>
       <label>Due Date<input type="date" name="due_date" value="<?= date('Y-m-d', strtotime('+2 days')) ?>"></label>
       <label class="full">Recommended Next Step<textarea name="recommended_next_step" rows="3"></textarea></label>
       <button>Create Follow-Up</button>

@@ -72,14 +72,14 @@ class WorkspaceController extends Controller
     private function metrics($db, string $key): array
     {
         return match ($key) {
-            'work' => ['Work Ready' => $this->count($db, 'work_intelligence'), 'Pursuits' => $this->count($db, 'opportunity_pursuit_decisions'), 'Preconstruction' => $this->count($db, 'preconstruction_profiles'), 'Opportunities' => $this->count($db, 'opportunities')],
-            'capacity' => ['Capacity Providers' => $this->count($db, 'capacity_profiles'), 'Subcontractors' => $this->count($db, 'subcontractors'), 'Workforce' => $this->count($db, 'workforce_profiles'), 'Capacity Gaps' => $this->count($db, 'recommended_actions', 'category = "Capacity" AND status = "Open"')],
-            'relationships' => ['Contacts' => $this->count($db, 'contacts'), 'Organizations' => $this->count($db, 'organizations'), 'Relationship Profiles' => $this->count($db, 'relationship_intelligence_profiles'), 'Conversations' => $this->count($db, 'communication_records')],
-            'market' => ['Signals' => $this->count($db, 'signals'), 'Escalations' => $this->count($db, 'signal_quality_profiles', 'classification = "Escalate"'), 'Watchlists' => $this->count($db, 'watchlist_items'), 'Competitors' => $this->count($db, 'competitor_profiles')],
-            'growth' => ['Demand Signals' => $this->count($db, 'demand_signals'), 'Content Drafts' => $this->count($db, 'content_drafts'), 'Distribution Plans' => $this->count($db, 'distribution_plans'), 'Channels' => $this->count($db, 'channels')],
-            'onboarding' => ['Subcontractors' => $this->count($db, 'subcontractor_onboarding'), 'Workforce' => $this->count($db, 'workforce_onboarding'), 'Strategic Accounts' => $this->count($db, 'strategic_account_onboarding'), 'Markets' => $this->count($db, 'market_onboarding')],
-            'operations' => ['Project Packages' => $this->count($db, 'project_packages'), 'Ready' => $this->count($db, 'erp_readiness_profiles', 'readiness_category IN ("Ready","Ready Now")'), 'Blocked' => $this->count($db, 'erp_readiness_profiles', 'readiness_category IN ("Not Ready","Needs Review")'), 'Handoffs' => $this->count($db, 'integration_statuses')],
-            default => ['Health Checks' => $this->count($db, 'platform_health_checks'), 'Recommendations' => $this->count($db, 'recommended_actions', 'status = "Open"'), 'Activities' => $this->count($db, 'activities'), 'Lessons' => $this->count($db, 'lessons_learned')],
+            'work' => ['Work Ready' => $this->countScoped($db, 'work_intelligence'), 'Pursuits' => $this->countScoped($db, 'opportunity_pursuit_decisions'), 'Preconstruction' => $this->countScoped($db, 'preconstruction_profiles'), 'Opportunities' => $this->countScoped($db, 'opportunities')],
+            'capacity' => ['Capacity Providers' => $this->countScoped($db, 'capacity_profiles'), 'Subcontractors' => $this->countScoped($db, 'subcontractors'), 'Workforce' => $this->countScoped($db, 'workforce_profiles'), 'Capacity Gaps' => $this->countScoped($db, 'recommended_actions', 'category = "Capacity" AND status = "Open"')],
+            'relationships' => ['Contacts' => $this->countScoped($db, 'contacts'), 'Organizations' => $this->countScoped($db, 'organizations'), 'Relationship Profiles' => $this->countScoped($db, 'relationship_intelligence_profiles'), 'Conversations' => $this->countScoped($db, 'communication_records')],
+            'market' => ['Signals' => $this->countScoped($db, 'signals'), 'Escalations' => $this->countSignalEscalations($db), 'Watchlists' => $this->countScoped($db, 'watchlist_items'), 'Competitors' => $this->countScoped($db, 'competitor_profiles')],
+            'growth' => ['Demand Signals' => $this->countScoped($db, 'demand_signals'), 'Content Drafts' => $this->countContentDrafts($db), 'Distribution Plans' => $this->countDistributionPlans($db), 'Channels' => $this->countScoped($db, 'channels')],
+            'onboarding' => ['Subcontractors' => $this->countScoped($db, 'subcontractor_onboarding'), 'Workforce' => $this->countScoped($db, 'workforce_onboarding'), 'Strategic Accounts' => $this->countScoped($db, 'strategic_account_onboarding'), 'Markets' => $this->countScoped($db, 'market_onboarding')],
+            'operations' => ['Project Packages' => $this->countScoped($db, 'project_packages'), 'Ready' => $this->countPackageJoin($db, 'erp_readiness_profiles erp', 'erp.project_package_id', 'erp.readiness_category IN ("Ready","Ready Now")'), 'Blocked' => $this->countPackageJoin($db, 'erp_readiness_profiles erp', 'erp.project_package_id', 'erp.readiness_category IN ("Not Ready","Needs Review")'), 'Handoffs' => $this->countPackageJoin($db, 'integration_statuses ist', 'ist.project_package_id')],
+            default => ['Health Checks' => $this->count($db, 'platform_health_checks'), 'Recommendations' => $this->countScoped($db, 'recommended_actions', 'status = "Open"'), 'Activities' => $this->countScoped($db, 'activities'), 'Lessons' => $this->countScoped($db, 'lessons_learned')],
         };
     }
 
@@ -101,6 +101,50 @@ class WorkspaceController extends Controller
     private function count($db, string $table, string $where = '1=1'): int
     {
         return (int)$db->query("SELECT COUNT(*) FROM {$table} WHERE {$where}")->fetchColumn();
+    }
+
+    private function countScoped($db, string $table, string $where = '1=1', string $column = 'region_id'): int
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return $this->count($db, $table, $where);
+        }
+        $ids = Auth::allowedRegionIds();
+        if (!$ids) {
+            return 0;
+        }
+        return $this->count($db, $table, $where . ' AND (' . $column . ' IS NULL OR ' . $column . ' IN (' . implode(',', array_map('intval', $ids)) . '))');
+    }
+
+    private function countSignalEscalations($db): int
+    {
+        [$where, $params] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT COUNT(*) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id LEFT JOIN regions r ON r.id = s.region_id WHERE sqp.classification = "Escalate" AND ' . $where);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function countContentDrafts($db): int
+    {
+        [$where, $params] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT COUNT(*) FROM content_drafts cd JOIN content_opportunities co ON co.id = cd.content_opportunity_id LEFT JOIN regions r ON r.id = co.region_id WHERE ' . $where);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function countDistributionPlans($db): int
+    {
+        [$where, $params] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT COUNT(*) FROM distribution_plans dp JOIN content_opportunities co ON co.id = dp.content_id LEFT JOIN regions r ON r.id = co.region_id WHERE ' . $where);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    private function countPackageJoin($db, string $table, string $packageJoinColumn, string $where = '1=1'): int
+    {
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare("SELECT COUNT(*) FROM {$table} JOIN project_packages pp ON pp.id = {$packageJoinColumn} LEFT JOIN regions r ON r.id = pp.region_id WHERE {$where} AND {$regionWhere}");
+        $stmt->execute($regionParams);
+        return (int)$stmt->fetchColumn();
     }
 
     private function regionFilter(string $column): array

@@ -118,18 +118,22 @@ class OperationalMaturityService
 
     private function seedRhythms(PDO $db): void
     {
+        $ownerModel = new OwnerModelService();
+        $sharedOwner = $ownerModel->sharedOwnerValue();
+        $relationshipOwner = $ownerModel->ownerForRegionName('Southeast', 'relationship_opportunity');
+        $readinessOwner = $ownerModel->ownerForRegionName('Great Lakes', 'capacity_readiness');
         $rows = [
-            ['Daily Company State Review','Daily','Executive Brief Review','Mike/Ron Shared','National','Who has work, who has capacity, who needs work, who influences work','Weekday','08:00'],
+            ['Daily Company State Review','Daily','Executive Brief Review',$sharedOwner,'National','Who has work, who has capacity, who needs work, who influences work','Weekday','08:00'],
             ['Daily My Priorities Review','Daily','Top 5 Actions Review','Admin','National','Owner-specific actions, overdue owner actions, blocked next steps','Weekday','08:15'],
-            ['Daily Shared Priorities Review','Daily','Relationship Risk Review','Mike/Ron Shared','Southwest','Shared blockers, Southwest priorities, National priority actions','Weekday','08:30'],
-            ['Weekly Mike Relationship / Opportunity Review','Weekly','Relationship Review','Mike','Southeast','Strategic accounts, relationships, opportunities, market intelligence, partnerships','Monday','09:00'],
-            ['Weekly Ron Capacity / Readiness Review','Weekly','Capacity Review','Ron','Great Lakes','Capacity gaps, subcontractor pipeline, workforce, field readiness, handoff readiness','Tuesday','09:00'],
-            ['Weekly Joint Pursuits / Blockers Review','Weekly','Pursuit Review','Mike/Ron Shared','National','Major pursuits, strategic accounts, shared blockers, critical capacity gaps','Wednesday','09:00'],
-            ['Monthly Strategic Account Review','Monthly','Strategic Account Review','Mike','National','Comcast, Charter, Frontier, AT&T, Windstream, co-ops','First Wednesday','11:00'],
-            ['Monthly Capacity Network Review','Monthly','Partner Network Review','Ron','National','Approved network, preferred partners, workforce, readiness gaps','Second Wednesday','11:00'],
-            ['Monthly Market Readiness Review','Monthly','Regional Readiness Review','Mike/Ron Shared','National','Market readiness, demand, competitive pressure, real intelligence gaps','Third Wednesday','11:00'],
-            ['Quarterly Regional Dominance Review','Quarterly','Regional Dominance Review','Mike/Ron Shared','National','Dominance score, expansion, investment priorities, account coverage','Quarter Start','13:00'],
-            ['Quarterly Investment Review','Quarterly','Investment Priority Review','Mike/Ron Shared','National','Where to invest, what to recruit, what to pursue, what to avoid','Quarter Start','14:00'],
+            ['Daily Shared Priorities Review','Daily','Relationship Risk Review',$sharedOwner,'Southwest','Shared blockers, Southwest priorities, National priority actions','Weekday','08:30'],
+            ['Weekly Relationship / Opportunity Review','Weekly','Relationship Review',$relationshipOwner,'Southeast','Strategic accounts, relationships, opportunities, market intelligence, partnerships','Monday','09:00'],
+            ['Weekly Capacity / Readiness Review','Weekly','Capacity Review',$readinessOwner,'Great Lakes','Capacity gaps, subcontractor pipeline, workforce, field readiness, handoff readiness','Tuesday','09:00'],
+            ['Weekly Shared Pursuits / Blockers Review','Weekly','Pursuit Review',$sharedOwner,'National','Major pursuits, strategic accounts, shared blockers, critical capacity gaps','Wednesday','09:00'],
+            ['Monthly Strategic Account Review','Monthly','Strategic Account Review',$relationshipOwner,'National','Comcast, Charter, Frontier, AT&T, Windstream, co-ops','First Wednesday','11:00'],
+            ['Monthly Capacity Network Review','Monthly','Partner Network Review',$readinessOwner,'National','Approved network, preferred partners, workforce, readiness gaps','Second Wednesday','11:00'],
+            ['Monthly Market Readiness Review','Monthly','Regional Readiness Review',$sharedOwner,'National','Market readiness, demand, competitive pressure, real intelligence gaps','Third Wednesday','11:00'],
+            ['Quarterly Regional Dominance Review','Quarterly','Regional Dominance Review',$sharedOwner,'National','Dominance score, expansion, investment priorities, account coverage','Quarter Start','13:00'],
+            ['Quarterly Investment Review','Quarterly','Investment Priority Review',$sharedOwner,'National','Where to invest, what to recruit, what to pursue, what to avoid','Quarter Start','14:00'],
         ];
         $stmt = $db->prepare('INSERT INTO operating_rhythms (rhythm_name, cadence, review_type, owner, region_id, required_sections, due_day, due_time, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
         foreach ($rows as [$name, $cadence, $type, $owner, $region, $sections, $day, $time]) {

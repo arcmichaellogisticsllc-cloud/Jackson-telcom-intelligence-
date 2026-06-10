@@ -1,6 +1,6 @@
 <?php
 $slug = strtolower(str_replace(' ', '-', $region['name']));
-$ownerLabel = $region['name'] === 'Southwest' ? 'Mike / Ron Shared' : $region['owner'];
+$ownerLabel = $region['name'] === 'Southwest' ? 'Shared Regional Ownership' : 'Regional Ownership';
 $command = $commandData ?? ['metrics' => [], 'work' => [], 'capacity' => [], 'need' => [], 'influence' => []];
 $widgets = [
     [
@@ -42,25 +42,23 @@ $widgets = [
 ];
 ?>
 <section class="page-header command-page-header">
-  <p class="eyebrow"><?= htmlspecialchars($ownerLabel) ?> Mode</p>
+  <p class="eyebrow"><?= htmlspecialchars($ownerLabel) ?></p>
   <h1><?= htmlspecialchars($region['name']) ?> Command Center</h1>
   <p>States covered: <?= htmlspecialchars($region['states']) ?>. This screen filters Jackson Telcom intelligence into work, capacity, need, influence, and the next actions for this theater.</p>
 </section>
 
 <nav class="dash-tabs">
   <a href="/">Command Center</a>
-  <a class="<?= $region['name'] === 'Southeast' ? 'active' : '' ?>" href="/command/southeast">Mike Perspective</a>
-  <a class="<?= $region['name'] === 'Great Lakes' ? 'active' : '' ?>" href="/command/great-lakes">Ron Perspective</a>
+  <a class="<?= $region['name'] === 'Southeast' ? 'active' : '' ?>" href="/command/southeast">Southeast View</a>
+  <a class="<?= $region['name'] === 'Great Lakes' ? 'active' : '' ?>" href="/command/great-lakes">Great Lakes View</a>
   <a class="<?= $region['name'] === 'Southwest' ? 'active' : '' ?>" href="/command/southwest">Shared Southwest</a>
   <a href="/daily-brief">Executive Brief</a>
 </nav>
 
-<?php
-$why = $region['name'] . ' is an operating theater. The page should tell ' . $ownerLabel . ' where work, capacity, need, and influence are moving.';
-$recommended = 'Work the highest decision-score actions first, then inspect capacity gaps and relationship blockers.';
-$next = 'Complete or dismiss one priority, capture the outcome, then move the target, hunt, or relationship forward.';
-require __DIR__ . '/../components/action_first.php';
-?>
+<section class="operator-note">
+  <strong><?= htmlspecialchars($region['name']) ?> focus:</strong>
+  <span>Work the highest-score actions first, then clear capacity gaps, relationship blockers, and onboarding items for this theater.</span>
+</section>
 
 <?php $priorityActions = $decisionWidgets['topActions'] ?? []; require __DIR__ . '/../components/todays_priorities.php'; ?>
 

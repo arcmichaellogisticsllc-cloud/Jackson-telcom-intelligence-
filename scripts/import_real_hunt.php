@@ -3,6 +3,7 @@
 require __DIR__ . '/../vendor_autoload.php';
 
 use App\Core\Database;
+use App\Services\OwnerModelService;
 
 const DATASET_COLUMNS = [
     'strategic_accounts' => ['account_name','account_type','region','market','website','source_url','source_type','confidence_score','review_status','import_source'],
@@ -130,21 +131,13 @@ function normalizeReviewStatus(string $status): string
 
 function ownerForRegion(string $region): string
 {
-    return match ($region) {
-        'Southeast' => 'Mike',
-        'Great Lakes' => 'Ron',
-        'Southwest' => 'Mike/Ron Shared',
-        default => 'Admin',
-    };
+    return (new OwnerModelService())->ownerForRegionName($region ?: 'National', 'relationship_opportunity');
 }
 
 function signalOwnerForRegion(string $region): string
 {
-    return match ($region) {
-        'Southeast' => 'Mike',
-        'Great Lakes' => 'Ron',
-        default => 'Admin',
-    };
+    $owner = (new OwnerModelService())->ownerForRegionName($region ?: 'National', 'relationship_opportunity');
+    return in_array($owner, ['Admin', 'Mike', 'Ron', 'Unassigned'], true) ? $owner : 'Admin';
 }
 
 function signalTypeForDataset(string $dataset): string

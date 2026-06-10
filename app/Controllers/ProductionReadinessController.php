@@ -18,7 +18,7 @@ class ProductionReadinessController extends Controller
     public function index(): void
     {
         Auth::requireLogin();
-        $this->view('production_readiness/index', $this->service->dashboardData());
+        $this->view('production_readiness/index', $this->service->dashboardData($_GET));
     }
 
     public function dataQuality(): void
@@ -47,7 +47,7 @@ class ProductionReadinessController extends Controller
     {
         Auth::requireLogin();
         $this->service->updateReview((int)($_POST['id'] ?? 0), $_POST['status'] ?? 'In Review', $_POST['resolution_notes'] ?? '');
-        $this->redirect('/production-readiness#data-review');
+        $this->redirect($_POST['return_to'] ?? '/production-readiness#data-review');
     }
 
     public function createDataQualityIssue(): void
@@ -60,8 +60,15 @@ class ProductionReadinessController extends Controller
     public function updateDataQualityIssue(): void
     {
         Auth::requireLogin();
-        $this->service->updateDataQualityIssue((int)($_POST['id'] ?? 0), $_POST['status'] ?? 'In Review', $_POST['resolution_notes'] ?? '', $_POST['resolution_outcome'] ?? '');
-        $this->redirect('/production-readiness#quality-issues');
+        $this->service->updateDataQualityIssue((int)($_POST['id'] ?? 0), $_POST['status'] ?? 'In Review', $_POST['resolution_notes'] ?? '', $this->structuredOutcome($_POST));
+        $this->redirect($_POST['return_to'] ?? '/production-readiness#quality-issues');
+    }
+
+    public function applyTuning(): void
+    {
+        Auth::requireLogin();
+        $this->service->applyTuningRules();
+        $this->redirect('/production-readiness#tuning');
     }
 
     public function runConnector(): void
@@ -90,5 +97,20 @@ class ProductionReadinessController extends Controller
         Auth::requireLogin();
         $this->service->updateErpValidation((int)($_POST['id'] ?? 0), $_POST['validation_status'] ?? 'Pending', $_POST['notes'] ?? '');
         $this->redirect('/production-readiness#syncerp-contract');
+    }
+
+    private function structuredOutcome(array $input): string
+    {
+        $parts = [];
+        if (!empty($input['resolution_outcome'])) {
+            $parts[] = trim((string)$input['resolution_outcome']);
+        }
+        foreach (['owner','region','email','phone','website','status','market','classification','recommended_action','notes'] as $field) {
+            $value = trim((string)($input['correction_' . $field] ?? ''));
+            if ($value !== '') {
+                $parts[] = $field . '=' . $value;
+            }
+        }
+        return implode("\n", $parts);
     }
 }

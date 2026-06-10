@@ -1,6 +1,6 @@
 # V1 Operator Readiness Guide
 
-This guide is for getting Mike, Ron, and future regional owners operating the Jackson Intelligence Platform without drowning in module noise.
+This guide is for getting current and future operators using the Jackson Intelligence Platform without drowning in module noise.
 
 ## Operating Rule
 
@@ -32,7 +32,7 @@ Executive Mode:
 Use `/operating-view`. Decide the top five actions and remove noise.
 
 Regional Owner Mode:
-Use `/acquisition-command`. Mike focuses Southeast. Ron focuses Great Lakes. Southwest remains shared until ownership changes.
+Use `/acquisition-command`. Operators work from the shared company state, then use owner and regional filters to focus assigned priorities. Southwest remains shared until ownership changes.
 
 Hunting Mode:
 Use `/hunt-actions`, `/targets`, `/hunting-lists`, `/hunts`, and `/playbooks`. This is for calls, research, qualification, and outcome capture.
@@ -182,8 +182,8 @@ Days 1-3: System Readiness
 
 Days 4-7: Operator Training
 
-- Train Mike on Southeast Regional Owner Mode.
-- Train Ron on Great Lakes Regional Owner Mode.
+- Train relationship/opportunity ownership on account, relationship, opportunity, and market workflows.
+- Train capacity/readiness ownership on capacity, subcontractor, workforce, readiness, and handoff workflows.
 - Review Southwest shared ownership rules.
 - Work only the top five actions per day.
 - Record outcomes instead of adding unstructured notes.

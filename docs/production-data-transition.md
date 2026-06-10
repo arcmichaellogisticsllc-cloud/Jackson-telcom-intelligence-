@@ -12,7 +12,7 @@ Demo mode is the default:
 php scripts/seed.php
 ```
 
-Demo mode creates sample contacts, organizations, targets, hunts, capacity, relationships, opportunities, demand, executive packages, onboarding records, and pilot feedback for development and training.
+Demo mode creates sample contacts, organizations, targets, hunts, capacity, relationships, opportunities, demand, executive packages, onboarding records, and operator feedback for development and training.
 
 Production mode creates only baseline system/reference data:
 
@@ -81,7 +81,7 @@ The purge removes demo/sample operating records, including:
 
 - contacts and organizations
 - strategic accounts
-- raw signal items and signals
+- source items and signals
 - acquisition targets, hunts, playbooks, and hunt tasks
 - opportunities, pursuits, preconstruction profiles, and project packages
 - capacity profiles, subcontractors, documents, compliance, and scorecards
@@ -89,7 +89,7 @@ The purge removes demo/sample operating records, including:
 - executive packages and visual decision data
 - onboarding records, reviews, and documents
 - intelligence warehouse outcomes and lessons
-- pilot feedback demo rows
+- operator feedback demo rows
 - connector run demo rows
 - market intelligence demo rows
 - demand/content/distribution demo rows
@@ -137,8 +137,8 @@ Initial regions:
 1. Add the first strategic accounts.
 2. Add real contacts and organizations.
 3. Add capacity providers and subcontractor candidates.
-4. Run or import connector data into the raw signal queue.
-5. Review raw signals through Signal Quality and Data Quality.
+4. Run or import connector data into the source item queue.
+5. Review source items through Signal Quality and Data Quality.
 6. Promote only real, reviewed intelligence into targets, hunts, onboarding, and decisions.
 
 ## Rollback

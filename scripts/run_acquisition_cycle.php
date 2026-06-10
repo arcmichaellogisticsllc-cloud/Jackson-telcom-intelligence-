@@ -26,7 +26,7 @@ echo "SQLite mode: running database-writing jobs sequentially. Do not run these 
 
 $steps = [
     'Harvest active signal sources' => __DIR__ . '/run_harvesters.php',
-    'Process raw signals' => __DIR__ . '/process_raw_signals.php',
+    'Process source items' => __DIR__ . '/process_raw_signals.php',
     'Build acquisition targets' => __DIR__ . '/build_acquisition_targets.php',
 ];
 

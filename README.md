@@ -70,7 +70,7 @@ The platform still includes detailed modules, but they support the Command Cente
 
 ## Shared Operating System & Ownership
 
-Jackson does not run separate Mike and Ron workflows.
+Jackson does not run separate person-based workflows.
 
 The platform is one shared company operating system:
 
@@ -81,11 +81,15 @@ The platform is one shared company operating system:
 
 Major records support primary owner, secondary owner, shared ownership, and ownership notes. Ownership changes write to the record timeline, activities, and audit log.
 
-Responsibility defaults:
+Ownership is configured through the ownership responsibility model, not through hardcoded dropdowns. The platform seeds `owner_profiles`, `responsibility_roles`, `owner_responsibility_roles`, and `region_ownership_defaults` as system configuration. Existing text owner fields remain for compatibility, but new defaults, dropdowns, importer ownership, and workflow assignment logic read from those records.
 
-- Mike: strategic accounts, relationships, opportunities, market intelligence, partnerships, and executive packages.
-- Ron: capacity, subcontractors, workforce, field readiness, preconstruction readiness, and SyncERP handoff readiness.
-- Shared: Southwest, National, strategic decisions, major pursuits, critical capacity gaps, and quarterly reviews.
+Current responsibility defaults:
+
+- Relationship / Opportunity Owner: strategic accounts, relationships, opportunities, market intelligence, partnerships, and executive packages.
+- Capacity / Readiness Owner: capacity, subcontractors, workforce, field readiness, preconstruction readiness, and SyncERP handoff readiness.
+- Shared Ownership: Southwest, National, strategic decisions, major pursuits, critical capacity gaps, and quarterly reviews.
+
+Mike and Ron may currently fill these responsibilities, but the workflow is built around ownership and operating perspective, not named-person lanes.
 
 See [Shared Operating System & Ownership Model](docs/shared-operating-system-ownership.md).
 
@@ -94,8 +98,8 @@ See [Shared Operating System & Ownership Model](docs/shared-operating-system-own
 Perspective filters emphasize the right priorities without splitting the workflow:
 
 - Company View: national Jackson Telcom Command Center and top five company actions.
-- Mike Perspective: accounts, relationships, opportunities, market intelligence, and partnerships.
-- Ron Perspective: capacity, subcontractors, workforce, readiness, and handoff preparation.
+- Relationship / Opportunity Perspective: accounts, relationships, opportunities, market intelligence, and partnerships.
+- Capacity / Readiness Perspective: capacity, subcontractors, workforce, readiness, and handoff preparation.
 - Regional Owner Perspective: theater-specific work, capacity, need, influence, and actions.
 - Admin / Executive View: platform health, seed mode, backups, data integrity, navigation, and release readiness.
 
@@ -109,15 +113,38 @@ The Executive Brief is a one-screen operating brief. It answers:
 - Who influences work?
 - What should we do today?
 
-It intentionally avoids raw signal counts and CSV-style review. The brief is for decisions and action.
+It intentionally avoids source item counts and CSV-style review. The brief is for decisions and action.
+
+## Operating Workflow Loop
+
+The Command Center is organized around one operating loop:
+
+1. Capture real intelligence.
+2. Review whether it is useful, duplicate, incomplete, or bad.
+3. Clean data quality issues before trusting the record.
+4. Convert useful intelligence into work, capacity, need, or influence assets.
+5. Onboard subcontractors, workforce, strategic accounts, and markets.
+6. Act through daily actions, follow-ups, document requests, and reviews.
+7. Decide through executive packages and pursuit/preconstruction readiness.
+8. Handoff only ready project packages to the SyncERP integration layer.
+
+The home screen now exposes this as operating queues instead of module dashboards. Empty queues are hidden or shown as clean empty states. The goal is that an operator can open the Command Center and immediately see what needs to move next without browsing engines.
+
+Top Actions should come from real blockers: data review, missing documents, capacity gaps, ownership gaps, decision packages, and handoff readiness. Broad recommendations remain available, but the executive queue should stay tied to work that can be completed or moved forward.
+
+See [Mission Operating Workflow](docs/mission-operating-workflow.md).
+
+Ground crew and subcontractor onboarding is wired as an operational capacity workflow: create prospect, generate intake link, receive self-service intake, review documents, complete compliance/capacity reviews, approve capacity, sync the capacity profile, and match it against open work before recruiting from scratch.
+
+See [Operational Capacity Workflow](docs/operational-capacity-workflow.md).
 
 ## Regional Command Centers
 
 Regional Command Centers are built for daily theater ownership:
 
-- Southeast: Mike
-- Great Lakes: Ron
-- Southwest: Mike / Ron shared until a future Southwest owner exists
+- Southeast: assigned regional ownership
+- Great Lakes: assigned regional ownership
+- Southwest: shared regional ownership until a dedicated regional owner exists
 
 Each regional command center shows work, capacity, need, influence, actions, growth blockers, capacity gaps, market intelligence, and SyncERP handoff readiness for that theater.
 
@@ -212,7 +239,7 @@ The Ownership Matrix tracks primary and secondary owners for:
 - Hunts
 - Strategic Accounts
 
-Ownership keeps strategic action accountable across Mike, Ron, shared Southwest, Admin, and future regional owners.
+Ownership keeps strategic action accountable across primary owners, secondary owners, shared Southwest, Admin, and future regional owners.
 
 ### Strategic Accounts
 
@@ -362,8 +389,8 @@ Strategic Review mode uses packages and briefs to answer:
 Jackson Intelligence Platform
 ├── National Command Center
 ├── Regions / Theaters
-│   ├── Southeast: Mike, GA, AL, FL, TN, NC, SC
-│   ├── Great Lakes: Ron, MI, OH, IN, WI, IL
+│   ├── Southeast: assigned regional ownership, GA, AL, FL, TN, NC, SC
+│   ├── Great Lakes: assigned regional ownership, MI, OH, IN, WI, IL
 │   └── Southwest: Houston hub, TX, OK, LA, NM
 ├── Acquisition Harvesters
 ├── Acquisition Targets
@@ -385,8 +412,8 @@ Jackson Intelligence Platform
 
 ## Regions / Theaters
 
-- Southeast: owner Mike, states GA, AL, FL, TN, NC, SC
-- Great Lakes: owner Ron, states MI, OH, IN, WI, IL
+- Southeast: assigned regional ownership, states GA, AL, FL, TN, NC, SC
+- Great Lakes: assigned regional ownership, states MI, OH, IN, WI, IL
 - Southwest: Houston, TX hub, states TX, OK, LA, NM
 
 ## Requirements
@@ -417,7 +444,7 @@ Run the complete V1 hardening check before operator use:
 php scripts/release_check.php
 ```
 
-This runs migrations, seed, acquisition cycle, data integrity checks, route smoke tests, backup, operating export, and PHP lint.
+This runs migrations, seed, acquisition cycle, data integrity checks, route smoke tests, backup, backup-restore verification, operating export, production launch checks, and PHP lint.
 
 Operator readiness, security basics, backup/export guidance, and the first 30-day operating plan are documented in:
 
@@ -436,7 +463,7 @@ The seeder creates acquisition operating data for local validation and developme
 - regional service capacity targets
 - keyword, content, outreach target, and outreach sequence records
 - signal source registry records
-- harvester runs and raw signal items
+- harvester runs and source items
 - signal intelligence records for Signal Center workflow validation
 - acquisition targets, hunts, playbooks, and hunt tasks
 - capacity profiles, trust scores, and capacity radar targets
@@ -451,19 +478,26 @@ For a minimal production baseline:
 JIP_SEED_MODE=production php scripts/seed.php
 ```
 
-Production mode seeds only regions, users, and capacity targets. Change seeded passwords before live use.
+Production mode seeds only regions, users, and capacity targets. Newly created baseline users are marked for password change and must not be exposed with default credentials.
 
-## Seeded Login
+## Production Credential Setup
 
-All seeded users use password:
+Rotate any seeded default passwords before live use:
 
-`password`
+```bash
+php scripts/rotate_default_passwords.php
+```
 
-Users:
+The script writes one-time passwords to `storage/secrets/` with restricted permissions. Operators must change their password on first login.
+
+Baseline users:
 
 - `admin@jacksontelcom.com` - Admin
+- `executive@jacksontelcom.com` - Executive
 - `mike@jacksontlcom.com` - Southeast Owner
 - `ron@jacksontelcom.com` - Great Lakes Owner
+- `operator@jacksontelcom.com` - Southeast Operator
+- `viewer@jacksontelcom.com` - Southeast Viewer
 
 ## Modules
 
@@ -506,10 +540,10 @@ The harvesting pipeline is:
 
 1. Signal Source defines where intelligence should come from.
 2. Harvester Run records when the source was checked and what happened.
-3. Raw Signal Item stores unprocessed harvested data.
-4. Signal Processing classifies, routes, scores, and converts raw items into clean Signals.
+3. Review-gated source items store unprocessed harvested data.
+4. Signal Processing classifies, routes, scores, and converts source items into clean Signals.
 5. Acquisition Target Pipeline converts relevant Signals into scored Targets.
-6. Hunting Lists prioritize Targets for Mike, Ron, Admin, and the future Southwest owner.
+6. Hunting Lists prioritize Targets for primary owners, shared ownership, Admin, and future regional owners.
 7. Recommendation Engine turns Signals and Targets into owner actions.
 
 Signal sources track source type, target category, collection method, URL/search query, cadence, status, last run, next run, and run counts.
@@ -539,9 +573,9 @@ CSV imports must include these headers when available:
 
 `title,description,source_type,source_url,company_name,contact_name,phone,email,city,state,notes`
 
-CSV rows become Raw Signal Items first, then flow through the same processor as harvested records.
+CSV rows become review-gated source items first, then flow through the same processor as harvested records.
 
-This framework exists before Capacity Radar because Capacity Radar needs fuel: source coverage, raw market activity, contractor movement, equipment signals, funding signals, relationship movement, SEO demand, and outreach targets.
+This framework exists before Capacity Radar because Capacity Radar needs fuel: source coverage, market activity, contractor movement, equipment signals, funding signals, relationship movement, SEO demand, and outreach targets.
 
 ## Acquisition Target Pipeline
 
@@ -574,9 +608,9 @@ Targets are deduplicated by organization, phone, email, website, region, and tar
 Hunting lists:
 
 - National Hunting List: top targets across all theaters
-- Mike's Southeast Hunting List: Southeast targets only
-- Ron's Great Lakes Hunting List: Great Lakes targets only
-- Southwest Hunting List: Southwest targets assigned to Future Southwest Owner or Admin
+- Southeast Hunting List: Southeast targets only
+- Great Lakes Hunting List: Great Lakes targets only
+- Southwest Hunting List: Southwest targets assigned to shared ownership, a future regional owner, or Admin
 
 Outreach Prep does not send messages. It only prepares a suggested opening message, call notes, reason the target matters, discovery questions, and recommended channel.
 
@@ -623,8 +657,8 @@ The Escalation Center shows why something escalated, the supporting signals behi
 
 The Daily Intelligence Briefing is the owner-facing operating screen:
 
-- Mike sees Southeast escalations, hunts, watchlist changes, and top recommendations.
-- Ron sees Great Lakes escalations, hunts, watchlist changes, and top recommendations.
+- Regional owners see assigned theater escalations, hunts, watchlist changes, and top recommendations.
+- Shared owners see shared Southwest/National escalations, hunts, watchlist changes, and top recommendations.
 - Admin sees national escalations, hunts, watchlists, and regional comparison.
 
 Signal decay reduces influence as signals age. At 30 days, influence starts dropping. At 60 days, it drops further. At 90 days, a signal moves toward archive unless reinforced by newer related signals.
@@ -757,14 +791,14 @@ Relationships are treated as influence assets, not passive CRM contacts. Every r
 - Can this relationship create capacity?
 - Can this relationship create market intelligence?
 - Can this relationship create access to primes, utilities, or projects?
-- What should Mike or Ron do next?
+- What should the responsible owner do next?
 
 The Relationship Graph organizes national and regional influence:
 
 - National Relationship Graph
-- Southeast Relationship Graph for Mike
-- Great Lakes Relationship Graph for Ron
-- Southwest Relationship Graph for shared Mike/Ron ownership
+- Southeast Relationship Graph for assigned regional ownership
+- Great Lakes Relationship Graph for assigned regional ownership
+- Southwest Relationship Graph for shared regional ownership
 
 Relationship Intelligence Profiles connect contacts and organizations to scoring, objectives, risks, win conditions, and owner actions.
 
@@ -914,7 +948,7 @@ Hunts support capacity, opportunity, relationship, workforce, equipment seller, 
 
 Playbooks are repeatable operating procedures for working a target. They define the opening script, qualification questions, disqualification rules, required documents, conversion goal, and ordered steps. Outreach Sequences are planned campaign templates. Playbooks are the human execution workflow used during hunting. Neither sends email, SMS, LinkedIn, or Facebook messages.
 
-Playbook steps generate Hunt Tasks. The Today's Hunt Actions screen is the working queue for Mike, Ron, Admin, and future regional owners. Each task shows target, hunt, current step, recommended channel, instructions, questions, due date, owner, and completion notes.
+Playbook steps generate Hunt Tasks. The Today's Hunt Actions screen is the working queue for primary owners, shared owners, Admin, and future regional owners. Each task shows target, hunt, current step, recommended channel, instructions, questions, due date, owner, and completion notes.
 
 Qualification scorecards are tied to the playbook and target type. They score fit for subcontractor capacity, equipment seller relevance, prime contractor value, utility influence, workforce readiness, or vendor usefulness. Results are stored as Strong Fit, Possible Fit, Weak Fit, or Not Fit.
 
@@ -927,8 +961,8 @@ This phase comes before Capacity Radar because hunting execution creates the ver
 The National Command Center is built for acquisition decisions, not generic CRM review.
 
 - Executive Overview: total approved subcontractors, available crews, open opportunities, pipeline value, critical recommendations, capacity gaps by region, opportunities by stage, and recent activity.
-- Southeast Command Center: Mike's regional view for GA, AL, FL, TN, NC, and SC.
-- Great Lakes Command Center: Ron's regional view for MI, OH, IN, WI, and IL.
+- Southeast Command Center: assigned regional view for GA, AL, FL, TN, NC, and SC.
+- Great Lakes Command Center: assigned regional view for MI, OH, IN, WI, and IL.
 - Southwest Command Center: Houston hub view for TX, OK, LA, and NM.
 
 Regional dashboards show approved network strength, available crews by service type, capacity gaps, open opportunities, relationships needing follow-up, compliance issues, and top recommended daily actions.
@@ -1191,7 +1225,7 @@ Decision Support answers:
 
 Decision Support V2 is the operating brain above the module-level recommendation engine.
 
-Recommended Actions are system findings. Daily Actions are the smaller executive list that Mike, Ron, shared Southwest ownership, and Admin should act on first.
+Recommended Actions are system findings. Daily Actions are the smaller executive list that primary owners, secondary owners, shared Southwest ownership, and Admin should act on first.
 
 Decision Support V2 adds:
 
@@ -1259,10 +1293,10 @@ This platform is now organized for operator use, not generic CRM browsing. Prima
 
 Owner and theater conventions:
 
-- Southeast: Mike
-- Great Lakes: Ron
-- Southwest: Mike/Ron Shared until a future Southwest owner exists
-- National: Mike/Ron Shared or Admin
+- Southeast: assigned regional ownership
+- Great Lakes: assigned regional ownership
+- Southwest: shared ownership until a future regional owner exists
+- National: shared ownership or Admin
 
 ## Operator Workflow
 
@@ -1794,7 +1828,7 @@ The Onboarding Command Center shows new capacity being created, new relationship
 
 ## Executive Workspace & Action System
 
-The default operator experience is the Jackson Telcom Command Center. Mike and Ron should not have to navigate backend engines to decide what to do next.
+The default operator experience is the Jackson Telcom Command Center. Operators should not have to navigate backend engines to decide what to do next.
 
 The Command Center is intentionally limited to:
 
@@ -1839,13 +1873,13 @@ Major record workspaces explicitly answer:
 
 List views now support working search and filters for search text, owner, theater, and status. Operators should use list filtering to narrow Contacts, Organizations, Strategic Accounts, Opportunities, Subcontractors, Pursuits, Project Packages, Daily Actions, and Recommendations instead of scanning raw system output.
 
-Operator mode filtering keeps the primary screens focused:
+Perspective filtering keeps the primary screens focused:
 
-- Mike Perspective: Southeast, shared Southwest, and shared National work.
-- Ron Perspective: Great Lakes, shared Southwest, and shared National work.
+- Relationship / Opportunity Perspective: account, relationship, opportunity, market, and partnership work assigned to the current owner or shared ownership.
+- Capacity / Readiness Perspective: capacity, subcontractor, workforce, readiness, preconstruction, and handoff work assigned to the current owner or shared ownership.
 - Admin / Executive: all regions.
 
-Operator mode filtering is a usability filter, not a security authorization model. It affects the Command Center, Daily Brief, Decision Support, workspace homes, global search, list views, Recent Conversations, and Top Actions so operators see the work most relevant to them first.
+Perspective filtering is a usability filter, not a security authorization model. It affects the Command Center, Daily Brief, Decision Support, workspace homes, global search, list views, Recent Conversations, and Top Actions so operators see the work most relevant to them first.
 
 Mobile views intentionally prioritize:
 
@@ -1954,11 +1988,11 @@ Decision visuals include:
 - Opportunity Flow / Leakage
 - Executive Scorecards
 
-Each visual drills down to a supporting workspace, package, record, recommendation, or action path. Visuals respect operator-mode filtering: Mike sees Southeast plus shared Southwest/National, Ron sees Great Lakes plus shared Southwest/National, and Admin/Executive sees all.
+Each visual drills down to a supporting workspace, package, record, recommendation, or action path. Visuals respect perspective filtering: assigned owners see their owned work plus shared Southwest/National, and Admin/Executive sees all.
 
-## Operator Pilot Production Readiness
+## Operational Production Readiness
 
-The production readiness sprint moves the platform from architecturally complete to pilot-ready and production-safe. The control page is `/production-readiness`.
+The production readiness sprint moves the platform from architecturally complete to operational-ready and production-safe. The control page is `/production-readiness`.
 
 Focus order:
 
@@ -1966,7 +2000,7 @@ Focus order:
 2. Security hardening
 3. Data review queue
 4. First real connector
-5. Operator pilot feedback loop
+5. Operator feedback loop
 6. Recommendation/action tuning
 7. Deployment readiness
 8. SyncERP contract validation
@@ -1978,17 +2012,18 @@ Implemented readiness controls:
 - CSRF validation for all rendered POST forms.
 - Automatic CSRF token injection into rendered POST forms.
 - Session timeout enforcement, session regeneration on login, CSRF token rotation on login, and basic login attempt throttling.
+- Forced password-change flow and seeded default password rotation.
 - Password reset token foundation with expiry and one-time use. Production requires a mailer; local/dev logs reset tokens only for controlled testing.
 - Security headers for frame protection, content type, referrer policy, and CSP.
 - Application error logging to `storage/logs/app.log` with production-safe error output.
-- Data Review Queue for questionable raw signals, classification conflicts, and noisy recommendations.
+- Data Review Queue for questionable source items, classification conflicts, and noisy recommendations.
 - Data Quality Review for duplicate entities, bad imports, missing owners/regions, stale contacts, and disputed classifications.
 - Audit Log view for login, logout, failed login, unauthorized access, record actions, connector runs, and readiness updates.
-- Operator Pilot Feedback capture.
+- Operator Feedback capture.
 - Recommendation/Daily Action tuning rules plus “not useful” recommendation suppression.
 - Connector registry and connector run logs.
-- Opt-in RSS/static-source connector path and source-file fallback that writes only to Raw Signal Items for human review.
-- Backup and restore scripts for SQLite pilot operations.
+- Opt-in RSS/static-source connector path and source-file fallback that writes only to review-gated source items for human review.
+- Backup, restore, and non-destructive restore-verification scripts for SQLite operations.
 - SyncERP contract validation checklist and validation script.
 
 The first real connector is RSS only. It runs only for Signal Sources with `collection_method = RSS` and a non-empty `source_url`. It does not scrape pages, does not send outreach, and does not auto-convert records.
@@ -2002,14 +2037,16 @@ Control routes:
 
 Operational docs:
 
-- `docs/operator-pilot-production-readiness.md`
+- `docs/operational-production-readiness.md`
 - `docs/deployment-readiness.md`
-- `docs/operator-pilot-guide.md`
+- `docs/operator-operations-guide.md`
 
 Validation scripts:
 
 - `php scripts/backup_database.php`
 - `php scripts/restore_database.php <backup> CONFIRM_RESTORE`
+- `php scripts/verify_backup_restore.php`
+- `php scripts/check_production_launch.php`
 - `php scripts/validate_erp_contract.php`
 
 ## Production Data Transition
@@ -2077,7 +2114,7 @@ Supported datasets:
 - `opportunities`
 - `markets`
 
-The importer always creates raw signal items and signal records first, tags rows as `import_source=real_hunt`, records source URLs/confidence/review status in `real_hunt_import_records`, and creates Data Quality Issues for low-confidence, incomplete, or non-verified records.
+The importer always creates source items and signal records first, tags rows as `import_source=real_hunt`, records source URLs/confidence/review status in `real_hunt_import_records`, and creates Data Quality Issues for low-confidence, incomplete, or non-verified records.
 
 After importing, run research enrichment:
 

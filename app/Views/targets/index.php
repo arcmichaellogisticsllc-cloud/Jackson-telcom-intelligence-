@@ -6,8 +6,8 @@
 
 <nav class="dash-tabs">
   <a href="/targets/hunting">National Hunting List</a>
-  <a href="/targets/hunting?region=southeast">Mike: Southeast</a>
-  <a href="/targets/hunting?region=great-lakes">Ron: Great Lakes</a>
+  <a href="/targets/hunting?region=southeast">Southeast</a>
+  <a href="/targets/hunting?region=great-lakes">Great Lakes</a>
   <a href="/targets/hunting?region=southwest">Southwest</a>
   <a href="/targets">All Acquisition Targets</a>
 </nav>

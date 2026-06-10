@@ -2,7 +2,7 @@
 
 Jackson Platform uses one company workflow.
 
-Mike and Ron do not operate separate systems. The platform maintains one shared company state and uses ownership plus perspective filters to emphasize what each person should act on.
+The platform does not operate separate person-based systems. It maintains one shared company state and uses ownership plus perspective filters to emphasize what each operator should act on.
 
 ## Doctrine
 
@@ -25,9 +25,9 @@ Company Priorities shows executive-critical items regardless of owner.
 
 ## Responsibility Defaults
 
-Mike is primary for strategic accounts, relationships, opportunities, market intelligence, partnerships, and executive packages.
+The Relationship / Opportunity Owner is primary for strategic accounts, relationships, opportunities, market intelligence, partnerships, and executive packages.
 
-Ron is primary for capacity, subcontractors, workforce, field readiness, preconstruction readiness, and SyncERP handoff readiness.
+The Capacity / Readiness Owner is primary for capacity, subcontractors, workforce, field readiness, preconstruction readiness, and SyncERP handoff readiness.
 
 Southwest, National, major pursuits, critical capacity gaps, strategic decisions, and quarterly reviews remain shared unless transferred.
 
@@ -42,6 +42,19 @@ Major records support:
 
 Ownership changes write to the ownership change log, activities, and audit log.
 
+## Ownership Responsibility Model
+
+Ownership choices are system records, not hardcoded workflow lanes.
+
+Core tables:
+
+- `owner_profiles`: available owners, shared ownership placeholders, and system owners.
+- `responsibility_roles`: scalable operating responsibilities such as Relationship / Opportunity Owner and Capacity / Readiness Owner.
+- `owner_responsibility_roles`: which owners currently fill which responsibilities.
+- `region_ownership_defaults`: regional and context-specific default assignments.
+
+Existing text owner columns remain in place for compatibility with current workflows. They are populated from the ownership model so future owners, teams, or regional leaders can be added through configuration instead of code changes.
+
 ## Operating Rhythm
 
 Daily:
@@ -52,9 +65,9 @@ Daily:
 
 Weekly:
 
-- Mike relationship / opportunity / market review
-- Ron capacity / workforce / readiness review
-- Joint pursuits / blockers / strategic accounts review
+- Relationship / opportunity / market review
+- Capacity / workforce / readiness review
+- Shared pursuits / blockers / strategic accounts review
 
 Monthly:
 

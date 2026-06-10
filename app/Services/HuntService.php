@@ -55,6 +55,9 @@ class HuntService
         $status = str_starts_with($outcome, 'Converted') ? 'Converted' : ($outcome === 'Not Fit' ? 'Not Fit' : 'Future Follow-Up');
         $db->prepare('UPDATE hunt_targets SET hunt_status = ?, outcome = ?, outcome_date = CURRENT_TIMESTAMP, outcome_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$status, $outcome, $notes, $huntTargetId]);
         $db->prepare('UPDATE acquisition_targets SET status = ?, last_touched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$status === 'Converted' ? 'Converted' : $status, $row['acquisition_target_id']]);
+        if ($status === 'Converted') {
+            $this->createConvertedAsset($db, (int)$row['acquisition_target_id'], $owner);
+        }
         $this->activity($db, $huntTargetId, (int)$row['acquisition_target_id'], 'Hunt outcome recorded', $outcome . ': ' . $notes, $owner);
         RecommendationEngine::regenerate();
     }
@@ -137,5 +140,41 @@ class HuntService
         $region = $db->query('SELECT region_id FROM acquisition_targets WHERE id = ' . (int)$targetId)->fetchColumn();
         $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES ("hunt_target", ?, ?, "Status Change", ?, ?, CURRENT_TIMESTAMP, ?)')->execute([$huntTargetId, $region, $title, $notes, $owner]);
         $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES ("acquisition_target", ?, ?, "Status Change", ?, ?, CURRENT_TIMESTAMP, ?)')->execute([$targetId, $region, $title, $notes, $owner]);
+    }
+
+    private function createConvertedAsset(PDO $db, int $targetId, string $owner): void
+    {
+        $stmt = $db->prepare('SELECT * FROM acquisition_targets WHERE id = ? LIMIT 1');
+        $stmt->execute([$targetId]);
+        $target = $stmt->fetch();
+        if (!$target || ($target['target_type'] ?? '') !== 'Subcontractor') {
+            return;
+        }
+
+        $name = trim((string)($target['organization_name'] ?: $target['target_name']));
+        if ($name === '') {
+            return;
+        }
+        $orgStmt = $db->prepare('SELECT id FROM organizations WHERE LOWER(name) = LOWER(?) AND region_id = ? LIMIT 1');
+        $orgStmt->execute([$name, $target['region_id']]);
+        $orgId = (int)$orgStmt->fetchColumn();
+        if (!$orgId) {
+            $db->prepare('INSERT INTO organizations (name, type, region_id, state, city, website, phone, notes, status) VALUES (?, "Fiber Construction Contractor", ?, ?, ?, ?, ?, ?, "Prospect")')
+                ->execute([$name, $target['region_id'], $target['state'], $target['city'], $target['website'], $target['phone'], 'Created from converted hunt target #' . $targetId . '.']);
+            $orgId = (int)$db->lastInsertId();
+        }
+
+        $existing = $db->prepare('SELECT id FROM subcontractors WHERE organization_id = ? LIMIT 1');
+        $existing->execute([$orgId]);
+        $subcontractorId = (int)$existing->fetchColumn();
+        if (!$subcontractorId) {
+            $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, website, phone, email, primary_contact, states_served, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Researching", "Limited", ?)')
+                ->execute([$orgId, $target['region_id'], $name, $target['website'], $target['phone'], $target['email'], $target['contact_name'], $target['state'], trim((string)($target['city'] . ' ' . $target['state'])), $target['target_type'], 'Created from converted hunt target #' . $targetId . '. Human onboarding review required.']);
+            $subcontractorId = (int)$db->lastInsertId();
+        }
+
+        (new OnboardingService())->ensureSubcontractorOnboarding($subcontractorId);
+        $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES ("subcontractor", ?, ?, "Created", "Subcontractor created from hunt conversion", ?, CURRENT_TIMESTAMP, ?)')
+            ->execute([$subcontractorId, $target['region_id'], 'Converted hunt target created/linked subcontractor onboarding.', $owner]);
     }
 }

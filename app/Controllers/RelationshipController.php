@@ -17,12 +17,12 @@ class RelationshipController extends Controller
 
     public function southeast(): void
     {
-        $this->graph('Southeast', 'Southeast Relationship Graph', 'Mike relationship actions for project, prime, utility, capacity, and market access.');
+        $this->graph('Southeast', 'Southeast Relationship Graph', 'Regional relationship actions for project, prime, utility, capacity, and market access.');
     }
 
     public function greatLakes(): void
     {
-        $this->graph('Great Lakes', 'Great Lakes Relationship Graph', 'Ron relationship actions for project, prime, utility, capacity, and market access.');
+        $this->graph('Great Lakes', 'Great Lakes Relationship Graph', 'Regional relationship actions for project, prime, utility, capacity, and market access.');
     }
 
     public function southwest(): void

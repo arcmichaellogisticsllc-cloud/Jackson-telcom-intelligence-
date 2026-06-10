@@ -4,4 +4,7 @@ storage/*.sqlite-*
 storage/production_data_mode
 storage/backups/
 storage/exports/
+storage/restore-tests/
+storage/secrets/
+storage/onboarding_documents/
 *.log

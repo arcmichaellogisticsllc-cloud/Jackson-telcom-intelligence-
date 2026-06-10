@@ -1,26 +1,26 @@
-# Operator Pilot Guide
+# Operator Operations Guide
 
-## 30-Day Goal
+## Operating Goal
 
-Prove Jackson operators can use the platform with real data without drowning in modules, raw signals, or noisy recommendations.
+Keep Jackson operators working from real data, trusted workflows, and prioritized actions without drowning in modules, source items, or noisy recommendations.
 
-## Daily Mike Workflow
+## Daily Relationship / Opportunity Workflow
 
 1. Open Jackson Telcom Command Center.
 2. Review Top 5 Actions.
-3. Review Southeast work, capacity gaps, and relationship priorities.
+3. Review assigned accounts, relationships, opportunities, market actions, and shared regional blockers.
 4. Log calls, notes, follow-ups, and outcomes.
-5. Submit Pilot Feedback when a page is confusing, noisy, missing data, or useful.
-6. Resolve or assign Data Quality issues tied to Southeast records.
+5. Submit Operator Feedback when a page is confusing, noisy, missing data, or useful.
+6. Resolve or assign Data Quality issues tied to owned or shared records.
 
-## Daily Ron Workflow
+## Daily Capacity / Readiness Workflow
 
 1. Open Jackson Telcom Command Center.
 2. Review Top 5 Actions.
-3. Review Great Lakes work, capacity gaps, and relationship priorities.
+3. Review assigned capacity gaps, subcontractors, workforce, field readiness, preconstruction, and handoff blockers.
 4. Log relationship actions and workforce/competitive movement notes.
-5. Submit Pilot Feedback on bad priorities or missing context.
-6. Resolve or assign Great Lakes Data Quality issues.
+5. Submit Operator Feedback on bad priorities or missing context.
+6. Resolve or assign Data Quality issues tied to owned or shared records.
 
 ## Weekly Review
 

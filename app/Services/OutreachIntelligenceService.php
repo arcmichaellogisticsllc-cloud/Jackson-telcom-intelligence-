@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Core\Auth;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use PDO;
@@ -347,6 +348,9 @@ class OutreachIntelligenceService
             };
             if ($status) {
                 $db->prepare('UPDATE acquisition_targets SET status = ?, last_touched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$status, $id]);
+                if ($status === 'Converted') {
+                    $this->createSubcontractorFromConvertedTarget($db, $id, $owner);
+                }
             } else {
                 $db->prepare('UPDATE acquisition_targets SET last_touched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$id]);
             }
@@ -356,9 +360,42 @@ class OutreachIntelligenceService
         }
     }
 
+    private function createSubcontractorFromConvertedTarget(PDO $db, int $targetId, string $owner): void
+    {
+        $stmt = $db->prepare('SELECT * FROM acquisition_targets WHERE id = ? LIMIT 1');
+        $stmt->execute([$targetId]);
+        $target = $stmt->fetch();
+        if (!$target || ($target['target_type'] ?? '') !== 'Subcontractor') {
+            return;
+        }
+        $name = trim((string)($target['organization_name'] ?: $target['target_name']));
+        if ($name === '') {
+            return;
+        }
+        $org = $db->prepare('SELECT id FROM organizations WHERE LOWER(name) = LOWER(?) AND region_id = ? LIMIT 1');
+        $org->execute([$name, $target['region_id']]);
+        $orgId = (int)$org->fetchColumn();
+        if (!$orgId) {
+            $db->prepare('INSERT INTO organizations (name, type, region_id, state, city, website, phone, notes, status) VALUES (?, "Fiber Construction Contractor", ?, ?, ?, ?, ?, ?, "Prospect")')
+                ->execute([$name, $target['region_id'], $target['state'], $target['city'], $target['website'], $target['phone'], 'Created from converted outreach target #' . $targetId . '.']);
+            $orgId = (int)$db->lastInsertId();
+        }
+        $sub = $db->prepare('SELECT id FROM subcontractors WHERE organization_id = ? LIMIT 1');
+        $sub->execute([$orgId]);
+        $subcontractorId = (int)$sub->fetchColumn();
+        if (!$subcontractorId) {
+            $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, website, phone, email, primary_contact, states_served, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Researching", "Limited", ?)')
+                ->execute([$orgId, $target['region_id'], $name, $target['website'], $target['phone'], $target['email'], $target['contact_name'], $target['state'], trim((string)($target['city'] . ' ' . $target['state'])), 'Telecom Construction', 'Created from converted outreach target #' . $targetId . '. Human onboarding review required.']);
+            $subcontractorId = (int)$db->lastInsertId();
+        }
+        (new OnboardingService())->ensureSubcontractorOnboarding($subcontractorId);
+        $db->prepare('INSERT INTO activities (entity_type, entity_id, region_id, activity_type, title, notes, activity_date, owner) VALUES ("subcontractor", ?, ?, "Created", "Subcontractor created from outreach conversion", ?, CURRENT_TIMESTAMP, ?)')
+            ->execute([$subcontractorId, $target['region_id'], 'Converted outreach target created/linked subcontractor onboarding.', $owner]);
+    }
+
     private function metrics(PDO $db, ?int $regionId): array
     {
-        $where = $regionId ? ' AND region_id = ' . (int)$regionId : '';
+        $where = $regionId ? ' AND region_id = ' . (int)$regionId : $this->allowedRegionSql('region_id', ' AND ');
         return [
             'ready' => (int)$db->query("SELECT COUNT(*) FROM outreach_intelligence WHERE status = 'Ready for Human' {$where}")->fetchColumn(),
             'critical' => (int)$db->query("SELECT COUNT(*) FROM outreach_intelligence WHERE priority = 'Critical' AND status NOT IN ('Completed','Skipped') {$where}")->fetchColumn(),
@@ -375,6 +412,10 @@ class OutreachIntelligenceService
         if ($regionId) {
             $sql .= ' AND oi.region_id = ?';
             $params[] = $regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND (oi.region_id IS NULL OR oi.region_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))' : ' AND 1=0';
+            $params = array_merge($params, $ids);
         }
         $sql .= " ORDER BY CASE oi.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END, oi.due_date ASC LIMIT " . (int)$limit;
         $stmt = $db->prepare($sql);
@@ -389,6 +430,10 @@ class OutreachIntelligenceService
         if ($regionId) {
             $sql .= ' AND oi.region_id = ?';
             $params[] = $regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND (oi.region_id IS NULL OR oi.region_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))' : ' AND 1=0';
+            $params = array_merge($params, $ids);
         }
         $sql .= ' ORDER BY os.updated_at DESC LIMIT 12';
         $stmt = $db->prepare($sql);
@@ -405,6 +450,8 @@ class OutreachIntelligenceService
         $sql = "SELECT {$field} label, COUNT(*) count FROM outreach_intelligence WHERE status NOT IN ('Completed','Skipped')";
         if ($regionId) {
             $sql .= ' AND region_id = ' . (int)$regionId;
+        } else {
+            $sql .= $this->allowedRegionSql('region_id', ' AND ');
         }
         $sql .= " GROUP BY {$field} ORDER BY count DESC";
         return $db->query($sql)->fetchAll();
@@ -415,9 +462,24 @@ class OutreachIntelligenceService
         $sql = 'SELECT os.*, r.name region_name FROM outreach_sequences os LEFT JOIN regions r ON r.id = os.region_id WHERE os.status = "Planned"';
         if ($regionId) {
             $sql .= ' AND (os.region_id = ' . (int)$regionId . ' OR os.region_id IS NULL)';
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND (os.region_id IS NULL OR os.region_id IN (' . implode(',', array_map('intval', $ids)) . '))' : ' AND 1=0';
         }
         $sql .= ' ORDER BY os.name, os.step_number LIMIT 40';
         return $db->query($sql)->fetchAll();
+    }
+
+    private function allowedRegionSql(string $column, string $prefix = ''): string
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return '';
+        }
+        $ids = Auth::allowedRegionIds();
+        if (!$ids) {
+            return $prefix . '1=0';
+        }
+        return $prefix . '(' . $column . ' IS NULL OR ' . $column . ' IN (' . implode(',', array_map('intval', $ids)) . '))';
     }
 
     private function questionsFor(PDO $db, string $targetType): array
@@ -568,13 +630,8 @@ class OutreachIntelligenceService
     private function owner(?string $owner, ?string $regionName): string
     {
         if ($owner && $owner !== 'Unassigned') {
-            return $owner;
+            return (new OwnerModelService())->normalizeOwner($owner, $owner);
         }
-        return match ($regionName) {
-            'Southeast' => 'Mike',
-            'Great Lakes' => 'Ron',
-            'Southwest' => 'Mike/Ron Shared',
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->ownerForRegionName((string)($regionName ?: 'National'), 'relationship_opportunity');
     }
 }

@@ -9,8 +9,6 @@ use PDO;
 
 class OwnershipService
 {
-    private const OWNERS = ['Mike', 'Ron', 'Mike/Ron Shared', 'Admin', 'Unassigned'];
-
     public function dashboardData(): array
     {
         $db = Database::connection();
@@ -19,7 +17,8 @@ class OwnershipService
 
         $unassigned = array_values(array_filter($records, fn($row) => $this->blank($row['primary_owner'] ?? null) || ($row['primary_owner'] ?? '') === 'Unassigned'));
         $missingSecondary = array_values(array_filter($records, fn($row) => !$this->blank($row['primary_owner'] ?? null) && $this->blank($row['secondary_owner'] ?? null) && !(int)($row['shared_owner_flag'] ?? 0)));
-        $shared = array_values(array_filter($records, fn($row) => (int)($row['shared_owner_flag'] ?? 0) === 1 || ($row['primary_owner'] ?? '') === 'Mike/Ron Shared'));
+        $sharedOwner = $this->ownerModel()->sharedOwnerValue();
+        $shared = array_values(array_filter($records, fn($row) => (int)($row['shared_owner_flag'] ?? 0) === 1 || ($row['primary_owner'] ?? '') === $sharedOwner));
         $conflicts = array_values(array_filter($records, fn($row) => !$this->blank($row['primary_owner'] ?? null) && ($row['primary_owner'] ?? '') === ($row['secondary_owner'] ?? '')));
 
         return [
@@ -178,19 +177,15 @@ class OwnershipService
     private function defaultsFor(string $type, string $regionName, array $row = []): array
     {
         $regionName = $regionName !== '' ? $regionName : 'National';
-        if (in_array($regionName, ['Southwest', 'National'], true)) {
-            return ['primary' => 'Mike', 'secondary' => 'Ron', 'shared' => true, 'reason' => 'Southwest and National records remain shared until ownership is explicitly transferred.'];
+        $db = Database::connection();
+        $regionId = null;
+        $stmt = $db->prepare('SELECT id FROM regions WHERE name = ? LIMIT 1');
+        $stmt->execute([$regionName]);
+        $found = $stmt->fetchColumn();
+        if ($found) {
+            $regionId = (int)$found;
         }
-        if (in_array($type, ['capacity_provider','subcontractor','workforce','preconstruction_profile','project_package','subcontractor_onboarding','workforce_onboarding','market_onboarding'], true)) {
-            return ['primary' => 'Ron', 'secondary' => 'Mike', 'shared' => false, 'reason' => 'Ron owns field capacity, workforce, readiness, and execution handoff preparation; Mike supports relationship and opportunity context.'];
-        }
-        if (in_array($type, ['strategic_account','contact','organization','opportunity','pursuit','strategic_account_onboarding','executive_package'], true)) {
-            return ['primary' => 'Mike', 'secondary' => 'Ron', 'shared' => false, 'reason' => 'Mike owns account, relationship, opportunity, market, and partnership strategy; Ron supports capacity readiness.'];
-        }
-        if ($regionName === 'Great Lakes') {
-            return ['primary' => 'Ron', 'secondary' => 'Mike', 'shared' => false, 'reason' => 'Great Lakes defaults to Ron unless the record is explicitly account or opportunity strategy.'];
-        }
-        return ['primary' => 'Mike', 'secondary' => 'Ron', 'shared' => false, 'reason' => 'Southeast defaults to Mike with Ron supporting capacity and readiness.'];
+        return $this->ownerModel()->defaultAssignment($regionId, $this->ownerModel()->contextForRecordType($type));
     }
 
     private function dailyActionType(array $row): string
@@ -256,7 +251,7 @@ class OwnershipService
         return match ($user['role'] ?? '') {
             'Mike' => 'Mike',
             'Ron' => 'Ron',
-            default => (string)($user['name'] ?? 'Admin'),
+            default => $this->ownerModel()->normalizeOwner((string)($user['name'] ?? ''), 'Admin'),
         };
     }
 
@@ -267,7 +262,12 @@ class OwnershipService
 
     private function isSharedForOwner(array $row, string $owner): bool
     {
-        return (int)($row['shared_owner_flag'] ?? 0) === 1 || ($row['secondary_owner'] ?? '') === $owner || ($row['owner'] ?? '') === 'Mike/Ron Shared';
+        return (int)($row['shared_owner_flag'] ?? 0) === 1 || ($row['secondary_owner'] ?? '') === $owner || ($row['owner'] ?? '') === $this->ownerModel()->sharedOwnerValue();
+    }
+
+    private function ownerModel(): OwnerModelService
+    {
+        return new OwnerModelService();
     }
 
     private function recordMaps(): array

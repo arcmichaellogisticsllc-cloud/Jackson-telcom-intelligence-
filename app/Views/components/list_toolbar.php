@@ -4,7 +4,16 @@ $ownerFilter = $_GET['owner'] ?? '';
 $regionFilter = $_GET['region'] ?? '';
 $statusFilter = $_GET['status'] ?? '';
 $listRegions = $listRegions ?? ['Southeast','Great Lakes','Southwest','National'];
-$listOwners = $listOwners ?? ['Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin','Unassigned'];
+if (!isset($listOwners) || !isset($ownerLabels)) {
+    try {
+        $ownerModel = new \App\Services\OwnerModelService();
+        $listOwners = $listOwners ?? $ownerModel->ownerValues(true);
+        $ownerLabels = $ownerLabels ?? $ownerModel->ownerLabels();
+    } catch (\Throwable) {
+        $listOwners = $listOwners ?? ['Admin','Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Unassigned'];
+        $ownerLabels = $ownerLabels ?? ['Mike/Ron Shared' => 'Shared Ownership', 'Future Southwest Owner' => 'Future Regional Owner'];
+    }
+}
 $listStatuses = $listStatuses ?? ['Open','Active','New','In Progress','Qualified','Approved','Preferred','Strategic Partner','Ready For SyncERP','Completed','Dismissed'];
 ?>
 <form class="list-toolbar" method="get">
@@ -16,7 +25,7 @@ $listStatuses = $listStatuses ?? ['Open','Active','New','In Progress','Qualified
     <input type="search" name="q" placeholder="Search this workspace" value="<?= htmlspecialchars((string)$query) ?>">
     <select name="owner" onchange="this.form.submit()">
       <option value="">All owners</option>
-      <?php foreach ($listOwners as $owner): ?><option value="<?= htmlspecialchars($owner) ?>" <?= $ownerFilter === $owner ? 'selected' : '' ?>><?= htmlspecialchars($owner) ?></option><?php endforeach; ?>
+      <?php foreach ($listOwners as $owner): ?><option value="<?= htmlspecialchars($owner) ?>" <?= $ownerFilter === $owner ? 'selected' : '' ?>><?= htmlspecialchars($ownerLabels[$owner] ?? $owner) ?></option><?php endforeach; ?>
     </select>
     <select name="region" onchange="this.form.submit()">
       <option value="">All theaters</option>

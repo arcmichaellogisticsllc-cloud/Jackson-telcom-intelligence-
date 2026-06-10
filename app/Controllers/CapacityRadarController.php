@@ -22,17 +22,17 @@ class CapacityRadarController extends Controller
 
     public function southeast(): void
     {
-        $this->regional('Southeast', 'Mike');
+        $this->regional('Southeast', 'Regional Capacity Owner');
     }
 
     public function greatLakes(): void
     {
-        $this->regional('Great Lakes', 'Ron');
+        $this->regional('Great Lakes', 'Regional Capacity Owner');
     }
 
     public function southwest(): void
     {
-        $this->regional('Southwest', 'Mike/Ron Shared');
+        $this->regional('Southwest', 'Shared Regional Ownership');
     }
 
     public function rebuild(): void

@@ -1,13 +1,13 @@
 <section class="page-header">
   <p class="eyebrow">Today's Hunt Actions</p>
   <h1>What do we do next?</h1>
-  <p>The working screen for Mike, Ron, Admin, and future regional owners. No outreach is sent from this screen.</p>
+  <p>The working screen for company, regional, and shared ownership. No outreach is sent from this screen.</p>
 </section>
 
 <nav class="dash-tabs">
   <a href="/hunt-actions">National</a>
-  <a href="/hunt-actions?region=southeast">Mike: Southeast</a>
-  <a href="/hunt-actions?region=great-lakes">Ron: Great Lakes</a>
+  <a href="/hunt-actions?region=southeast">Southeast</a>
+  <a href="/hunt-actions?region=great-lakes">Great Lakes</a>
   <a href="/hunt-actions?region=southwest">Southwest</a>
 </nav>
 

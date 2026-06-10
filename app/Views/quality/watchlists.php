@@ -22,6 +22,6 @@
       <td><?= htmlspecialchars($item['current_status'] ?? '') ?><br><small><?= (int)($item['accumulated_signal_count'] ?? 0) ?> related signals</small></td>
       <td><?= htmlspecialchars($item['purpose']) ?></td>
     </tr><?php endforeach; ?>
-    <?php if (!$items): ?><tr><td colspan="6">No watchlist items yet. Run harvesters and process raw signals.</td></tr><?php endif; ?>
+    <?php if (!$items): ?><tr><td colspan="6">No watchlist items yet. Run harvesters and process source items.</td></tr><?php endif; ?>
   </tbody></table></div>
 </section>

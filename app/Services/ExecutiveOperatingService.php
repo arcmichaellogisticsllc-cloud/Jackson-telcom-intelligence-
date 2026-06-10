@@ -324,17 +324,11 @@ class ExecutiveOperatingService
 
     private function ownerForRegionId(PDO $db, int $regionId): string
     {
-        $owner = (string)$db->query('SELECT owner FROM regions WHERE id = ' . $regionId)->fetchColumn();
-        return $this->owner($owner);
+        return (new OwnerModelService())->ownerForRegionId($regionId, 'general');
     }
 
     private function owner(string $owner): string
     {
-        return match ($owner) {
-            'Mike' => 'Mike',
-            'Ron' => 'Ron',
-            'Mike/Ron Shared' => 'Mike/Ron Shared',
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->normalizeOwner($owner, 'Admin');
     }
 }

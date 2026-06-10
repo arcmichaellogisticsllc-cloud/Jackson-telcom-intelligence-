@@ -12,6 +12,7 @@
 </nav>
 
 <?php
+$ownerOptions = (new \App\Services\OwnerModelService())->ownerOptions(false, true);
 $why = 'Communication is how relationships, capacity, opportunities, hunts, and targets move from intelligence into action.';
 $recommended = 'Log the call, meeting, note, follow-up, or draft while the context is fresh.';
 $next = 'Record the outcome and next step, then connect it to the relationship, opportunity, capacity profile, subcontractor, hunt, or target.';
@@ -29,7 +30,7 @@ require __DIR__ . '/../components/action_first.php';
       <label>Region<select name="region_id"><?php foreach ($regions as $region): ?><option value="<?= (int)$region['id'] ?>"><?= htmlspecialchars($region['name']) ?></option><?php endforeach; ?></select></label>
       <label>Contact<select name="contact_id"><option value="">None</option><?php foreach ($contacts as $contact): ?><option value="<?= (int)$contact['id'] ?>"><?= htmlspecialchars(trim($contact['first_name'] . ' ' . $contact['last_name'])) ?> - <?= htmlspecialchars($contact['organization_name'] ?? '') ?></option><?php endforeach; ?></select></label>
       <label>Organization<select name="organization_id"><option value="">None</option><?php foreach ($organizations as $org): ?><option value="<?= (int)$org['id'] ?>"><?= htmlspecialchars($org['name']) ?></option><?php endforeach; ?></select></label>
-      <label>Owner<select name="owner"><option>Mike</option><option>Ron</option><option>Mike/Ron Shared</option><option>Admin</option></select></label>
+      <label>Owner<select name="owner"><?php foreach ($ownerOptions as $ownerOption): ?><option value="<?= htmlspecialchars($ownerOption['value']) ?>"><?= htmlspecialchars($ownerOption['label']) ?></option><?php endforeach; ?></select></label>
       <label>Date<input name="communication_date" type="date" value="<?= date('Y-m-d') ?>"></label>
       <label class="full">Summary<textarea name="summary" required></textarea></label>
       <label class="full">Outcome<textarea name="outcome"></textarea></label>

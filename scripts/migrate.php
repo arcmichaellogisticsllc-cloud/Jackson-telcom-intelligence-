@@ -3,12 +3,16 @@
 require __DIR__ . '/../vendor_autoload.php';
 
 use App\Core\Database;
+use App\Services\OwnerModelService;
 
 $db = Database::connection();
 foreach (glob(__DIR__ . '/../database/migrations/*.sql') as $file) {
     $db->exec(file_get_contents($file));
     echo 'Migrated ' . basename($file) . PHP_EOL;
 }
+
+(new OwnerModelService())->ensureBaseline($db);
+echo "Seeded ownership responsibility model baseline\n";
 
 $columns = [
     'regions' => [
@@ -76,6 +80,23 @@ $columns = [
     ],
     'outreach_intelligence' => [
         'due_date' => 'TEXT',
+    ],
+    'connectors' => [
+        'region_id' => 'INTEGER',
+    ],
+    'connector_run_logs' => [
+        'region_id' => 'INTEGER',
+    ],
+    'onboarding_documents' => [
+        'source_reference' => 'TEXT',
+        'storage_path' => 'TEXT',
+        'file_size' => 'INTEGER DEFAULT 0',
+        'mime_type' => 'TEXT',
+        'uploaded_by' => 'TEXT',
+    ],
+    'users' => [
+        'must_change_password' => 'INTEGER DEFAULT 0',
+        'password_changed_at' => 'TEXT',
     ],
     'opportunities' => [
         'opportunity_type' => 'TEXT',
@@ -194,6 +215,7 @@ $columns = [
         'shared_owner_flag' => 'INTEGER DEFAULT 0',
         'ownership_notes' => 'TEXT',
         'action_scope' => 'TEXT DEFAULT "Company Action"',
+        'generated_by' => 'TEXT DEFAULT "system"',
     ],
 ];
 
@@ -219,13 +241,18 @@ if ($userSchema && !str_contains($userSchema, "'Executive'")) {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('Admin','Executive','Mike','Ron','Regional Owner','Operator','Viewer','Southeast Owner','Great Lakes Owner','Southwest Owner')),
       region_id INTEGER NULL,
+      must_change_password INTEGER DEFAULT 0,
+      password_changed_at TEXT,
       FOREIGN KEY(region_id) REFERENCES regions(id)
     )");
-    $db->exec('INSERT INTO users (id, name, email, password_hash, role, region_id) SELECT id, name, email, password_hash, role, region_id FROM users_old');
+    $oldColumns = array_column($db->query('PRAGMA table_info(users_old)')->fetchAll(), 'name');
+    $mustChangeSelect = in_array('must_change_password', $oldColumns, true) ? 'must_change_password' : '0';
+    $changedAtSelect = in_array('password_changed_at', $oldColumns, true) ? 'password_changed_at' : 'NULL';
+    $db->exec('INSERT INTO users (id, name, email, password_hash, role, region_id, must_change_password, password_changed_at) SELECT id, name, email, password_hash, role, region_id, ' . $mustChangeSelect . ', ' . $changedAtSelect . ' FROM users_old');
     $db->exec('DROP TABLE users_old');
     $db->commit();
     $db->exec('PRAGMA foreign_keys = ON');
-    echo "Rebuilt users table for pilot role model\n";
+    echo "Rebuilt users table for operational role model\n";
 }
 
 $auditSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'audit_logs'")->fetchColumn();
@@ -246,7 +273,7 @@ if ($auditSchema && (str_contains($auditSchema, 'users_old') || str_contains($au
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )");
     $db->exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)');
-    echo "Rebuilt audit_logs table for pilot audit model\n";
+    echo "Rebuilt audit_logs table for operational audit model\n";
 }
 
 $resetSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'password_reset_tokens'")->fetchColumn();
@@ -262,7 +289,7 @@ if ($resetSchema && (str_contains($resetSchema, 'users_old') || str_contains($re
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )");
     $db->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash)');
-    echo "Rebuilt password_reset_tokens table for pilot reset model\n";
+    echo "Rebuilt password_reset_tokens table for operational reset model\n";
 }
 
 $signalSchema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'signals'")->fetchColumn();
@@ -327,4 +354,85 @@ if ($intelligenceSchema && str_contains($intelligenceSchema, 'signals_old')) {
     $db->commit();
     $db->exec('PRAGMA foreign_keys = ON');
     echo "Rebuilt intelligence_records foreign key for signals" . PHP_EOL;
+}
+
+rebuildTableWithoutChecks($db, 'users', [
+    "role TEXT NOT NULL CHECK(role IN ('Admin','Executive','Mike','Ron','Regional Owner','Operator','Viewer','Southeast Owner','Great Lakes Owner','Southwest Owner'))" => 'role TEXT NOT NULL',
+]);
+rebuildTableWithoutChecks($db, 'capacity_profiles', [
+    "owner TEXT CHECK(owner IN ('Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin'))" => 'owner TEXT',
+]);
+rebuildTableWithoutChecks($db, 'signals', [
+    "owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Admin','Mike','Ron','Unassigned'))" => "owner TEXT DEFAULT 'Unassigned'",
+]);
+rebuildTableWithoutChecks($db, 'data_review_items', [
+    "review_type TEXT NOT NULL CHECK(review_type IN ('Raw Signal','Duplicate','Classification','Recommendation','Connector','Security','Data Quality','Other'))" => "review_type TEXT NOT NULL CHECK(review_type IN ('Raw Signal','Source Item','Duplicate','Classification','Recommendation','Connector','Security','Data Quality','Other'))",
+]);
+foreach (['capacity_discipline_counts', 'capacity_equipment', 'capacity_trust_scores', 'capacity_intelligence'] as $capacityChildTable) {
+    rebuildTableWithoutChecks($db, $capacityChildTable, [
+        'REFERENCES "capacity_profiles_owner_model_old"(id)' => 'REFERENCES capacity_profiles(id)',
+    ]);
+}
+foreach ([
+    'intelligence_records',
+    'acquisition_targets',
+    'signal_quality_profiles',
+    'watchlist_items',
+    'content_opportunities',
+    'workforce_movements',
+    'competitor_movements',
+    'real_hunt_import_records',
+] as $signalChildTable) {
+    rebuildTableWithoutChecks($db, $signalChildTable, [
+        'REFERENCES "signals_owner_model_old"(id)' => 'REFERENCES signals(id)',
+        'REFERENCES "signals_old"(id)' => 'REFERENCES signals(id)',
+    ]);
+}
+foreach (['hunt_targets', 'hunt_tasks'] as $targetChildTable) {
+    rebuildTableWithoutChecks($db, $targetChildTable, [
+        'REFERENCES "acquisition_targets_owner_model_old"(id)' => 'REFERENCES acquisition_targets(id)',
+        'REFERENCES "hunt_targets_owner_model_old"(id)' => 'REFERENCES hunt_targets(id)',
+    ]);
+}
+foreach ([
+    'content_drafts',
+    'distribution_plans',
+    'content_attributions',
+    'content_decisions',
+    'demand_performance_profiles',
+] as $contentChildTable) {
+    rebuildTableWithoutChecks($db, $contentChildTable, [
+        'REFERENCES "content_opportunities_owner_model_old"(id)' => 'REFERENCES content_opportunities(id)',
+    ]);
+}
+
+function rebuildTableWithoutChecks(PDO $db, string $table, array $replacements): void
+{
+    $schema = (string)$db->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = '{$table}'")->fetchColumn();
+    if ($schema === '') {
+        return;
+    }
+    $newSchema = $schema;
+    foreach ($replacements as $search => $replace) {
+        $newSchema = str_replace($search, $replace, $newSchema);
+    }
+    if ($newSchema === $schema) {
+        return;
+    }
+
+    $oldTable = $table . '_owner_model_old';
+    $newSchema = preg_replace('/CREATE TABLE\s+' . preg_quote($table, '/') . '\s*/i', 'CREATE TABLE ' . $table . ' ', $newSchema, 1);
+    $columns = array_column($db->query("PRAGMA table_info({$table})")->fetchAll(), 'name');
+    $columnList = implode(', ', array_map(fn($column) => '"' . str_replace('"', '""', $column) . '"', $columns));
+
+    $db->exec('PRAGMA foreign_keys = OFF');
+    $db->beginTransaction();
+    $db->exec("DROP TABLE IF EXISTS {$oldTable}");
+    $db->exec("ALTER TABLE {$table} RENAME TO {$oldTable}");
+    $db->exec($newSchema);
+    $db->exec("INSERT INTO {$table} ({$columnList}) SELECT {$columnList} FROM {$oldTable}");
+    $db->exec("DROP TABLE {$oldTable}");
+    $db->commit();
+    $db->exec('PRAGMA foreign_keys = ON');
+    echo "Rebuilt {$table} without hardcoded owner/role CHECK constraints\n";
 }

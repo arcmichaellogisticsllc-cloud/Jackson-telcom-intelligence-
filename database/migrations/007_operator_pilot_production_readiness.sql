@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS data_review_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  review_type TEXT NOT NULL CHECK(review_type IN ('Raw Signal','Duplicate','Classification','Recommendation','Connector','Security','Data Quality','Other')),
+  review_type TEXT NOT NULL CHECK(review_type IN ('Raw Signal','Source Item','Duplicate','Classification','Recommendation','Connector','Security','Data Quality','Other')),
   linked_record_type TEXT,
   linked_record_id INTEGER,
   region_id INTEGER,

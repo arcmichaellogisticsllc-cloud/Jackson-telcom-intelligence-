@@ -52,13 +52,10 @@ class RecommendationController extends Controller
     {
         $conditions = ['1=1'];
         $params = [];
-        $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
-        if ($allowed) {
+        $allowed = Auth::hasGlobalRegionAccess() ? [] : Auth::allowedRegionNames();
+        if (!Auth::hasGlobalRegionAccess() && !$allowed) {
+            $conditions[] = '1=0';
+        } elseif ($allowed) {
             $conditions[] = '(r.name IS NULL OR r.name IN (' . implode(',', array_fill(0, count($allowed), '?')) . '))';
             array_push($params, ...$allowed);
         }

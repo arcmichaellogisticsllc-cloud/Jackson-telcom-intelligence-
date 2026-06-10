@@ -168,12 +168,7 @@ class AcquisitionTargetService
 
     private function owner(array $signal): string
     {
-        return match ($signal['region_name'] ?? '') {
-            'Southeast' => 'Mike',
-            'Great Lakes' => 'Ron',
-            'Southwest' => 'Future Southwest Owner',
-            default => 'Admin',
-        };
+        return (new OwnerModelService())->ownerForRegionName((string)($signal['region_name'] ?? 'National'), 'relationship_opportunity');
     }
 
     private function reason(array $signal, string $targetType): string

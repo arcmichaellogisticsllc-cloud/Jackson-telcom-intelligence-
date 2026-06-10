@@ -25,4 +25,4 @@ Every visual must answer at least one question:
 
 ## Drill-Down Rule
 
-Visuals cannot be dead ends. Every visual must link to a decision package, supporting record, recommended action, or operating workspace where Mike, Ron, or an executive can take the next step.
+Visuals cannot be dead ends. Every visual must link to a decision package, supporting record, recommended action, or operating workspace where the responsible owner or an executive can take the next step.

@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS capacity_profiles (
   market TEXT,
   state TEXT,
   city TEXT,
-  owner TEXT CHECK(owner IN ('Mike','Ron','Mike/Ron Shared','Future Southwest Owner','Admin')),
+  owner TEXT,
   status TEXT DEFAULT 'Prospect' CHECK(status IN ('Prospect','Qualified','Approved','Preferred','Strategic Partner')),
   primary_mobilization_readiness TEXT DEFAULT '30 Days',
   max_travel_radius_miles INTEGER DEFAULT 0,
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('Admin','Executive','Mike','Ron','Regional Owner','Operator','Viewer','Southeast Owner','Great Lakes Owner','Southwest Owner')),
+  role TEXT NOT NULL,
   region_id INTEGER NULL,
   FOREIGN KEY(region_id) REFERENCES regions(id)
 );
@@ -909,7 +909,7 @@ CREATE TABLE IF NOT EXISTS signals (
   confidence_score INTEGER DEFAULT 0,
   impact_score INTEGER DEFAULT 0,
   priority TEXT NOT NULL DEFAULT 'Medium' CHECK(priority IN ('Low','Medium','High','Critical')),
-  owner TEXT DEFAULT 'Unassigned' CHECK(owner IN ('Admin','Mike','Ron','Unassigned')),
+  owner TEXT DEFAULT 'Unassigned',
   status TEXT NOT NULL DEFAULT 'New' CHECK(status IN ('New','Reviewed','Assigned','Converted','Ignored')),
   recommended_next_action TEXT,
   notes TEXT,

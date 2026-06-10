@@ -310,7 +310,7 @@ class AcquisitionCommandService
 
     private function ownerForRegion(string $owner): string
     {
-        return $owner === 'National' || $owner === '' ? 'Admin' : $owner;
+        return (new OwnerModelService())->normalizeOwner($owner, (new OwnerModelService())->sharedOwnerValue());
     }
 
     private function titleFor(PDO $db, string $category, array $row): string

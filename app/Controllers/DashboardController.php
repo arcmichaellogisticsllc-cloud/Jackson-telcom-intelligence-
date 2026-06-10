@@ -15,6 +15,7 @@ use App\Services\ExecutiveOperatingService;
 use App\Services\IntelligenceWarehouseService;
 use App\Services\MarketIntelligenceService;
 use App\Services\OnboardingService;
+use App\Services\OperatingWorkflowService;
 use App\Services\OperationalMaturityService;
 use App\Services\OpportunityPursuitService;
 use App\Services\OwnershipService;
@@ -29,9 +30,10 @@ class DashboardController extends Controller
     {
         Auth::requireLogin();
         $db = Database::connection();
+        $allowedRegionIds = $this->allowedRegionIds();
 
         $regions = $this->regionSummaries();
-        $totals = $this->executiveTotals();
+        $totals = $this->executiveTotals($allowedRegionIds);
         $actions = $this->actions();
         $signalWidgets = $this->signalWidgets();
         $qualityWidgets = $this->qualityWidgets();
@@ -55,18 +57,18 @@ class DashboardController extends Controller
         $onboardingWidgets = (new OnboardingService())->dashboardData();
         $maturityWidgets = (new OperationalMaturityService())->dashboardData();
         $ownershipWidgets = (new OwnershipService())->dashboardData();
-        $allowedRegionIds = $this->allowedRegionIds();
         $visualWidgets = (new DecisionVisualService())->visualData($allowedRegionIds);
+        $workflowQueues = (new OperatingWorkflowService())->commandCenterQueues($allowedRegionIds);
         $decisionWidgets = $this->filterDecisionWidgets($decisionWidgets, $allowedRegionIds);
         $commandData = $this->filterCommandData($commandData, $allowedRegionIds);
         $maturityWidgets = $this->filterMaturityData($maturityWidgets, $allowedRegionIds);
         $regionSql = $this->regionSql('cr.region_id', $allowedRegionIds);
         $recentConversations = $db->query('SELECT cr.*, r.name region_name FROM communication_records cr LEFT JOIN regions r ON r.id = cr.region_id WHERE ' . $regionSql . ' ORDER BY cr.communication_date DESC LIMIT 6')->fetchAll();
-        $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
-        $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
+        $topSignals = $db->query('SELECT s.*, r.name region_name FROM signals s LEFT JOIN regions r ON r.id = s.region_id WHERE s.status NOT IN ("Converted","Ignored") AND ' . $this->regionSql('s.region_id', $allowedRegionIds) . ' ORDER BY CASE s.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, s.impact_score DESC LIMIT 8')->fetchAll();
+        $topCapacityNeeds = $db->query('SELECT ra.*, r.name region_name FROM recommended_actions ra LEFT JOIN regions r ON r.id = ra.region_id WHERE ra.category = "Capacity" AND ra.status = "Open" AND ' . $this->regionSql('ra.region_id', $allowedRegionIds) . ' ORDER BY ra.priority_score DESC LIMIT 8')->fetchAll();
         $topOpportunities = $db->query('SELECT op.*, r.name region_name FROM opportunities op LEFT JOIN regions r ON r.id = op.region_id WHERE op.stage NOT IN ("Awarded","Lost") AND ' . $this->regionSql('op.region_id', $allowedRegionIds) . ' ORDER BY op.estimated_value DESC LIMIT 8')->fetchAll();
-        $stageCounts = $db->query('SELECT stage, COUNT(*) count FROM opportunities GROUP BY stage ORDER BY stage')->fetchAll();
-        $recentActivities = $db->query('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id ORDER BY a.activity_date DESC LIMIT 8')->fetchAll();
+        $stageCounts = $db->query('SELECT stage, COUNT(*) count FROM opportunities WHERE ' . $this->regionSql('region_id', $allowedRegionIds) . ' GROUP BY stage ORDER BY stage')->fetchAll();
+        $recentActivities = $db->query('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id WHERE ' . $this->regionSql('a.region_id', $allowedRegionIds) . ' ORDER BY a.activity_date DESC LIMIT 8')->fetchAll();
         $this->view('dashboard/index', [
             'mode' => 'executive',
             'regions' => $regions,
@@ -95,6 +97,7 @@ class DashboardController extends Controller
             'maturityWidgets' => $maturityWidgets,
             'ownershipWidgets' => $ownershipWidgets,
             'visualWidgets' => $visualWidgets,
+            'workflowQueues' => $workflowQueues,
             'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,
@@ -261,6 +264,8 @@ class DashboardController extends Controller
 
     private function regionSummaries(): array
     {
+        $allowedRegionIds = $this->allowedRegionIds();
+        $where = $allowedRegionIds ? 'WHERE r.id IN (' . implode(',', array_map('intval', $allowedRegionIds)) . ')' : '';
         $regions = Database::connection()->query("SELECT r.*, 
             COUNT(DISTINCT s.id) subcontractor_count,
             SUM(CASE WHEN s.approval_stage IN ('Approved','Preferred') THEN 1 ELSE 0 END) approved_subcontractors,
@@ -269,6 +274,7 @@ class DashboardController extends Controller
             FROM regions r
             LEFT JOIN subcontractors s ON s.region_id = r.id
             LEFT JOIN opportunities o ON o.region_id = r.id AND o.stage NOT IN ('Awarded','Lost')
+            {$where}
             GROUP BY r.id")->fetchAll();
 
         foreach ($regions as &$region) {
@@ -279,15 +285,18 @@ class DashboardController extends Controller
         return $regions;
     }
 
-    private function executiveTotals(): array
+    private function executiveTotals(array $allowedRegionIds): array
     {
         $db = Database::connection();
+        $subScope = $this->regionSql('region_id', $allowedRegionIds);
+        $oppScope = $this->regionSql('region_id', $allowedRegionIds);
+        $recScope = $this->regionSql('region_id', $allowedRegionIds);
         return [
-            'approved_subcontractors' => (int)$db->query("SELECT COUNT(*) FROM subcontractors WHERE approval_stage IN ('Approved','Preferred')")->fetchColumn(),
-            'available_crews' => (int)$db->query("SELECT COALESCE(SUM(crew_count),0) FROM subcontractors WHERE approval_stage IN ('Approved','Preferred') AND availability IN ('Available Now','Available Soon','Limited')")->fetchColumn(),
-            'open_opportunities' => (int)$db->query("SELECT COUNT(*) FROM opportunities WHERE stage NOT IN ('Awarded','Lost')")->fetchColumn(),
-            'pipeline_value' => (float)$db->query("SELECT COALESCE(SUM(estimated_value),0) FROM opportunities WHERE stage NOT IN ('Awarded','Lost')")->fetchColumn(),
-            'critical_recommendations' => (int)$db->query("SELECT COUNT(*) FROM recommended_actions WHERE priority = 'Critical' AND status = 'Open'")->fetchColumn(),
+            'approved_subcontractors' => (int)$db->query("SELECT COUNT(*) FROM subcontractors WHERE approval_stage IN ('Approved','Preferred') AND {$subScope}")->fetchColumn(),
+            'available_crews' => (int)$db->query("SELECT COALESCE(SUM(crew_count),0) FROM subcontractors WHERE approval_stage IN ('Approved','Preferred') AND availability IN ('Available Now','Available Soon','Limited') AND {$subScope}")->fetchColumn(),
+            'open_opportunities' => (int)$db->query("SELECT COUNT(*) FROM opportunities WHERE stage NOT IN ('Awarded','Lost') AND {$oppScope}")->fetchColumn(),
+            'pipeline_value' => (float)$db->query("SELECT COALESCE(SUM(estimated_value),0) FROM opportunities WHERE stage NOT IN ('Awarded','Lost') AND {$oppScope}")->fetchColumn(),
+            'critical_recommendations' => (int)$db->query("SELECT COUNT(*) FROM recommended_actions WHERE priority = 'Critical' AND status = 'Open' AND {$recScope}")->fetchColumn(),
         ];
     }
 
@@ -299,6 +308,10 @@ class DashboardController extends Controller
         if ($regionId) {
             $where[] = 'region_id = ?';
             $params[] = $regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $where[] = $ids ? 'region_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')' : '1=0';
+            $params = array_merge($params, $ids);
         }
         $prefix = $where ? ' WHERE ' . implode(' AND ', $where) . ' AND ' : ' WHERE ';
 
@@ -326,9 +339,9 @@ class DashboardController extends Controller
     private function qualityWidgets(?int $regionId = null): array
     {
         $db = Database::connection();
-        $regionFilter = $regionId ? ' AND s.region_id = ' . (int)$regionId : '';
-        $watchFilter = $regionId ? ' AND region_id = ' . (int)$regionId : '';
-        $huntFilter = $regionId ? ' AND h.region_id = ' . (int)$regionId : '';
+        $regionFilter = $regionId ? ' AND s.region_id = ' . (int)$regionId : $this->allowedSql('s.region_id', ' AND ');
+        $watchFilter = $regionId ? ' AND region_id = ' . (int)$regionId : $this->allowedSql('region_id', ' AND ');
+        $huntFilter = $regionId ? ' AND h.region_id = ' . (int)$regionId : $this->allowedSql('h.region_id', ' AND ');
         return [
             'escalations' => (int)$db->query("SELECT COUNT(*) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id WHERE sqp.classification = 'Escalate' {$regionFilter}")->fetchColumn(),
             'hunt_signals' => (int)$db->query("SELECT COUNT(*) FROM signal_quality_profiles sqp JOIN signals s ON s.id = sqp.signal_id WHERE sqp.classification = 'Hunt' {$regionFilter}")->fetchColumn(),
@@ -343,6 +356,9 @@ class DashboardController extends Controller
         $sql = 'SELECT sqp.*, ss.name source_name, ss.source_type, r.name region_name FROM source_quality_profiles sqp JOIN signal_sources ss ON ss.id = sqp.signal_source_id LEFT JOIN regions r ON r.id = ss.region_id';
         if ($regionId) {
             $sql .= ' WHERE ss.region_id = ' . (int)$regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' WHERE ss.region_id IN (' . implode(',', array_map('intval', $ids)) . ')' : ' WHERE 1=0';
         }
         $sql .= ' ORDER BY sqp.source_quality_score DESC, sqp.escalated_signals DESC LIMIT 6';
         return Database::connection()->query($sql)->fetchAll();
@@ -355,6 +371,10 @@ class DashboardController extends Controller
         if ($regionId) {
             $sql .= ' AND ra.region_id = ?';
             $params[] = $regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND (ra.region_id IS NULL OR ra.region_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))' : ' AND 1=0';
+            $params = array_merge($params, $ids);
         }
         $sql .= ' ORDER BY priority_score DESC, CASE priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, ra.created_at DESC LIMIT ' . (int)$limit;
         $stmt = Database::connection()->prepare($sql);
@@ -365,7 +385,7 @@ class DashboardController extends Controller
     private function targetWidgets(?int $regionId = null): array
     {
         $db = Database::connection();
-        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('region_id', '', true);
         return [
             'new_week' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}created_at >= datetime('now','-7 days')")->fetchColumn(),
             'critical' => (int)$db->query("SELECT COUNT(*) FROM acquisition_targets {$where}priority = 'Critical' AND status NOT IN ('Converted','Not Fit','Archived')")->fetchColumn(),
@@ -377,9 +397,9 @@ class DashboardController extends Controller
 
     private function subcontractorWidgets(?int $regionId = null): array
     {
-        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $complianceJoin = $regionId ? 'JOIN subcontractors s ON s.id = scp.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $networkJoin = $regionId ? 'JOIN subcontractors s ON s.id = sns.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('region_id', '', true);
+        $complianceJoin = $regionId ? 'JOIN subcontractors s ON s.id = scp.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'JOIN subcontractors s ON s.id = scp.subcontractor_id WHERE ' . $this->allowedSql('s.region_id', '', true);
+        $networkJoin = $regionId ? 'JOIN subcontractors s ON s.id = sns.subcontractor_id WHERE s.region_id = ' . (int)$regionId . ' AND ' : 'JOIN subcontractors s ON s.id = sns.subcontractor_id WHERE ' . $this->allowedSql('s.region_id', '', true);
         $db = Database::connection();
         return [
             'new_candidates' => (int)$db->query("SELECT COUNT(*) FROM subcontractors {$where}created_at >= datetime('now','-7 days')")->fetchColumn(),
@@ -394,13 +414,13 @@ class DashboardController extends Controller
     {
         (new RelationshipIntelligenceService())->rebuild();
         $db = Database::connection();
-        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $riskJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $actionJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = ra.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('region_id', '', true);
+        $riskJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'JOIN relationship_intelligence_profiles rip ON rip.id = rr.relationship_profile_id WHERE ' . $this->allowedSql('rip.region_id', '', true);
+        $actionJoin = $regionId ? 'JOIN relationship_intelligence_profiles rip ON rip.id = ra.relationship_profile_id WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'JOIN relationship_intelligence_profiles rip ON rip.id = ra.relationship_profile_id WHERE ' . $this->allowedSql('rip.region_id', '', true);
         return [
             'critical' => (int)$db->query("SELECT COUNT(*) FROM relationship_intelligence_profiles {$where}relationship_priority = 'Critical'")->fetchColumn(),
             'strategic' => (int)$db->query("SELECT COUNT(*) FROM relationship_intelligence_profiles {$where}relationship_status = 'Strategic'")->fetchColumn(),
-            'project_managers' => (int)$db->query("SELECT COUNT(*) FROM influence_roles ir JOIN relationship_intelligence_profiles rip ON rip.contact_id = ir.contact_id " . ($regionId ? 'WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ') . "ir.influence_role = 'Project Manager'")->fetchColumn(),
+            'project_managers' => (int)$db->query("SELECT COUNT(*) FROM influence_roles ir JOIN relationship_intelligence_profiles rip ON rip.contact_id = ir.contact_id " . ($regionId ? 'WHERE rip.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('rip.region_id', '', true)) . "ir.influence_role = 'Project Manager'")->fetchColumn(),
             'open_risks' => (int)$db->query("SELECT COUNT(*) FROM relationship_risks rr {$riskJoin}rr.status = 'Open'")->fetchColumn(),
             'open_actions' => (int)$db->query("SELECT COUNT(*) FROM relationship_actions ra {$actionJoin}ra.status IN ('Open','In Progress')")->fetchColumn(),
         ];
@@ -411,6 +431,9 @@ class DashboardController extends Controller
         $sql = 'SELECT rip.*, c.first_name, c.last_name, c.title, o.name organization_name, r.name region_name, ir.influence_role FROM relationship_intelligence_profiles rip LEFT JOIN contacts c ON c.id = rip.contact_id LEFT JOIN organizations o ON o.id = rip.organization_id LEFT JOIN regions r ON r.id = rip.region_id LEFT JOIN influence_roles ir ON ir.contact_id = c.id WHERE 1 = 1';
         if ($regionId) {
             $sql .= ' AND rip.region_id = ' . (int)$regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND (rip.region_id IS NULL OR rip.region_id IN (' . implode(',', array_map('intval', $ids)) . '))' : ' AND 1=0';
         }
         $sql .= ' ORDER BY rip.relationship_value_score DESC LIMIT ' . (int)$limit;
         return Database::connection()->query($sql)->fetchAll();
@@ -421,6 +444,9 @@ class DashboardController extends Controller
         $sql = 'SELECT at.*, r.name region_name, s.title signal_title FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id LEFT JOIN signals s ON s.id = at.source_signal_id WHERE at.status NOT IN ("Converted","Not Fit","Archived")';
         if ($regionId) {
             $sql .= ' AND at.region_id = ' . (int)$regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND at.region_id IN (' . implode(',', array_map('intval', $ids)) . ')' : ' AND 1=0';
         }
         $sql .= ' ORDER BY CASE at.priority WHEN "Critical" THEN 1 WHEN "High" THEN 2 WHEN "Medium" THEN 3 ELSE 4 END, at.acquisition_score DESC, at.urgency_score DESC LIMIT ' . (int)$limit;
         return Database::connection()->query($sql)->fetchAll();
@@ -430,10 +456,10 @@ class DashboardController extends Controller
     {
         (new DemandDistributionService())->rebuild();
         $db = Database::connection();
-        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $contentWhere = $regionId ? 'WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $planJoin = $regionId ? 'JOIN content_opportunities co ON co.id = dp.content_id WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
-        $channelWhere = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ';
+        $where = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('region_id', '', true);
+        $contentWhere = $regionId ? 'WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('co.region_id', '', true);
+        $planJoin = $regionId ? 'JOIN content_opportunities co ON co.id = dp.content_id WHERE co.region_id = ' . (int)$regionId . ' AND ' : 'JOIN content_opportunities co ON co.id = dp.content_id WHERE ' . $this->allowedSql('co.region_id', '', true);
+        $channelWhere = $regionId ? 'WHERE region_id = ' . (int)$regionId . ' AND ' : 'WHERE ' . $this->allowedSql('region_id', '', true);
         return [
             'opportunities' => (int)$db->query("SELECT COUNT(*) FROM content_opportunities {$where}status NOT IN ('Published','Archived')")->fetchColumn(),
             'distribution_queue' => (int)$db->query("SELECT COUNT(*) FROM distribution_plans dp {$planJoin}dp.status IN ('Planned','Approved','Scheduled')")->fetchColumn(),
@@ -448,6 +474,9 @@ class DashboardController extends Controller
         $sql = 'SELECT co.*, r.name region_name FROM content_opportunities co LEFT JOIN regions r ON r.id = co.region_id WHERE co.status NOT IN ("Published","Archived")';
         if ($regionId) {
             $sql .= ' AND co.region_id = ' . (int)$regionId;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $sql .= $ids ? ' AND co.region_id IN (' . implode(',', array_map('intval', $ids)) . ')' : ' AND 1=0';
         }
         $sql .= ' ORDER BY co.strategic_value DESC, co.expected_relationship_impact DESC, co.expected_capacity_impact DESC LIMIT ' . (int)$limit;
         return Database::connection()->query($sql)->fetchAll();
@@ -475,6 +504,16 @@ class DashboardController extends Controller
             return '1 = 1';
         }
         return '(' . $column . ' IS NULL OR ' . $column . ' IN (' . implode(',', array_map('intval', $allowedRegionIds)) . '))';
+    }
+
+    private function allowedSql(string $column, string $prefix = '', bool $trailingAnd = false): string
+    {
+        $condition = '1=1';
+        if (!Auth::hasGlobalRegionAccess()) {
+            $ids = Auth::allowedRegionIds();
+            $condition = $ids ? $column . ' IN (' . implode(',', array_map('intval', $ids)) . ')' : '1=0';
+        }
+        return $prefix . $condition . ($trailingAnd ? ' AND ' : '');
     }
 
     private function filterDecisionWidgets(array $widgets, array $allowedRegionIds): array

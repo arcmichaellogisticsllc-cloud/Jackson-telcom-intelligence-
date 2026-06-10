@@ -9,6 +9,16 @@ $onboardingMetrics = $onboardingWidgets['metrics'] ?? [];
 $onboardingActions = array_slice($onboardingWidgets['recommendations'] ?? [], 0, 3);
 $recentConversations = array_slice($recentConversations ?? [], 0, 3);
 $healthChecks = array_slice($platformData['health'] ?? [], 0, 4);
+$workflowQueues = $workflowQueues ?? [];
+$missionLanes = $workflowQueues['mission'] ?? [];
+$workflowSummary = $workflowQueues['summary'] ?? [];
+$reviewQueue = array_slice($workflowQueues['review'] ?? [], 0, 5);
+$qualityQueue = array_slice($workflowQueues['quality'] ?? [], 0, 5);
+$captureQueue = array_slice($workflowQueues['capture'] ?? [], 0, 5);
+$onboardingQueue = array_slice($workflowQueues['onboarding'] ?? [], 0, 5);
+$documentQueue = array_slice($workflowQueues['documents'] ?? [], 0, 5);
+$decisionQueue = array_slice($workflowQueues['decisions'] ?? [], 0, 5);
+$handoffQueue = array_slice($workflowQueues['handoff'] ?? [], 0, 5);
 
 $shortItems = fn(array $rows, callable $map): array => array_slice(array_map($map, $rows), 0, 3);
 $stateWidgets = [
@@ -92,6 +102,8 @@ $workflowCards = [
         'cta' => 'Open Decision Queue',
     ],
 ];
+
+$hasWorkflowQueue = $captureQueue || $reviewQueue || $qualityQueue || $onboardingQueue || $documentQueue || $decisionQueue || $handoffQueue;
 ?>
 
 <section class="command-hero">
@@ -105,7 +117,7 @@ $workflowCards = [
   <div>
     <p class="eyebrow"><?= htmlspecialchars($brand['platform_name'] ?? 'Jackson Intelligence Platform') ?></p>
     <h1><?= htmlspecialchars($brand['command_center_title'] ?? 'Jackson Telcom Command Center') ?></h1>
-    <p>One operating screen for work, capacity, relationships, risks, and today’s next moves.</p>
+    <p>Acquire work, acquire capacity, acquire influence, and convert all three into revenue.</p>
   </div>
 </section>
 
@@ -118,11 +130,178 @@ $workflowCards = [
   <a href="/ownership">Ownership</a>
 </nav>
 
-<section class="action-first-grid">
-  <article><span>What This Is</span><p>The first screen after login. It shows what needs action now.</p></article>
-  <article><span>Why It Matters</span><p>Work, capacity, relationship, and onboarding issues lose value when they sit.</p></article>
-  <article><span>Next Step</span><p>Work the Top 5 first. Then clear blockers and intake items waiting on Jackson.</p></article>
-  <article><span>Risk Of Inaction</span><p>High-value work and capacity can stall while competitors move first.</p></article>
+<section class="operator-note">
+  <strong>Start here:</strong>
+  <span>Work the mission lanes first, then clear blockers, intake items, decisions, and handoffs waiting on Jackson.</span>
+</section>
+
+<section class="panel mission-spine">
+  <div class="panel-title">
+    <div><p class="eyebrow">Mission</p><h2>Acquire Work. Acquire Capacity. Acquire Influence. Convert To Revenue.</h2></div>
+    <a class="btn secondary" href="/decision-support">Top Actions</a>
+  </div>
+  <div class="mission-lanes">
+    <?php foreach (['work', 'capacity', 'influence', 'revenue'] as $laneKey): ?>
+      <?php $lane = $missionLanes[$laneKey] ?? ['title' => ucfirst($laneKey), 'question' => '', 'count' => 0, 'items' => []]; ?>
+      <article>
+        <div class="lane-head">
+          <div>
+            <span><?= htmlspecialchars($lane['question'] ?? '') ?></span>
+            <h3><?= htmlspecialchars($lane['title'] ?? ucfirst($laneKey)) ?></h3>
+          </div>
+          <strong><?= (int)($lane['count'] ?? 0) ?></strong>
+        </div>
+        <div class="mission-items">
+          <?php foreach (array_slice($lane['items'] ?? [], 0, 5) as $item): ?>
+            <a class="mission-item" href="<?= htmlspecialchars($item['href'] ?? '#') ?>">
+              <strong><?= htmlspecialchars($item['title'] ?? 'Mission item') ?></strong>
+              <span><?= htmlspecialchars($item['region'] ?? 'National') ?> · <?= htmlspecialchars($item['status'] ?? 'Needs Review') ?> · <?= htmlspecialchars($item['owner'] ?? 'Unassigned') ?></span>
+              <?php if (!empty($item['blockers'])): ?><em><?= htmlspecialchars(implode(' / ', array_slice($item['blockers'], 0, 2))) ?></em><?php endif; ?>
+              <small><?= htmlspecialchars($item['next_action'] ?? 'Confirm next action.') ?></small>
+            </a>
+          <?php endforeach; ?>
+          <?php if (empty($lane['items'])): ?><div class="empty-state"><strong>No active records</strong><span>This lane is ready for real data.</span></div><?php endif; ?>
+        </div>
+      </article>
+    <?php endforeach; ?>
+  </div>
+</section>
+
+<section class="panel command-workflow">
+  <div class="panel-title">
+    <div><p class="eyebrow">Operating Loop</p><h2>What Needs To Move Next</h2></div>
+    <a class="btn secondary" href="/onboarding/subcontractors#add-ground-crew">Start Subcontractor Intake</a>
+  </div>
+  <div class="workflow-status-strip">
+    <div><span>Review</span><strong><?= (int)($workflowSummary['review'] ?? 0) ?></strong></div>
+    <div><span>Data Quality</span><strong><?= (int)($workflowSummary['quality'] ?? 0) ?></strong></div>
+    <div><span>Active Intake Links</span><strong><?= (int)($workflowSummary['intake'] ?? 0) ?></strong></div>
+    <div><span>Documents Waiting</span><strong><?= (int)($workflowSummary['documents'] ?? 0) ?></strong></div>
+    <div><span>Handoff</span><strong><?= (int)($workflowSummary['handoff'] ?? 0) ?></strong></div>
+  </div>
+  <?php if (!$hasWorkflowQueue): ?>
+    <div class="empty-state"><strong>No workflow queues waiting</strong><span>Add or import real intelligence, start subcontractor onboarding, or run the acquisition cycle when new work is available.</span></div>
+  <?php endif; ?>
+  <div class="workflow-queue-grid">
+    <?php if ($captureQueue): ?>
+      <article>
+        <h3>1. Capture</h3>
+        <p>New intelligence waiting for review.</p>
+        <?php foreach ($captureQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['title'] ?: 'Raw intelligence') ?></strong>
+            <span><?= htmlspecialchars($item['organization_name'] ?: 'Unknown source') ?> · <?= htmlspecialchars($item['region_name'] ?? 'National') ?></span>
+            <a class="btn secondary" href="/harvesters">Review Source</a>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($reviewQueue): ?>
+      <article>
+        <h3>2. Review</h3>
+        <p>Decide whether the record is useful, duplicate, incomplete, or bad.</p>
+        <?php foreach ($reviewQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['title']) ?></strong>
+            <span><?= htmlspecialchars($item['severity']) ?> · <?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['recommended_resolution'] ?: 'Review and resolve.') ?></span>
+            <form method="post" action="/production-readiness/review" class="inline-form">
+              <input type="hidden" name="return_to" value="/">
+              <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+              <input type="hidden" name="status" value="Resolved">
+              <input type="hidden" name="resolution_notes" value="Resolved from Command Center operating queue.">
+              <button class="btn secondary">Mark Reviewed</button>
+            </form>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($qualityQueue): ?>
+      <article>
+        <h3>3. Clean Data</h3>
+        <p>Fix bad, missing, stale, duplicate, or conflicting records.</p>
+        <?php foreach ($qualityQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['title']) ?></strong>
+            <span><?= htmlspecialchars($item['issue_type']) ?> · <?= htmlspecialchars($item['severity']) ?> · <?= htmlspecialchars($item['region_name'] ?? 'National') ?></span>
+            <form method="post" action="/production-readiness/data-quality/update" class="inline-form">
+              <input type="hidden" name="return_to" value="/">
+              <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+              <input type="hidden" name="status" value="In Review">
+              <input type="hidden" name="resolution_notes" value="Moved into review from Command Center.">
+              <button class="btn secondary">Start Review</button>
+            </form>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($onboardingQueue): ?>
+      <article>
+        <h3>4. Onboard</h3>
+        <p>Get subcontractor information and readiness documents without manual re-entry.</p>
+        <?php foreach ($onboardingQueue as $item): ?>
+          <?php $missing = array_filter(array_map('trim', preg_split('/[;,]/', (string)($item['missing_items'] ?? '')) ?: [])); ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['company_name'] ?? 'Subcontractor onboarding') ?></strong>
+            <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['onboarding_status']) ?><?= $missing ? ' · Missing: ' . htmlspecialchars(implode(', ', array_slice($missing, 0, 4))) : '' ?></span>
+            <div class="inline-form">
+              <a class="btn secondary" href="/onboarding/subcontractors/detail?id=<?= (int)$item['id'] ?>">Open</a>
+              <form method="post" action="/onboarding/intake-link" class="inline-form">
+                <input type="hidden" name="return_to" value="/">
+                <input type="hidden" name="onboarding_id" value="<?= (int)$item['id'] ?>">
+                <input type="hidden" name="expires_days" value="14">
+                <button class="btn secondary"><?= (int)($item['active_intake_links'] ?? 0) > 0 ? 'Refresh Intake Link' : 'Generate Intake Link' ?></button>
+              </form>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($documentQueue): ?>
+      <article>
+        <h3>5. Verify Documents</h3>
+        <p>Review submitted documents and request anything still missing.</p>
+        <?php foreach ($documentQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['company_name'] ?? 'Onboarding document') ?></strong>
+            <span><?= htmlspecialchars($item['document_type']) ?> · <?= htmlspecialchars($item['status']) ?> · <?= htmlspecialchars($item['region_name'] ?? 'National') ?></span>
+            <a class="btn secondary" href="/onboarding/subcontractors/detail?id=<?= (int)$item['onboarding_id'] ?>">Review Documents</a>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($decisionQueue): ?>
+      <article>
+        <h3>6. Decide</h3>
+        <p>Executive packages that need a decision, owner action, or close-out.</p>
+        <?php foreach ($decisionQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['package_title']) ?></strong>
+            <span><?= htmlspecialchars($item['package_type']) ?> · <?= htmlspecialchars($item['region_name'] ?? 'National') ?> · impact <?= (int)($item['impact_score'] ?? 0) ?></span>
+            <a class="btn secondary" href="/executive-packages/detail?id=<?= (int)$item['id'] ?>">Open Decision</a>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+
+    <?php if ($handoffQueue): ?>
+      <article>
+        <h3>7. Handoff</h3>
+        <p>Packages that are ready or nearly ready for SyncERP handoff review.</p>
+        <?php foreach ($handoffQueue as $item): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($item['package_name']) ?></strong>
+            <span><?= htmlspecialchars($item['region_name'] ?? 'National') ?> · <?= htmlspecialchars($item['package_status']) ?> · readiness <?= (int)($item['readiness_score'] ?? 0) ?></span>
+            <a class="btn secondary" href="/syncerp-integration/detail?id=<?= (int)$item['id'] ?>">Open Handoff</a>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+  </div>
 </section>
 
 <section class="panel command-priorities">

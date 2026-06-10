@@ -21,9 +21,9 @@ Start every day at the Jackson Telcom Command Center.
 7. Complete, dismiss, or delegate the top five actions.
 8. Record outcome notes before moving to the next action.
 
-Mike should work Southeast priorities first, then shared Southwest and national actions.
+Relationship / opportunity ownership should work assigned account, relationship, opportunity, market, and partnership priorities first, then shared Southwest and national actions.
 
-Ron should work Great Lakes priorities first, then shared Southwest and national actions.
+Capacity / readiness ownership should work assigned capacity, subcontractor, workforce, readiness, preconstruction, and handoff priorities first, then shared Southwest and national actions.
 
 Admin should review cross-theater priorities, data health, and system reliability.
 

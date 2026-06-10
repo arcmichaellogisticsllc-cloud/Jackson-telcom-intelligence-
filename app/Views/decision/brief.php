@@ -26,17 +26,15 @@ foreach ($commandBriefs as $regionName => $command) {
   <a href="/">Command Center</a>
   <a href="/decision-support">Decision Support</a>
   <a class="active" href="/daily-brief">Executive Brief</a>
-  <a href="/command/southeast">Mike Perspective</a>
-  <a href="/command/great-lakes">Ron Perspective</a>
+  <a href="/command/southeast">Southeast View</a>
+  <a href="/command/great-lakes">Great Lakes View</a>
   <a href="/command/southwest">Shared Southwest</a>
 </nav>
 
-<?php
-$why = 'The executive brief prevents operators from drowning in modules by showing only the doctrine categories and top actions.';
-$recommended = 'Use this page at the start of every operating day before opening module-specific screens.';
-$next = 'Pick the first priority, complete or delegate it, then capture the outcome in the linked record.';
-require __DIR__ . '/../components/action_first.php';
-?>
+<section class="operator-note">
+  <strong>Daily use:</strong>
+  <span>Pick the first priority, complete or delegate it, then capture the outcome in the linked record.</span>
+</section>
 
 <?php $priorityActions = $allActions; require __DIR__ . '/../components/todays_priorities.php'; ?>
 
@@ -89,7 +87,7 @@ require __DIR__ . '/../components/action_first.php';
       <div class="panel-title">
         <div>
           <p class="eyebrow"><?= htmlspecialchars($regionName) ?></p>
-          <h2><?= htmlspecialchars($regionName === 'Southeast' ? 'Mike' : ($regionName === 'Great Lakes' ? 'Ron' : ($regionName === 'Southwest' ? 'Mike/Ron Shared' : 'Admin'))) ?> operating focus</h2>
+          <h2><?= htmlspecialchars($regionName === 'Southwest' ? 'Shared regional focus' : ($regionName === 'National' ? 'Company focus' : 'Regional operating focus')) ?></h2>
         </div>
         <?php if ($brief['scorecard']): ?><span class="score stable"><?= (int)$brief['scorecard']['overall_growth_score'] ?></span><?php endif; ?>
       </div>

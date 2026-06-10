@@ -83,12 +83,7 @@ class StrategicWorkforceCompetitiveController extends Controller
 
     private function filterDashboardData(array $data): array
     {
-        $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
+        $allowed = Auth::hasGlobalRegionAccess() ? [] : Auth::allowedRegionNames();
         $query = strtolower(trim((string)($_GET['q'] ?? '')));
         $owner = trim((string)($_GET['owner'] ?? ''));
         $region = trim((string)($_GET['region'] ?? ''));
@@ -97,7 +92,7 @@ class StrategicWorkforceCompetitiveController extends Controller
         foreach (['accounts', 'workforce', 'competitors', 'recommendations'] as $key) {
             $data[$key] = array_values(array_filter($data[$key] ?? [], function (array $row) use ($allowed, $query, $owner, $region, $status, $key): bool {
                 $rowRegion = (string)($row['region_name'] ?? 'National');
-                if ($allowed && !in_array($rowRegion, $allowed, true)) {
+                if (!Auth::hasGlobalRegionAccess() && (!$allowed || !in_array($rowRegion, $allowed, true))) {
                     return false;
                 }
                 if ($region !== '' && $rowRegion !== $region) {

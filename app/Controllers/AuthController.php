@@ -47,6 +47,44 @@ class AuthController extends Controller
         $this->redirect('/login');
     }
 
+    public function showChangePassword(): void
+    {
+        Auth::requireLogin();
+        $this->view('auth/change_password', ['error' => null, 'message' => null]);
+    }
+
+    public function changePassword(): void
+    {
+        Auth::requireLogin();
+        $current = (string)($_POST['current_password'] ?? '');
+        $new = (string)($_POST['new_password'] ?? '');
+        $confirm = (string)($_POST['confirm_password'] ?? '');
+        $userId = (int)(Auth::user()['id'] ?? 0);
+
+        $stmt = Database::connection()->prepare('SELECT * FROM users WHERE id = ?');
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if (!$user || !password_verify($current, $user['password_hash'])) {
+            Audit::log('password_change_failed', 'user', $userId, 'Denied', 'Current password mismatch');
+            $this->view('auth/change_password', ['error' => 'Current password is incorrect.', 'message' => null]);
+            return;
+        }
+        if ($new !== $confirm) {
+            $this->view('auth/change_password', ['error' => 'New passwords do not match.', 'message' => null]);
+            return;
+        }
+        if (!$this->strongPassword($new) || password_verify($new, $user['password_hash'])) {
+            $this->view('auth/change_password', ['error' => 'Use a new password with at least 12 characters, upper/lowercase letters, a number, and a symbol.', 'message' => null]);
+            return;
+        }
+
+        Database::connection()->prepare('UPDATE users SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?')
+            ->execute([password_hash($new, PASSWORD_DEFAULT), $userId]);
+        Auth::clearPasswordChangeRequired();
+        Audit::log('password_changed', 'user', $userId);
+        $this->view('auth/change_password', ['error' => null, 'message' => 'Password changed. Continue to the Command Center.']);
+    }
+
     public function showResetRequest(): void
     {
         $this->view('auth/password_reset_request', ['message' => null, 'devToken' => null]);
@@ -104,7 +142,7 @@ class AuthController extends Controller
             $this->view('auth/password_reset_confirm', ['error' => 'Invalid or expired token.', 'token' => '']);
             return;
         }
-        $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([password_hash($password, PASSWORD_DEFAULT), (int)$row['user_id']]);
+        $db->prepare('UPDATE users SET password_hash = ?, must_change_password = 0, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([password_hash($password, PASSWORD_DEFAULT), (int)$row['user_id']]);
         $db->prepare('UPDATE password_reset_tokens SET used_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([(int)$row['id']]);
         Audit::log('password_reset_completed', 'user', (int)$row['user_id']);
         $this->view('auth/login', ['error' => 'Password reset complete. Log in with the new password.']);
@@ -128,5 +166,14 @@ class AuthController extends Controller
         }
         $attempts['count'] = (int)$attempts['count'] + 1;
         $_SESSION['login_attempts'] = $attempts;
+    }
+
+    private function strongPassword(string $password): bool
+    {
+        return strlen($password) >= 12
+            && preg_match('/[a-z]/', $password)
+            && preg_match('/[A-Z]/', $password)
+            && preg_match('/[0-9]/', $password)
+            && preg_match('/[^a-zA-Z0-9]/', $password);
     }
 }

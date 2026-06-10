@@ -24,7 +24,10 @@ class ActivityController extends Controller
     {
         Auth::requireLogin();
         $db = Database::connection();
-        $rows = $db->query('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id ORDER BY a.activity_date DESC')->fetchAll();
+        [$regionWhere, $regionParams] = $this->regionFilter('r.name');
+        $stmt = $db->prepare('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id WHERE ' . $regionWhere . ' ORDER BY a.activity_date DESC');
+        $stmt->execute($regionParams);
+        $rows = $stmt->fetchAll();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
         $this->view('activities/index', compact('rows', 'regions'));
     }
@@ -51,6 +54,7 @@ class ActivityController extends Controller
         if (!$record) {
             $this->redirect('/activities');
         }
+        Auth::requireRegionAccess($record['region_id'] ?? null);
 
         $activities = Database::connection()->prepare('SELECT a.*, r.name region_name FROM activities a LEFT JOIN regions r ON r.id = a.region_id WHERE a.entity_type = ? AND a.entity_id = ? ORDER BY a.activity_date DESC');
         $activities->execute([$type, $id]);
@@ -196,5 +200,17 @@ class ActivityController extends Controller
         [$table, $column] = $map[$recordType];
         $stmt = $db->prepare("UPDATE {$table} SET {$column} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmt->execute([$owner, $recordId]);
+    }
+
+    private function regionFilter(string $column): array
+    {
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
+        $allowed = Auth::allowedRegionNames();
+        if (!$allowed) {
+            return ['1=0', []];
+        }
+        return ['(' . $column . ' IS NULL OR ' . $column . ' IN (' . implode(',', array_fill(0, count($allowed), '?')) . '))', $allowed];
     }
 }

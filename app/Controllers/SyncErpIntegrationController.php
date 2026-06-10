@@ -78,17 +78,12 @@ class SyncErpIntegrationController extends Controller
         $owner = trim((string)($_GET['owner'] ?? ''));
         $region = trim((string)($_GET['region'] ?? ''));
         $status = trim((string)($_GET['status'] ?? ''));
-        $allowed = match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
+        $allowed = Auth::hasGlobalRegionAccess() ? [] : Auth::allowedRegionNames();
 
         foreach (['ready', 'blocked', 'missingCapacity', 'missingRisk', 'all', 'recommendations'] as $key) {
             $data[$key] = array_values(array_filter($data[$key] ?? [], function (array $row) use ($query, $owner, $region, $status, $allowed): bool {
                 $rowRegion = (string)($row['region_name'] ?? 'National');
-                if ($allowed && !in_array($rowRegion, $allowed, true)) {
+                if (!Auth::hasGlobalRegionAccess() && (!$allowed || !in_array($rowRegion, $allowed, true))) {
                     return false;
                 }
                 if ($region !== '' && $rowRegion !== $region) {

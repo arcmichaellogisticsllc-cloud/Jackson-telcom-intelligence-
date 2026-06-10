@@ -7,6 +7,8 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Services\AcquisitionTargetService;
+use App\Services\OnboardingService;
+use App\Services\OwnerModelService;
 
 class AcquisitionTargetController extends Controller
 {
@@ -21,8 +23,8 @@ class AcquisitionTargetController extends Controller
         Auth::requireLogin();
         $region = $_GET['region'] ?? '';
         $title = match ($region) {
-            'southeast' => "Mike's Southeast Hunting List",
-            'great-lakes' => "Ron's Great Lakes Hunting List",
+            'southeast' => 'Southeast Hunting List',
+            'great-lakes' => 'Great Lakes Hunting List',
             'southwest' => 'Southwest Hunting List',
             default => 'National Hunting List',
         };
@@ -120,7 +122,7 @@ class AcquisitionTargetController extends Controller
         $db = Database::connection();
         $regions = $db->query('SELECT * FROM regions ORDER BY name')->fetchAll();
         $params = [];
-        $where = '';
+        $conditions = [];
         if ($regionSlug) {
             $name = match ($regionSlug) {
                 'southeast' => 'Southeast',
@@ -128,9 +130,20 @@ class AcquisitionTargetController extends Controller
                 'southwest' => 'Southwest',
                 default => '',
             };
-            $where = 'WHERE r.name = ?';
+            $regionId = (int)$db->query('SELECT id FROM regions WHERE name = ' . $db->quote($name))->fetchColumn();
+            Auth::requireRegionAccess($regionId ?: null);
+            $conditions[] = 'r.name = ?';
             $params[] = $name;
+        } elseif (!Auth::hasGlobalRegionAccess()) {
+            $allowed = Auth::allowedRegionNames();
+            if (!$allowed) {
+                $conditions[] = '1=0';
+            } else {
+                $conditions[] = 'r.name IN (' . implode(',', array_fill(0, count($allowed), '?')) . ')';
+                $params = array_merge($params, $allowed);
+            }
         }
+        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
         $sql = "SELECT at.*, r.name region_name, s.title signal_title FROM acquisition_targets at LEFT JOIN regions r ON r.id = at.region_id LEFT JOIN signals s ON s.id = at.source_signal_id {$where} ORDER BY CASE at.priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END, at.acquisition_score DESC, at.urgency_score DESC, at.next_action_due_at ASC";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
@@ -159,7 +172,9 @@ class AcquisitionTargetController extends Controller
         $orgId = $this->ensureOrg($db, $t);
         $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, "Missing", "Missing", "Prospect", "Limited", ?)');
         $stmt->execute([$orgId, $t['region_id'], trim($t['city'] . ' ' . $t['state']), $t['target_type'], 'Converted from acquisition target #' . $t['id'] . '. ' . $t['reason_to_pursue']]);
-        return 'subcontractor #' . $db->lastInsertId();
+        $subId = (int)$db->lastInsertId();
+        (new OnboardingService())->ensureSubcontractorOnboarding($subId);
+        return 'subcontractor #' . $subId;
     }
 
     private function subcontractorCandidate($db, array $t): string
@@ -169,6 +184,7 @@ class AcquisitionTargetController extends Controller
         $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, legal_name, website, phone, email, owner_name, primary_contact, states_served, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Researching", "Limited", ?)');
         $stmt->execute([$orgId, $t['region_id'], $name, $name, $t['website'], $t['phone'], $t['email'], $t['contact_name'], $t['contact_name'], $t['state'], trim($t['city'] . ' ' . $t['state']), $this->servicesFromTarget($t), 'Converted from acquisition target #' . $t['id'] . '. Source: ' . $t['source_type'] . '. ' . $t['reason_to_pursue'] . ' Notes: ' . $t['notes']]);
         $subId = (int)$db->lastInsertId();
+        (new OnboardingService())->ensureSubcontractorOnboarding($subId);
         return 'subcontractor candidate #' . $subId;
     }
 
@@ -222,7 +238,7 @@ class AcquisitionTargetController extends Controller
     {
         return [
             'types' => ['Subcontractor','Utility','Prime Contractor','Vendor','Equipment Seller','Workforce Candidate','Engineering Firm','Municipality','Other'],
-            'owners' => ['Mike','Ron','Future Southwest Owner','Admin','Unassigned'],
+            'owners' => (new OwnerModelService())->ownerValues(true),
             'statuses' => $this->statuses(),
             'priorities' => ['Low','Medium','High','Critical'],
             'states' => ['GA','AL','FL','TN','NC','SC','MI','OH','IN','WI','IL','TX','OK','LA','NM'],

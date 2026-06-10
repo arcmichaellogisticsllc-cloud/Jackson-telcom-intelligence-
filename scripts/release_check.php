@@ -12,7 +12,9 @@ $steps = [
     'Check data integrity' => [PHP_BINARY, __DIR__ . '/check_data_integrity.php'],
     'Smoke routes' => [PHP_BINARY, __DIR__ . '/smoke_routes.php'],
     'Backup database' => [PHP_BINARY, __DIR__ . '/backup_database.php'],
+    'Verify backup restore' => [PHP_BINARY, __DIR__ . '/verify_backup_restore.php'],
     'Export operating data' => [PHP_BINARY, __DIR__ . '/export_operating_data.php'],
+    'Check production launch gates' => [PHP_BINARY, __DIR__ . '/check_production_launch.php'],
 ];
 
 foreach ($steps as $label => $command) {
