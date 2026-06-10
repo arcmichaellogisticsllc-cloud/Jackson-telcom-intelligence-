@@ -81,13 +81,10 @@ class DecisionVisualController extends Controller
 
     private function allowedRegionIds(): array
     {
-        $user = Auth::user();
-        $allowedNames = match ($user['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
-        return $this->service->regionIdsForNames($allowedNames);
+        if (Auth::hasGlobalRegionAccess()) {
+            return [];
+        }
+        $ids = Auth::allowedRegionIds();
+        return $ids ?: [-999999];
     }
 }

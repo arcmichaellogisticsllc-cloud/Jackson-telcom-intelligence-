@@ -105,14 +105,12 @@ class WorkspaceController extends Controller
 
     private function regionFilter(string $column): array
     {
-        $regions = match (Auth::user()['role'] ?? 'Admin') {
-            'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
-        if (!$regions) {
+        if (Auth::hasGlobalRegionAccess()) {
             return ['1=1', []];
+        }
+        $regions = Auth::allowedRegionNames();
+        if (!$regions) {
+            return ['1=0', []];
         }
         return [$column . ' IN (' . implode(',', array_fill(0, count($regions), '?')) . ')', $regions];
     }

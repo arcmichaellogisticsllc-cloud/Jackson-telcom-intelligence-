@@ -16,6 +16,7 @@ $recordEntityType = 'subcontractor';
 $recordEntityId = (int)$subcontractor['id'];
 $recordRegionId = (int)($subcontractor['region_id'] ?? 0);
 $approvalFinalStages = ['Approved','Preferred','Strategic Partner'];
+$approvalGate = $approvalGate ?? ['canApprove' => false, 'onboarding_id' => null, 'blockers' => ['Onboarding gate not available']];
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 require __DIR__ . '/../components/record_header.php';
@@ -52,9 +53,12 @@ require __DIR__ . '/../components/action_first.php';
     <hr>
     <h2>Promotion</h2>
     <p><?= htmlspecialchars($subcontractor['promotion_recommendation'] ?? 'Continue qualification and compliance follow-up.') ?></p>
+    <?php if (!empty($approvalGate['onboarding_id'])): ?>
+      <p><a href="/onboarding/subcontractors/detail?id=<?= (int)$approvalGate['onboarding_id'] ?>">Open Onboarding Review Gates</a></p>
+    <?php endif; ?>
     <form method="post" action="/subcontractor-acquisition/promote" class="form-grid compact">
       <input type="hidden" name="subcontractor_id" value="<?= (int)$subcontractor['id'] ?>">
-	      <label>Network Level <select name="level"><?php foreach ($pipeline as $stage): ?><option <?= $stage === $subcontractor['approval_stage'] ? 'selected' : '' ?> <?= in_array($stage, $approvalFinalStages, true) && !in_array($subcontractor['approval_stage'], $approvalFinalStages, true) ? 'disabled' : '' ?>><?= htmlspecialchars($stage) ?></option><?php endforeach; ?></select></label>
+      <label>Network Level <select name="level"><?php foreach ($pipeline as $stage): ?><option <?= $stage === $subcontractor['approval_stage'] ? 'selected' : '' ?> <?= in_array($stage, $approvalFinalStages, true) && empty($approvalGate['canApprove']) ? 'disabled' : '' ?>><?= htmlspecialchars($stage) ?></option><?php endforeach; ?></select></label>
       <p class="full"><small>Approved, Preferred, and Strategic Partner updates are blocked until Onboarding Review Gates are clear.</small></p>
       <button class="btn">Update Level</button>
     </form>

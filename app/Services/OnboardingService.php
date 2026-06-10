@@ -154,7 +154,7 @@ class OnboardingService
 
         $documents = $this->rows($db, 'SELECT * FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY CASE status WHEN "Missing" THEN 1 WHEN "Requested" THEN 2 WHEN "Submitted" THEN 3 WHEN "Rejected" THEN 4 WHEN "Expired" THEN 5 ELSE 6 END, document_type', [$onboardingId]);
         $reviews = $this->rows($db, 'SELECT * FROM onboarding_reviews WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY CASE status WHEN "Pending" THEN 1 WHEN "Needs Information" THEN 2 WHEN "Rejected" THEN 3 ELSE 4 END, created_at DESC', [$onboardingId]);
-        $activities = $this->rows($db, 'SELECT * FROM activities WHERE entity_type IN ("subcontractor_onboarding","onboarding_review","onboarding_document") AND entity_id = ? ORDER BY activity_date DESC LIMIT 30', [$onboardingId]);
+        $activities = $this->rows($db, 'SELECT * FROM activities WHERE (entity_type = "subcontractor_onboarding" AND entity_id = ?) OR (entity_type = "onboarding_review" AND entity_id IN (SELECT id FROM onboarding_reviews WHERE onboarding_type = "Subcontractor" AND onboarding_id = ?)) OR (entity_type = "onboarding_document" AND entity_id IN (SELECT id FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ?)) ORDER BY activity_date DESC LIMIT 30', [$onboardingId, $onboardingId, $onboardingId]);
         $actions = $this->rows($db, 'SELECT * FROM daily_actions WHERE linked_record_type = "subcontractor_onboarding" AND linked_record_id = ? AND status IN ("Open","In Progress") ORDER BY decision_score DESC, due_date ASC LIMIT 10', [$onboardingId]);
         $intakeLinks = $this->rows($db, 'SELECT * FROM onboarding_intake_links WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? ORDER BY created_at DESC LIMIT 5', [$onboardingId]);
         $approvalGate = $this->subcontractorApprovalGate($db, $onboardingId);
@@ -233,6 +233,7 @@ class OnboardingService
         }
         $this->syncSubcontractorDocumentStatus($db, $onboardingId, $onboardingType, $status);
         $this->activity($db, 'subcontractor_onboarding', $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . $status, $onboardingType);
+        $this->refreshWorkflowOutputs($db);
     }
 
     public function createSubcontractorIntakeLink(int $onboardingId, int $expiresDays = 14): ?string
@@ -397,10 +398,11 @@ class OnboardingService
                 ->execute([$status, (int)$row['subcontractor_id']]);
         }
         $this->activity($db, $entityType, $id, $row['region_id'] ?? null, 'Stage Change', "{$type} onboarding moved to {$status}", $notes);
+        $this->refreshWorkflowOutputs($db);
         return ['ok' => true, 'message' => "{$type} onboarding moved to {$status}."];
     }
 
-    public function saveReview(array $input): void
+    public function saveReview(array $input): array
     {
         $db = Database::connection();
         $type = (string)($input['onboarding_type'] ?? 'Subcontractor');
@@ -408,7 +410,7 @@ class OnboardingService
         $onboardingId = (int)($input['onboarding_id'] ?? 0);
         $row = $this->find($db, $table, $onboardingId);
         if (!$row) {
-            return;
+            return ['ok' => false, 'message' => 'Onboarding record not found.'];
         }
         Auth::requireRegionAccess($row['region_id'] ?? null);
         $stmt = $db->prepare('INSERT INTO onboarding_reviews (onboarding_type, onboarding_id, review_type, region_id, status, reviewer, review_notes, follow_up_action, reviewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)');
@@ -419,6 +421,8 @@ class OnboardingService
         if (!empty($input['follow_up_action'])) {
             $this->createDailyAction($db, $row['region_id'] ?? null, $input['follow_up_action'], $type, $onboardingId);
         }
+        $this->refreshWorkflowOutputs($db);
+        return ['ok' => true, 'message' => 'Review saved.'];
     }
 
     public function saveDocument(array $input): array
@@ -445,6 +449,7 @@ class OnboardingService
         if ($type === 'Subcontractor') {
             $this->syncSubcontractorDocumentStatus($db, $onboardingId, (string)($input['document_type'] ?? 'Other'), $status);
         }
+        $this->refreshWorkflowOutputs($db);
         return ['ok' => true, 'message' => 'Document record saved.'];
     }
 
@@ -570,6 +575,12 @@ class OnboardingService
         foreach ($db->query('SELECT * FROM strategic_account_onboarding WHERE account_readiness_score >= 70 ORDER BY account_readiness_score DESC LIMIT 8')->fetchAll() as $row) {
             $this->package($db, $package, 'Activate strategic account onboarding', 'Strategic', $row, $row['account_readiness_score'], 'Should this account become an active strategic account?', 'Strategic account onboarding is close to operational readiness.', $row['next_action'] ?: 'Complete account mapping and assign owner.', 'Jackson may miss work access because account coverage stays informal.', 'strategic_account_onboarding');
         }
+    }
+
+    private function refreshWorkflowOutputs(PDO $db): void
+    {
+        $this->generateRecommendations($db);
+        $this->generateExecutivePackages($db);
     }
 
     private function package(PDO $db, \PDOStatement $stmt, string $title, string $type, array $row, int $score, string $decision, string $summary, string $action, string $risk, string $source): void
@@ -902,9 +913,12 @@ class OnboardingService
         if ($regionId) {
             return ['r.id = ?', [$regionId]];
         }
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
         $allowed = Auth::allowedRegionNames();
         if (!$allowed) {
-            return ['1=1', []];
+            return ['1=0', []];
         }
         return [$column . ' IN (' . implode(',', array_fill(0, count($allowed), '?')) . ')', $allowed];
     }

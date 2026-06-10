@@ -83,13 +83,17 @@ class Auth
     public static function allowedRegionNames(): array
     {
         return match (self::role()) {
-            'Admin', 'Executive' => ['__ALL__'],
             'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
             'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
             'Regional Owner', 'Operator', 'Viewer' => self::assignedRegionNames(),
             default => [],
         };
+    }
+
+    public static function hasGlobalRegionAccess(): bool
+    {
+        return in_array(self::role(), ['Admin', 'Executive'], true);
     }
 
     public static function canWrite(): bool
@@ -99,10 +103,10 @@ class Auth
 
     public static function allowedRegionIds(): array
     {
-        $names = self::allowedRegionNames();
-        if (in_array('__ALL__', $names, true)) {
-            return [-1];
+        if (self::hasGlobalRegionAccess()) {
+            return [];
         }
+        $names = self::allowedRegionNames();
         if (!$names) {
             return [];
         }
@@ -115,10 +119,10 @@ class Auth
 
     public static function canAccessRegion(null|int|string $regionId): bool
     {
-        $allowed = self::allowedRegionIds();
-        if ($allowed === [-1]) {
+        if (self::hasGlobalRegionAccess()) {
             return true;
         }
+        $allowed = self::allowedRegionIds();
         if (!$allowed) {
             return false;
         }

@@ -87,7 +87,10 @@ class OnboardingController extends Controller
             $_POST['onboarding_type'] = $type;
             $_POST['onboarding_id'] = $id;
         }
-        $this->service->saveReview($_POST);
+        $result = $this->service->saveReview($_POST);
+        if ($result['message'] ?? '') {
+            $_SESSION['flash'] = $result['message'];
+        }
         $this->redirect($_POST['return_to'] ?? '/onboarding/reviews');
     }
 

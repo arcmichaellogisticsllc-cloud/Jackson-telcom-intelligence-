@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
+use App\Services\OnboardingService;
 use App\Services\SubcontractorAcquisitionService;
 
 class SubcontractorAcquisitionController extends Controller
@@ -44,7 +45,8 @@ class SubcontractorAcquisitionController extends Controller
         $conversationStmt->execute([(int)$subcontractor['organization_id'], (int)$subcontractor['region_id']]);
         $recentConversations = $conversationStmt->fetchAll();
         $timelineItems = array_map(fn($row) => ['type' => $row['communication_type'], 'title' => $row['summary'], 'why' => $row['outcome'] ?: 'Conversation may affect subcontractor qualification, compliance, or capacity readiness.', 'next' => $row['next_step'] ?: 'Create follow-up if needed.', 'owner' => $row['owner'], 'date' => $row['communication_date']], $recentConversations);
-        $this->view('subcontractors/detail', ['subcontractor' => $subcontractor, 'compliance' => $compliance->fetchAll(), 'documents' => $documents->fetchAll(), 'activities' => $activities->fetchAll(), 'recentConversations' => $recentConversations, 'timelineItems' => $timelineItems, 'pipeline' => SubcontractorAcquisitionService::PIPELINE, 'documentTypes' => array_merge(SubcontractorAcquisitionService::DOCUMENTS, ['Other'])]);
+        $approvalGate = (new OnboardingService())->subcontractorApprovalGateBySubcontractorId($id);
+        $this->view('subcontractors/detail', ['subcontractor' => $subcontractor, 'compliance' => $compliance->fetchAll(), 'documents' => $documents->fetchAll(), 'activities' => $activities->fetchAll(), 'recentConversations' => $recentConversations, 'timelineItems' => $timelineItems, 'pipeline' => SubcontractorAcquisitionService::PIPELINE, 'documentTypes' => array_merge(SubcontractorAcquisitionService::DOCUMENTS, ['Other']), 'approvalGate' => $approvalGate]);
     }
 
     public function saveScorecard(): void
@@ -76,6 +78,10 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         $this->requireSubcontractorAccess($id);
+        if (($_POST['status'] ?? '') === 'Approved' && (trim((string)($_POST['file_name'] ?? '')) === '' || trim((string)($_POST['notes'] ?? '')) === '')) {
+            $_SESSION['flash'] = 'Document approval blocked. Add the real file/source name and review note before marking this document Approved.';
+            $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
+        }
         (new SubcontractorAcquisitionService())->saveDocument($id, $_POST['file_name'], $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['notes'] ?? '');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);

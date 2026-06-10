@@ -189,6 +189,9 @@ class CrudController extends Controller
         $conditions = ['1=1'];
         $params = [];
         $allowedRegions = $this->allowedRegionNames();
+        if (!Auth::hasGlobalRegionAccess() && !$allowedRegions) {
+            $conditions[] = '1=0';
+        }
         if ($allowedRegions) {
             $conditions[] = $regionColumn . ' IN (' . implode(',', array_fill(0, count($allowedRegions), '?')) . ')';
             array_push($params, ...$allowedRegions);
@@ -231,11 +234,6 @@ class CrudController extends Controller
 
     private function allowedRegionNames(): array
     {
-        return match (Auth::user()['role'] ?? 'Admin') {
-            'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
-            'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
-            'Southwest Owner' => ['Southwest', 'National'],
-            default => [],
-        };
+        return Auth::hasGlobalRegionAccess() ? [] : Auth::allowedRegionNames();
     }
 }

@@ -249,9 +249,12 @@ class RealIntelligenceController extends Controller
 
     private function regionFilter(string $column): array
     {
+        if (Auth::hasGlobalRegionAccess()) {
+            return ['1=1', []];
+        }
         $ids = Auth::allowedRegionIds();
         if (!$ids) {
-            return ['1=1', []];
+            return ['1=0', []];
         }
         return [$column . ' IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', $ids];
     }

@@ -462,18 +462,11 @@ class DashboardController extends Controller
 
     private function allowedRegionIds(): array
     {
-        $role = Auth::user()['role'] ?? 'Admin';
-        $names = match ($role) {
-            'Southeast Owner' => ['National', 'Southeast', 'Southwest'],
-            'Great Lakes Owner' => ['National', 'Great Lakes', 'Southwest'],
-            'Southwest Owner' => ['National', 'Southwest'],
-            default => [],
-        };
-        if (!$names) {
+        if (Auth::hasGlobalRegionAccess()) {
             return [];
         }
-        $quoted = implode(',', array_map(fn($name) => Database::connection()->quote($name), $names));
-        return array_map('intval', array_column(Database::connection()->query('SELECT id FROM regions WHERE name IN (' . $quoted . ')')->fetchAll(), 'id'));
+        $ids = Auth::allowedRegionIds();
+        return $ids ?: [-999999];
     }
 
     private function regionSql(string $column, array $allowedRegionIds): string

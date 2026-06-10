@@ -288,9 +288,12 @@ class ProductionReadinessService
 
     private function regionFilter(string $column): string
     {
+        if (Auth::hasGlobalRegionAccess()) {
+            return '';
+        }
         $allowed = Auth::allowedRegionIds();
         if (!$allowed) {
-            return '';
+            return ' AND 1=0';
         }
         return ' AND (' . $column . ' IS NULL OR ' . $column . ' IN (' . implode(',', array_map('intval', $allowed)) . '))';
     }
