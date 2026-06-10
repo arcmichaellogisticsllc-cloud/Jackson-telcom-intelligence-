@@ -28,9 +28,9 @@ $csrf = \App\Core\Auth::csrfInput();
 
 <?php if ($flash): ?>
 <section class="panel">
-  <div class="panel-title"><h2>Onboarding Link Ready</h2><span class="status">Manual Send Only</span></div>
+  <div class="panel-title"><h2>Workflow Notice</h2><span class="status">Operator Action</span></div>
   <p><?= htmlspecialchars($flash) ?></p>
-  <p><small>Copy this link and send it manually by text, email, or message. The platform does not send outreach automatically.</small></p>
+  <?php if (str_contains($flash, 'http')): ?><p><small>Copy this link and send it manually by text, email, or message. The platform does not send outreach automatically.</small></p><?php endif; ?>
 </section>
 <?php endif; ?>
 
@@ -258,8 +258,12 @@ require __DIR__ . '/../components/action_first.php';
     <form method="post" action="/onboarding/review" class="form-grid compact">
       <?= $csrf ?>
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
-      <label>Type <select name="onboarding_type"><option>Subcontractor</option><option>Workforce</option><option>Strategic Account</option><option>Market</option></select></label>
-      <label>Onboarding ID <input type="number" name="onboarding_id" required></label>
+      <label>Record <select name="onboarding_ref" required>
+        <?php foreach ($subcontractors as $row): ?><option value="Subcontractor:<?= (int)$row['id'] ?>">Subcontractor #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['company_name'] ?: 'Subcontractor') ?></option><?php endforeach; ?>
+        <?php foreach ($workforce as $row): ?><option value="Workforce:<?= (int)$row['id'] ?>">Workforce #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['name']) ?></option><?php endforeach; ?>
+        <?php foreach ($accounts as $row): ?><option value="Strategic Account:<?= (int)$row['id'] ?>">Account #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['account_name']) ?></option><?php endforeach; ?>
+        <?php foreach ($markets as $row): ?><option value="Market:<?= (int)$row['id'] ?>">Market #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['market']) ?></option><?php endforeach; ?>
+      </select></label>
       <label>Review <select name="review_type"><option>Compliance Review</option><option>Capacity Review</option><option>Relationship Review</option><option>Strategic Review</option></select></label>
       <label>Status <select name="status"><option>Pending</option><option>Approved</option><option>Rejected</option><option>Needs Information</option></select></label>
       <label class="full">Notes <textarea name="review_notes"></textarea></label>
@@ -281,13 +285,12 @@ require __DIR__ . '/../components/action_first.php';
     <form method="post" action="/onboarding/document" class="form-grid compact">
       <?= $csrf ?>
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
-      <label>Type <select name="onboarding_type"><option>Subcontractor</option><option>Workforce</option><option>Strategic Account</option><option>Market</option></select></label>
-      <label>Onboarding ID <select name="onboarding_id" required>
-        <?php foreach ($subcontractors as $row): ?><option value="<?= (int)$row['id'] ?>">Sub #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['company_name'] ?: 'Subcontractor') ?></option><?php endforeach; ?>
-        <?php foreach ($workforce as $row): ?><option value="<?= (int)$row['id'] ?>">Workforce #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['name']) ?></option><?php endforeach; ?>
-        <?php foreach ($accounts as $row): ?><option value="<?= (int)$row['id'] ?>">Account #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['account_name']) ?></option><?php endforeach; ?>
-        <?php foreach ($markets as $row): ?><option value="<?= (int)$row['id'] ?>">Market #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['market']) ?></option><?php endforeach; ?>
-      </select></label>
+	      <label>Record <select name="onboarding_ref" required>
+	        <?php foreach ($subcontractors as $row): ?><option value="Subcontractor:<?= (int)$row['id'] ?>">Sub #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['company_name'] ?: 'Subcontractor') ?></option><?php endforeach; ?>
+	        <?php foreach ($workforce as $row): ?><option value="Workforce:<?= (int)$row['id'] ?>">Workforce #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['name']) ?></option><?php endforeach; ?>
+	        <?php foreach ($accounts as $row): ?><option value="Strategic Account:<?= (int)$row['id'] ?>">Account #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['account_name']) ?></option><?php endforeach; ?>
+	        <?php foreach ($markets as $row): ?><option value="Market:<?= (int)$row['id'] ?>">Market #<?= (int)$row['id'] ?> · <?= htmlspecialchars($row['market']) ?></option><?php endforeach; ?>
+	      </select></label>
       <label>Document <select name="document_type"><option>W9</option><option>COI</option><option>NDA</option><option>MSA</option><option>Safety Program</option><option>Certifications</option><option>Coverage Maps</option><option>Workforce Documents</option><option>Other</option></select></label>
       <label>Status <select name="status"><option>Submitted</option><option>Requested</option><option>Approved</option><option>Expired</option><option>Rejected</option></select></label>
       <label>File Name <input name="file_name" required></label>

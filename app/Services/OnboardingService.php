@@ -221,8 +221,16 @@ class OnboardingService
         }
 
         $fileName = strtoupper($status) . ' - ' . ($row['company_name'] ?: 'Subcontractor') . ' - ' . $onboardingType;
-        $stmt = $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$onboardingId, $row['region_id'] ?? null, $onboardingType, $fileName, $status, $expirationDate, Auth::user()['name'] ?? 'Admin', trim($notes ?: 'Synced from Subcontractor Network compliance/document update.')]);
+        $existing = $db->prepare('SELECT id FROM onboarding_documents WHERE onboarding_type = "Subcontractor" AND onboarding_id = ? AND document_type = ? ORDER BY updated_at DESC, id DESC LIMIT 1');
+        $existing->execute([$onboardingId, $onboardingType]);
+        $documentId = (int)$existing->fetchColumn();
+        if ($documentId) {
+            $stmt = $db->prepare('UPDATE onboarding_documents SET file_name = ?, status = ?, expires_at = ?, reviewed_by = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+            $stmt->execute([$fileName, $status, $expirationDate, Auth::user()['name'] ?? 'Admin', trim($notes ?: 'Synced from Subcontractor Network compliance/document update.'), $documentId]);
+        } else {
+            $stmt = $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES ("Subcontractor", ?, ?, ?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$onboardingId, $row['region_id'] ?? null, $onboardingType, $fileName, $status, $expirationDate, Auth::user()['name'] ?? 'Admin', trim($notes ?: 'Synced from Subcontractor Network compliance/document update.')]);
+        }
         $this->syncSubcontractorDocumentStatus($db, $onboardingId, $onboardingType, $status);
         $this->activity($db, 'subcontractor_onboarding', $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . $status, $onboardingType);
     }
@@ -413,7 +421,7 @@ class OnboardingService
         }
     }
 
-    public function saveDocument(array $input): void
+    public function saveDocument(array $input): array
     {
         $db = Database::connection();
         $type = (string)($input['onboarding_type'] ?? 'Subcontractor');
@@ -421,17 +429,23 @@ class OnboardingService
         $onboardingId = (int)($input['onboarding_id'] ?? 0);
         $row = $this->find($db, $table, $onboardingId);
         if (!$row) {
-            return;
+            return ['ok' => false, 'message' => 'Onboarding record not found.'];
         }
         Auth::requireRegionAccess($row['region_id'] ?? null);
-        $stmt = $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$type, $onboardingId, $row['region_id'] ?? null, $input['document_type'] ?? 'Other', trim((string)($input['file_name'] ?? 'Onboarding document')), $input['status'] ?? 'Submitted', ($input['expires_at'] ?? '') ?: null, Auth::user()['name'] ?? 'Admin', trim((string)($input['notes'] ?? ''))]);
-        $id = (int)$db->lastInsertId();
-        $this->activity($db, 'onboarding_document', $id, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . ($input['status'] ?? 'Submitted'), $input['document_type'] ?? 'Other');
-        $this->activity($db, $this->tableFor($type)[2], $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . ($input['status'] ?? 'Submitted'), $input['document_type'] ?? 'Other');
-        if ($type === 'Subcontractor') {
-            $this->syncSubcontractorDocumentStatus($db, $onboardingId, (string)($input['document_type'] ?? 'Other'), (string)($input['status'] ?? 'Submitted'));
+        $status = (string)($input['status'] ?? 'Submitted');
+        $fileName = trim((string)($input['file_name'] ?? ''));
+        if ($status === 'Approved' && ($fileName === '' || preg_match('/^(REQUESTED|SUBMITTED|REVIEWED) - /', $fileName))) {
+            return ['ok' => false, 'message' => 'Document approval blocked. Enter the real received file name or source reference before marking this document Approved.'];
         }
+        $stmt = $db->prepare('INSERT INTO onboarding_documents (onboarding_type, onboarding_id, region_id, document_type, file_name, status, expires_at, reviewed_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$type, $onboardingId, $row['region_id'] ?? null, $input['document_type'] ?? 'Other', $fileName ?: 'Onboarding document', $status, ($input['expires_at'] ?? '') ?: null, Auth::user()['name'] ?? 'Admin', trim((string)($input['notes'] ?? ''))]);
+        $id = (int)$db->lastInsertId();
+        $this->activity($db, 'onboarding_document', $id, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . $status, $input['document_type'] ?? 'Other');
+        $this->activity($db, $this->tableFor($type)[2], $onboardingId, $row['region_id'] ?? null, 'Document', 'Onboarding document ' . $status, $input['document_type'] ?? 'Other');
+        if ($type === 'Subcontractor') {
+            $this->syncSubcontractorDocumentStatus($db, $onboardingId, (string)($input['document_type'] ?? 'Other'), $status);
+        }
+        return ['ok' => true, 'message' => 'Document record saved.'];
     }
 
     private function syncSubcontractors(PDO $db): void

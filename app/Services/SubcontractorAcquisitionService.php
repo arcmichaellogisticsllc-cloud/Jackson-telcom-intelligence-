@@ -15,7 +15,6 @@ class SubcontractorAcquisitionService
         $db = Database::connection();
         foreach ($db->query('SELECT s.*, o.name organization_name FROM subcontractors s JOIN organizations o ON o.id = s.organization_id')->fetchAll() as $sub) {
             $this->ensureCompliance($db, (int)$sub['id']);
-            $this->ensureScorecard($db, $sub);
             $this->updateNetworkScore($db, $sub);
         }
     }
@@ -67,18 +66,6 @@ class SubcontractorAcquisitionService
         return ['ok' => true, 'message' => 'Subcontractor moved to ' . $level . '.'];
     }
 
-    public function canApprove(array $sub): bool
-    {
-        return (int)($sub['qualification_score'] ?? 0) >= 70 && $this->requiredDocsApproved((int)$sub['id']);
-    }
-
-    public function requiredDocsApproved(int $subcontractorId): bool
-    {
-        $stmt = Database::connection()->prepare("SELECT COUNT(*) FROM subcontractor_compliance_profiles WHERE subcontractor_id = ? AND document_type IN ('W9','COI','Business License','Safety Program') AND status = 'Approved'");
-        $stmt->execute([$subcontractorId]);
-        return (int)$stmt->fetchColumn() >= 4;
-    }
-
     public function capacityContribution(array $sub): array
     {
         $crew = min(35, ((int)$sub['crew_count'] + (int)($sub['available_crew_count'] ?? 0)) * 3);
@@ -128,28 +115,6 @@ class SubcontractorAcquisitionService
                 $db->prepare('INSERT INTO subcontractor_compliance_profiles (subcontractor_id, document_type, status) VALUES (?, ?, "Missing")')->execute([$subcontractorId, $document]);
             }
         }
-    }
-
-    private function ensureScorecard(PDO $db, array $sub): void
-    {
-        $stmt = $db->prepare('SELECT id FROM subcontractor_qualification_scorecards WHERE subcontractor_id = ?');
-        $stmt->execute([$sub['id']]);
-        if ($stmt->fetchColumn()) {
-            return;
-        }
-        $scores = [
-            'service_fit' => min(10, max(2, substr_count((string)$sub['services_offered'], ',') + 5)),
-            'geographic_fit' => $sub['states_served'] ? 8 : 5,
-            'crew_capacity' => min(10, max(1, (int)$sub['crew_count'])),
-            'mobilization_speed' => $sub['availability'] === 'Available Now' ? 9 : ($sub['availability'] === 'Available Soon' ? 7 : 4),
-            'equipment_availability' => min(10, (int)$sub['bucket_trucks'] + (int)$sub['directional_drills'] + (int)$sub['splicing_trailers'] + 3),
-            'insurance_readiness' => $sub['insurance_status'] === 'Approved' ? 10 : ($sub['insurance_status'] === 'Submitted' ? 7 : 2),
-            'w9_readiness' => $sub['w9_status'] === 'Approved' ? 10 : ($sub['w9_status'] === 'Submitted' ? 7 : 2),
-            'communication' => min(10, max(4, (int)$sub['performance_score'] / 10)),
-            'experience' => min(10, max(3, (int)($sub['years_in_business'] ?? 3))),
-            'safety' => $sub['approval_stage'] === 'Rejected' ? 2 : 7,
-        ];
-        $this->updateScorecard((int)$sub['id'], $scores, 'Auto-generated seeded qualification baseline.');
     }
 
     private function updateNetworkScore(PDO $db, array $sub): void

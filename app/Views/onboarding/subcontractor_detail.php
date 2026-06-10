@@ -13,6 +13,11 @@ $next = $approvalGate['canApprove']
     ? 'Choose Approved, Preferred, or Strategic Partner and record the approval reason.'
     : 'Review submitted documents, complete compliance/capacity reviews, and capture any follow-up actions.';
 $risk = 'If this workflow is skipped, unverified crews can enter the capacity picture and create execution risk.';
+$latestDocumentFor = function (array $documents, string $docType): ?array {
+    $matches = array_values(array_filter($documents, fn($doc) => $doc['document_type'] === $docType));
+    usort($matches, fn($a, $b) => strcmp((string)($b['updated_at'] ?? ''), (string)($a['updated_at'] ?? '')) ?: ((int)$b['id'] <=> (int)$a['id']));
+    return $matches[0] ?? null;
+};
 ?>
 
 <section class="page-header command-page-header">
@@ -54,20 +59,20 @@ $risk = 'If this workflow is skipped, unverified crews can enter the capacity pi
     <?php else: ?>
       <p>Required documents and reviews are approved. Confirm risk acceptance before moving this subcontractor into deployable capacity.</p>
     <?php endif; ?>
-    <form method="post" action="/onboarding/stage" class="form-grid compact">
+	    <form method="post" action="/onboarding/stage" class="form-grid compact">
       <?= $csrf ?>
       <input type="hidden" name="return_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
       <input type="hidden" name="onboarding_type" value="Subcontractor">
       <input type="hidden" name="id" value="<?= (int)$sub['onboarding_id'] ?>">
       <label>Approval Decision
-        <select name="status">
-          <option>Compliance Review</option>
-          <option>Capacity Review</option>
-          <option>Approved</option>
-          <option>Preferred</option>
-          <option>Strategic Partner</option>
-          <option>Rejected</option>
-        </select>
+	        <select name="status">
+	          <option>Compliance Review</option>
+	          <option>Capacity Review</option>
+	          <option <?= !$approvalGate['canApprove'] ? 'disabled' : '' ?>>Approved</option>
+	          <option <?= !$approvalGate['canApprove'] ? 'disabled' : '' ?>>Preferred</option>
+	          <option <?= !$approvalGate['canApprove'] ? 'disabled' : '' ?>>Strategic Partner</option>
+	          <option>Rejected</option>
+	        </select>
       </label>
       <label class="full">Decision Notes <textarea name="notes" placeholder="Why this decision is being made, what risk remains, and who owns next step."></textarea></label>
       <button class="btn">Save Decision</button>
@@ -90,8 +95,8 @@ $risk = 'If this workflow is skipped, unverified crews can enter the capacity pi
   <div class="panel">
     <div class="panel-title"><h2>Documents</h2><span class="status">Required Gate</span></div>
     <div class="table-wrap"><table><thead><tr><th>Document</th><th>Current Gate</th><th>Latest Record</th><th>Action</th></tr></thead><tbody>
-      <?php foreach ($requiredDocs as $docType): ?>
-        <?php $latest = array_values(array_filter($documents, fn($doc) => $doc['document_type'] === $docType))[0] ?? null; ?>
+	      <?php foreach ($requiredDocs as $docType): ?>
+	        <?php $latest = $latestDocumentFor($documents, $docType); ?>
         <tr>
           <td><strong><?= htmlspecialchars($docType) ?></strong></td>
           <td><?= htmlspecialchars($approvalGate['documents'][$docType] ?? 'Missing') ?></td>
@@ -103,8 +108,8 @@ $risk = 'If this workflow is skipped, unverified crews can enter the capacity pi
               <input type="hidden" name="onboarding_type" value="Subcontractor">
               <input type="hidden" name="onboarding_id" value="<?= (int)$sub['onboarding_id'] ?>">
               <input type="hidden" name="document_type" value="<?= htmlspecialchars($docType) ?>">
-              <input type="hidden" name="file_name" value="<?= htmlspecialchars(($latest['file_name'] ?? ('REVIEWED - ' . ($sub['company_name'] ?: 'Subcontractor') . ' - ' . $docType))) ?>">
-              <select name="status"><option>Approved</option><option>Submitted</option><option>Requested</option><option>Rejected</option><option>Expired</option></select>
+	              <input name="file_name" value="<?= htmlspecialchars(($latest['file_name'] ?? '')) ?>" placeholder="received-w9.pdf or source reference" required>
+	              <select name="status"><option>Approved</option><option>Submitted</option><option>Requested</option><option>Rejected</option><option>Expired</option></select>
               <input name="notes" placeholder="Review notes">
               <button class="btn secondary">Save</button>
             </form>

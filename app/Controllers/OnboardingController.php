@@ -82,6 +82,11 @@ class OnboardingController extends Controller
     public function review(): void
     {
         Auth::requireLogin();
+        if (!empty($_POST['onboarding_ref']) && str_contains((string)$_POST['onboarding_ref'], ':')) {
+            [$type, $id] = explode(':', (string)$_POST['onboarding_ref'], 2);
+            $_POST['onboarding_type'] = $type;
+            $_POST['onboarding_id'] = $id;
+        }
         $this->service->saveReview($_POST);
         $this->redirect($_POST['return_to'] ?? '/onboarding/reviews');
     }
@@ -89,7 +94,15 @@ class OnboardingController extends Controller
     public function document(): void
     {
         Auth::requireLogin();
-        $this->service->saveDocument($_POST);
+        if (!empty($_POST['onboarding_ref']) && str_contains((string)$_POST['onboarding_ref'], ':')) {
+            [$type, $id] = explode(':', (string)$_POST['onboarding_ref'], 2);
+            $_POST['onboarding_type'] = $type;
+            $_POST['onboarding_id'] = $id;
+        }
+        $result = $this->service->saveDocument($_POST);
+        if ($result['message'] ?? '') {
+            $_SESSION['flash'] = $result['message'];
+        }
         $this->redirect($_POST['return_to'] ?? '/onboarding/documents');
     }
 

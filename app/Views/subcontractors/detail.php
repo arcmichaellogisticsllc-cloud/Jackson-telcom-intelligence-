@@ -15,6 +15,7 @@ $recordActions = ['Add Note','Log Call','Draft Email','Create Follow-Up','Promot
 $recordEntityType = 'subcontractor';
 $recordEntityId = (int)$subcontractor['id'];
 $recordRegionId = (int)($subcontractor['region_id'] ?? 0);
+$approvalFinalStages = ['Approved','Preferred','Strategic Partner'];
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 require __DIR__ . '/../components/record_header.php';
@@ -53,7 +54,7 @@ require __DIR__ . '/../components/action_first.php';
     <p><?= htmlspecialchars($subcontractor['promotion_recommendation'] ?? 'Continue qualification and compliance follow-up.') ?></p>
     <form method="post" action="/subcontractor-acquisition/promote" class="form-grid compact">
       <input type="hidden" name="subcontractor_id" value="<?= (int)$subcontractor['id'] ?>">
-      <label>Network Level <select name="level"><?php foreach ($pipeline as $stage): ?><option <?= $stage === $subcontractor['approval_stage'] ? 'selected' : '' ?>><?= htmlspecialchars($stage) ?></option><?php endforeach; ?></select></label>
+	      <label>Network Level <select name="level"><?php foreach ($pipeline as $stage): ?><option <?= $stage === $subcontractor['approval_stage'] ? 'selected' : '' ?> <?= in_array($stage, $approvalFinalStages, true) && !in_array($subcontractor['approval_stage'], $approvalFinalStages, true) ? 'disabled' : '' ?>><?= htmlspecialchars($stage) ?></option><?php endforeach; ?></select></label>
       <p class="full"><small>Approved, Preferred, and Strategic Partner updates are blocked until Onboarding Review Gates are clear.</small></p>
       <button class="btn">Update Level</button>
     </form>

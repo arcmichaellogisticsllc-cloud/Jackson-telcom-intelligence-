@@ -24,6 +24,8 @@ class CrudController extends Controller
     {
         Auth::requireLogin();
         $this->upsert('organizations', ['name','type','region_id','state','city','website','phone','notes','status']);
+        RecommendationEngine::regenerate();
+        $this->redirect('/organizations');
     }
 
     public function saveContact(): void
@@ -31,6 +33,7 @@ class CrudController extends Controller
         Auth::requireLogin();
         $this->upsert('contacts', ['first_name','last_name','title','email','phone','organization_id','region_id','relationship_owner','influence_level','relationship_strength','last_contact_date','next_action','notes']);
         RecommendationEngine::regenerate();
+        $this->redirect('/contacts');
     }
 
     public function saveSubcontractor(): void
@@ -51,6 +54,7 @@ class CrudController extends Controller
         }
         $this->upsert('subcontractors', $fields);
         RecommendationEngine::regenerate();
+        $this->redirect('/subcontractors');
     }
 
     public function saveOpportunity(): void
@@ -73,6 +77,9 @@ class CrudController extends Controller
         }
 
         try {
+            $region = Database::connection()->prepare("SELECT region_id FROM {$table} WHERE id = ?");
+            $region->execute([$id]);
+            Auth::requireRegionAccess($region->fetchColumn() ?: null);
             $stmt = Database::connection()->prepare("DELETE FROM {$table} WHERE id = ?");
             $stmt->execute([$id]);
         } catch (\Throwable $error) {
@@ -136,7 +143,6 @@ class CrudController extends Controller
             $stmt = $db->prepare("INSERT INTO {$table} ({$columns}) VALUES ({$params})");
         }
         $stmt->execute($data);
-        $this->redirect('/' . $table);
     }
 
     private function saveOpportunityRecord(): void

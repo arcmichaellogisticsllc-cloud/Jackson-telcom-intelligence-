@@ -7,7 +7,6 @@ use App\Core\Controller;
 use App\Core\Database;
 use App\Core\RecommendationEngine;
 use App\Services\AcquisitionTargetService;
-use App\Services\SubcontractorAcquisitionService;
 
 class AcquisitionTargetController extends Controller
 {
@@ -170,7 +169,6 @@ class AcquisitionTargetController extends Controller
         $stmt = $db->prepare('INSERT INTO subcontractors (organization_id, region_id, company_name, legal_name, website, phone, email, owner_name, primary_contact, states_served, markets_served, services_offered, insurance_status, w9_status, approval_stage, availability, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Missing", "Missing", "Researching", "Limited", ?)');
         $stmt->execute([$orgId, $t['region_id'], $name, $name, $t['website'], $t['phone'], $t['email'], $t['contact_name'], $t['contact_name'], $t['state'], trim($t['city'] . ' ' . $t['state']), $this->servicesFromTarget($t), 'Converted from acquisition target #' . $t['id'] . '. Source: ' . $t['source_type'] . '. ' . $t['reason_to_pursue'] . ' Notes: ' . $t['notes']]);
         $subId = (int)$db->lastInsertId();
-        (new SubcontractorAcquisitionService())->recalculateAll();
         return 'subcontractor candidate #' . $subId;
     }
 

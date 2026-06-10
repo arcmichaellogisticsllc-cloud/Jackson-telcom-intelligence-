@@ -300,8 +300,6 @@ class RecommendationEngine
         if (!$db->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'subcontractor_network_scores'")->fetchColumn()) {
             return;
         }
-        (new \App\Services\SubcontractorAcquisitionService())->recalculateAll();
-
         $missingDocs = $db->query("SELECT scp.*, s.company_name, o.name organization_name, s.region_id, r.owner FROM subcontractor_compliance_profiles scp JOIN subcontractors s ON s.id = scp.subcontractor_id JOIN organizations o ON o.id = s.organization_id LEFT JOIN regions r ON r.id = s.region_id WHERE scp.status IN ('Missing','Requested','Expired')")->fetchAll();
         foreach ($missingDocs as $doc) {
             self::insert($db, [

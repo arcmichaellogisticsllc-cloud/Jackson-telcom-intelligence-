@@ -83,6 +83,7 @@ class Auth
     public static function allowedRegionNames(): array
     {
         return match (self::role()) {
+            'Admin', 'Executive' => ['__ALL__'],
             'Mike', 'Southeast Owner' => ['Southeast', 'Southwest', 'National'],
             'Ron', 'Great Lakes Owner' => ['Great Lakes', 'Southwest', 'National'],
             'Southwest Owner' => ['Southwest', 'National'],
@@ -99,6 +100,9 @@ class Auth
     public static function allowedRegionIds(): array
     {
         $names = self::allowedRegionNames();
+        if (in_array('__ALL__', $names, true)) {
+            return [-1];
+        }
         if (!$names) {
             return [];
         }
@@ -112,8 +116,11 @@ class Auth
     public static function canAccessRegion(null|int|string $regionId): bool
     {
         $allowed = self::allowedRegionIds();
-        if (!$allowed) {
+        if ($allowed === [-1]) {
             return true;
+        }
+        if (!$allowed) {
+            return false;
         }
         if ($regionId === null || $regionId === '' || (int)$regionId === 0) {
             return true;

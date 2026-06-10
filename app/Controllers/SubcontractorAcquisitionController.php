@@ -13,8 +13,6 @@ class SubcontractorAcquisitionController extends Controller
     public function index(): void
     {
         Auth::requireLogin();
-        $service = new SubcontractorAcquisitionService();
-        $service->recalculateAll();
         $db = Database::connection();
         $rows = $db->query('SELECT s.*, o.name organization_name, r.name region_name, sq.qualification_score, sq.qualification_result, sns.network_level, sns.capacity_contribution_score, sns.capacity_contribution_category, sns.promotion_recommendation FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id LEFT JOIN subcontractor_qualification_scorecards sq ON sq.subcontractor_id = s.id LEFT JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id ORDER BY CASE s.approval_stage WHEN "Prospect" THEN 1 WHEN "Researching" THEN 2 WHEN "Qualified" THEN 3 WHEN "Documents Requested" THEN 4 WHEN "Compliance Review" THEN 5 WHEN "Approved" THEN 6 WHEN "Preferred" THEN 7 WHEN "Strategic Partner" THEN 8 WHEN "Inactive" THEN 9 ELSE 10 END, sns.capacity_contribution_score DESC')->fetchAll();
         $kanban = [];
@@ -30,7 +28,6 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)($_GET['id'] ?? 0);
         $db = Database::connection();
-        (new SubcontractorAcquisitionService())->recalculateAll();
         $stmt = $db->prepare('SELECT s.*, o.name organization_name, r.name region_name, sq.service_fit, sq.geographic_fit, sq.crew_capacity, sq.mobilization_speed, sq.equipment_availability, sq.insurance_readiness, sq.w9_readiness, sq.communication, sq.experience, sq.safety, sq.qualification_score, sq.qualification_result, sq.notes scorecard_notes, sns.network_level, sns.capacity_contribution_score, sns.capacity_contribution_category, sns.promotion_recommendation FROM subcontractors s JOIN organizations o ON o.id = s.organization_id JOIN regions r ON r.id = s.region_id LEFT JOIN subcontractor_qualification_scorecards sq ON sq.subcontractor_id = s.id LEFT JOIN subcontractor_network_scores sns ON sns.subcontractor_id = s.id WHERE s.id = ?');
         $stmt->execute([$id]);
         $subcontractor = $stmt->fetch();
@@ -65,6 +62,10 @@ class SubcontractorAcquisitionController extends Controller
         Auth::requireLogin();
         $id = (int)$_POST['subcontractor_id'];
         $this->requireSubcontractorAccess($id);
+        if (($_POST['status'] ?? '') === 'Approved' && trim((string)($_POST['notes'] ?? '')) === '') {
+            $_SESSION['flash'] = 'Compliance approval blocked. Add the real document source, filename, or review note before marking this item Approved.';
+            $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
+        }
         (new SubcontractorAcquisitionService())->saveCompliance($id, $_POST['document_type'], $_POST['status'], $_POST['expiration_date'] ?: null, $_POST['review_date'] ?: date('Y-m-d'), Auth::user()['name'] ?? 'Admin', $_POST['notes'] ?? '');
         RecommendationEngine::regenerate();
         $this->redirect('/subcontractor-acquisition/detail?id=' . $id);
