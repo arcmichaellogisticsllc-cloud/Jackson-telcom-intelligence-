@@ -56,7 +56,7 @@ if (!$results) {
     exit(0);
 }
 
-$totals = ['manual_tasks' => 0, 'review_items' => 0, 'data_quality_issues' => 0];
+$totals = ['raw_signals' => 0, 'manual_tasks' => 0, 'review_items' => 0, 'data_quality_issues' => 0];
 foreach ($results as $result) {
     $line = sprintf(
         '- #%d %s: %s',
@@ -73,6 +73,10 @@ foreach ($results as $result) {
     if (isset($result['manual_tasks'])) {
         $line .= ' | manual_tasks=' . (int)$result['manual_tasks'];
         $totals['manual_tasks'] += (int)$result['manual_tasks'];
+    }
+    if (isset($result['raw_signals'])) {
+        $line .= ' | raw_signals=' . (int)$result['raw_signals'];
+        $totals['raw_signals'] += (int)$result['raw_signals'];
     }
     if (isset($result['review_items'])) {
         $line .= ' | review_items=' . (int)$result['review_items'];
@@ -92,7 +96,7 @@ foreach ($results as $result) {
 }
 
 if (!$options['dry_run']) {
-    echo "Created/reused: manual_tasks={$totals['manual_tasks']} review_items={$totals['review_items']} data_quality_issues={$totals['data_quality_issues']}\n";
+    echo "Created/reused: raw_signals={$totals['raw_signals']} manual_tasks={$totals['manual_tasks']} review_items={$totals['review_items']} data_quality_issues={$totals['data_quality_issues']}\n";
     echo "Live web fetch adapters are intentionally not used locally. Review tasks keep enrichment gated until source evidence is verified.\n";
 }
 

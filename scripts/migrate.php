@@ -382,6 +382,7 @@ foreach ([
     'workforce_movements',
     'competitor_movements',
     'real_hunt_import_records',
+    'intelligence_stream_import_records',
 ] as $signalChildTable) {
     rebuildTableWithoutChecks($db, $signalChildTable, [
         'REFERENCES "signals_owner_model_old"(id)' => 'REFERENCES signals(id)',

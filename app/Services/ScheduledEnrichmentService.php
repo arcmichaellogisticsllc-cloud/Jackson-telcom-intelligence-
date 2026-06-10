@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Core\Database;
+use App\Services\Connectors\ConnectorAdapterInterface;
+use App\Services\Connectors\PublicPageConnectorAdapter;
+use App\Services\Connectors\RssFeedConnectorAdapter;
 use PDO;
 
 class ScheduledEnrichmentService
@@ -113,6 +116,11 @@ class ScheduledEnrichmentService
             $manualTasks = 0;
             $qualityIssues = 0;
             $sourceItems = 0;
+            $rawSignals = 0;
+            $collectedItems = $this->collectFromAdapter($source);
+            if ($collectedItems) {
+                $rawSignals = $this->createRawSignalsFromItems($db, $source, $collectedItems);
+            }
             if ($this->requiresManualReview($source)) {
                 $manualTasks += $this->createManualTask($db, $source, null);
                 $sourceItems += $this->createReviewItem($db, $source, null);
@@ -126,14 +134,16 @@ class ScheduledEnrichmentService
                 $sourceItems += $this->createReviewItem($db, $source, $query);
             }
 
-            $status = ($manualTasks > 0 || $qualityIssues > 0 || $sourceItems > 0) ? 'Review Required' : 'Completed';
-            $notes = 'No live fetch adapter configured. Review-gated manual research tasks created instead of scraping or trusting uncertain data.';
-            $db->prepare('UPDATE scheduled_enrichment_runs SET finished_at = CURRENT_TIMESTAMP, status = ?, records_found = 0, raw_signals_created = 0, candidate_records_created = 0, data_quality_issues_created = ?, skipped_count = ?, run_notes = ? WHERE id = ?')
-                ->execute([$status, $qualityIssues, $manualTasks + $sourceItems, $notes, $runId]);
+            $status = ($manualTasks > 0 || $qualityIssues > 0 || $sourceItems > 0 || $rawSignals > 0) ? 'Review Required' : 'Completed';
+            $notes = $rawSignals > 0
+                ? 'Live public-source adapter created review-gated raw signal items. Signal Quality and Data Quality review are still required.'
+                : 'No live fetch adapter enabled or no records found. Review-gated manual research tasks created instead of scraping or trusting uncertain data.';
+            $db->prepare('UPDATE scheduled_enrichment_runs SET finished_at = CURRENT_TIMESTAMP, status = ?, records_found = ?, raw_signals_created = ?, candidate_records_created = 0, data_quality_issues_created = ?, skipped_count = ?, run_notes = ? WHERE id = ?')
+                ->execute([$status, count($collectedItems), $rawSignals, $qualityIssues, $manualTasks + $sourceItems, $notes, $runId]);
             $db->prepare('UPDATE enrichment_sources SET last_run_at = CURRENT_TIMESTAMP, next_run_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
                 ->execute([$this->nextRunAt((string)$source['cadence']), (int)$source['id']]);
             $db->commit();
-            return ['source_id' => (int)$source['id'], 'source_name' => $source['source_name'], 'status' => $status, 'manual_tasks' => $manualTasks, 'review_items' => $sourceItems, 'data_quality_issues' => $qualityIssues];
+            return ['source_id' => (int)$source['id'], 'source_name' => $source['source_name'], 'status' => $status, 'raw_signals' => $rawSignals, 'manual_tasks' => $manualTasks, 'review_items' => $sourceItems, 'data_quality_issues' => $qualityIssues];
         } catch (\Throwable $e) {
             $db->rollBack();
             return ['source_id' => (int)$source['id'], 'source_name' => $source['source_name'], 'status' => 'Failed', 'error' => $e->getMessage()];
@@ -192,6 +202,85 @@ class ScheduledEnrichmentService
         $db->prepare('INSERT INTO data_quality_issues (issue_type, linked_record_type, linked_record_id, region_id, title, description, severity, assigned_owner) VALUES (?, "enrichment_source", ?, ?, ?, ?, ?, ?)')
             ->execute([$type, (int)$source['id'], $source['region_id'] ?: null, 'Review enrichment source: ' . $source['source_name'], $description, (int)$source['confidence_baseline'] < 60 ? 'High' : 'Medium', $this->ownerForRegion($db, $source['region_id'] ?? null)]);
         return 1;
+    }
+
+    /**
+     * @return array<int,array{title:string,description:string,url:string,published_date:string,organization:string,raw_payload:string}>
+     */
+    private function collectFromAdapter(array $source): array
+    {
+        if ((string)getenv('JIP_ENABLE_LIVE_FETCH') !== '1') {
+            return [];
+        }
+        $adapter = $this->adapterFor($source);
+        if (!$adapter) {
+            return [];
+        }
+        try {
+            return $adapter->collect($source);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    private function adapterFor(array $source): ?ConnectorAdapterInterface
+    {
+        return match ((string)$source['collection_method']) {
+            'RSS/Feed' => new RssFeedConnectorAdapter(),
+            'Official Fetch', 'Public Page Monitor' => new PublicPageConnectorAdapter(),
+            default => null,
+        };
+    }
+
+    private function createRawSignalsFromItems(PDO $db, array $source, array $items): int
+    {
+        $sourceId = $this->ensureSignalSource($db, $source);
+        $db->prepare('INSERT INTO harvester_runs (signal_source_id, status, records_found, created_by, summary) VALUES (?, "Running", ?, "scheduled_enrichment", ?)')
+            ->execute([$sourceId, count($items), 'Scheduled public-source adapter run for ' . $source['source_name']]);
+        $runId = (int)$db->lastInsertId();
+        $created = 0;
+        foreach ($items as $item) {
+            $duplicate = sha1(strtolower((string)$source['id'] . '|' . ($item['title'] ?? '') . '|' . ($item['url'] ?? '')));
+            $exists = $db->prepare('SELECT id FROM raw_signal_items WHERE duplicate_key = ? LIMIT 1');
+            $exists->execute([$duplicate]);
+            if ($exists->fetchColumn()) {
+                continue;
+            }
+            $db->prepare('INSERT INTO raw_signal_items (harvester_run_id, signal_source_id, raw_title, raw_description, raw_url, raw_company_name, raw_location, raw_state, raw_city, raw_source_date, raw_payload_json, processing_status, duplicate_key, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Needs Review", ?, ?)')
+                ->execute([
+                    $runId,
+                    $sourceId,
+                    $item['title'] ?? $source['source_name'],
+                    $item['description'] ?? '',
+                    $item['url'] ?? $source['source_url'],
+                    $item['organization'] ?? $source['source_name'],
+                    trim(($source['market'] ?? '') . ' ' . ($source['region_id'] ?? '')),
+                    $source['state'] ?? '',
+                    $source['market'] ?? '',
+                    $item['published_date'] ?? '',
+                    json_encode(['source' => $source, 'item' => $item], JSON_UNESCAPED_SLASHES),
+                    $duplicate,
+                    'Created by scheduled enrichment adapter; review before trusted use.',
+                ]);
+            $created++;
+        }
+        $db->prepare('UPDATE harvester_runs SET finished_at = CURRENT_TIMESTAMP, status = "Completed", records_created = ?, summary = ? WHERE id = ?')
+            ->execute([$created, 'Scheduled public-source adapter completed with review-gated raw signal items.', $runId]);
+        return $created;
+    }
+
+    private function ensureSignalSource(PDO $db, array $source): int
+    {
+        $name = 'Scheduled Enrichment - ' . $source['source_name'];
+        $exists = $db->prepare('SELECT id FROM signal_sources WHERE name = ? LIMIT 1');
+        $exists->execute([$name]);
+        $id = $exists->fetchColumn();
+        if ($id) {
+            return (int)$id;
+        }
+        $db->prepare('INSERT INTO signal_sources (name, source_type, region_id, state, city, target_category, collection_method, source_url, frequency, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "Active", ?)')
+            ->execute([$name, $source['source_type'], $source['region_id'] ?: null, $source['state'] ?? '', $source['market'] ?? '', $source['purpose'], $source['collection_method'], $source['source_url'] ?? '', $source['cadence'], 'Source created by scheduled enrichment. Records remain review-gated.']);
+        return (int)$db->lastInsertId();
     }
 
     private function seedSources(PDO $db, array $regions): void

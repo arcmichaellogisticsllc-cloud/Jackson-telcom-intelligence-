@@ -113,6 +113,14 @@ Local development does not perform live web fetching.
 
 When a live adapter is unavailable, the scheduler creates review-gated manual research tasks and source review items instead of failing or scraping unsafe sources.
 
+Live public-source fetch adapters are disabled by default. Enable them only in a controlled production environment:
+
+```bash
+JIP_ENABLE_LIVE_FETCH=1 php scripts/run_scheduled_enrichment.php --due
+```
+
+Enabled adapters still create review-gated raw signal items. They do not create trusted organizations, approved subcontractors, contacts, or opportunities directly.
+
 Production connector adapters can later be attached to the same Enrichment Source records, but they must still route imported data through source evidence, confidence scoring, Data Quality Review, and Signal Quality.
 
 ## Growth Targets

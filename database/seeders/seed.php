@@ -15,6 +15,7 @@ use App\Services\DecisionSupportService;
 use App\Services\ExecutiveOperatingService;
 use App\Services\ExecutivePackagingService;
 use App\Services\IntelligenceWarehouseService;
+use App\Services\IntelligenceStreamService;
 use App\Services\MarketIntelligenceService;
 use App\Services\OutreachIntelligenceService;
 use App\Services\OnboardingService;
@@ -95,6 +96,7 @@ function seedProductionBaseline(PDO $db): void
 
     (new OwnerModelService())->ensureBaseline($db);
     (new ScheduledEnrichmentService())->ensureBaseline($db);
+    (new IntelligenceStreamService())->ensureBaseline($db);
 
     $targets = [
         'Southeast' => ['Aerial' => 10, 'Underground' => 6, 'Fiber Splicing' => 5, 'Emergency Restoration' => 3, 'Traffic Control' => 3],
@@ -207,6 +209,7 @@ foreach ($targets as $regionName => $services) {
 if (in_array($seedMode, ['production', 'minimal'], true)) {
     (new PlatformReviewService())->rebuild();
     (new ScheduledEnrichmentService())->ensureBaseline($db);
+    (new IntelligenceStreamService())->ensureBaseline($db);
 
     $connectorStmt = $db->prepare('INSERT INTO connectors (connector_name, source_type, run_mode, source_url, status, notes) VALUES (?, ?, ?, ?, ?, ?)');
     $connectorStmt->execute(['Official Broadband Source Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'Production connector registry entry. Imported raw items remain review-gated and must pass Signal Quality.']);

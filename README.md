@@ -2188,6 +2188,42 @@ Local runs do not scrape or fetch unsafe web data. If a live adapter is unavaila
 
 Full operating rules are in `docs/scheduled-enrichment-plan.md`.
 
+## Organization-Centric Intelligence Streams
+
+The first five recurring intelligence streams are organized around the company record first:
+
+```text
+Organization -> Contact -> Work / Capacity / Influence -> Signal -> Action
+```
+
+Streams:
+
+- Broadband Funding Intelligence
+- Strategic Account Intelligence
+- Engineering Firm Intelligence
+- Contractor Discovery Intelligence
+- Prime Contractor Intelligence
+
+Import templates are stored in:
+
+```text
+storage/imports/real_streams/
+```
+
+Run imports:
+
+```bash
+php scripts/import_intelligence_stream.php storage/imports/real_streams/broadband_funding_stream.csv broadband_funding
+php scripts/import_intelligence_stream.php storage/imports/real_streams/strategic_account_stream.csv strategic_account
+php scripts/import_intelligence_stream.php storage/imports/real_streams/engineering_firm_stream.csv engineering_firm
+php scripts/import_intelligence_stream.php storage/imports/real_streams/contractor_discovery_stream.csv contractor_discovery
+php scripts/import_intelligence_stream.php storage/imports/real_streams/prime_contractor_stream.csv prime_contractor
+```
+
+The importer resolves organizations first, then attaches contacts, source evidence, signals, opportunity watches, capacity prospects, influence profiles, acquisition targets, and recommended actions when safe. Low-confidence or uncertain rows create Data Quality Issues and remain review-gated.
+
+Full doctrine and workflow are in `docs/organization-centric-intelligence-streams.md`.
+
 ## Subcontractor Intake Links
 
 Onboarding supports subcontractor self-service intake without automated sending.
