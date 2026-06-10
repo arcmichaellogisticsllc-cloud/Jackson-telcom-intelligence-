@@ -19,6 +19,11 @@ $onboardingQueue = array_slice($workflowQueues['onboarding'] ?? [], 0, 5);
 $documentQueue = array_slice($workflowQueues['documents'] ?? [], 0, 5);
 $decisionQueue = array_slice($workflowQueues['decisions'] ?? [], 0, 5);
 $handoffQueue = array_slice($workflowQueues['handoff'] ?? [], 0, 5);
+$enrichmentWidgets = $enrichmentWidgets ?? ['metrics' => [], 'due_sources' => [], 'manual_tasks' => [], 'growth_targets' => []];
+$enrichmentMetrics = $enrichmentWidgets['metrics'] ?? [];
+$dueEnrichmentSources = array_slice($enrichmentWidgets['due_sources'] ?? [], 0, 3);
+$manualResearchTasks = array_slice($enrichmentWidgets['manual_tasks'] ?? [], 0, 3);
+$growthTargets = array_slice($enrichmentWidgets['growth_targets'] ?? [], 0, 5);
 
 $shortItems = fn(array $rows, callable $map): array => array_slice(array_map($map, $rows), 0, 3);
 $stateWidgets = [
@@ -302,6 +307,60 @@ $hasWorkflowQueue = $captureQueue || $reviewQueue || $qualityQueue || $onboardin
       </article>
     <?php endif; ?>
   </div>
+</section>
+
+<section class="panel">
+  <div class="panel-title">
+    <div><p class="eyebrow">Enrichment</p><h2>Grow Verified Intelligence</h2></div>
+    <span class="status">Review-Gated</span>
+  </div>
+  <div class="workflow-status-strip">
+    <div><span>Due Sources</span><strong><?= (int)($enrichmentMetrics['due_sources'] ?? 0) ?></strong></div>
+    <div><span>Source Items Waiting</span><strong><?= (int)($enrichmentMetrics['new_source_items'] ?? 0) ?></strong></div>
+    <div><span>Review Items</span><strong><?= (int)($enrichmentMetrics['review_items'] ?? 0) ?></strong></div>
+    <div><span>Research Tasks</span><strong><?= (int)($enrichmentMetrics['manual_tasks'] ?? 0) ?></strong></div>
+  </div>
+  <div class="workflow-queue-grid compact">
+    <?php if ($dueEnrichmentSources): ?>
+      <article>
+        <h3>Due Now</h3>
+        <p>Sources ready for review-gated collection.</p>
+        <?php foreach ($dueEnrichmentSources as $source): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($source['source_name']) ?></strong>
+            <span><?= htmlspecialchars($source['purpose']) ?> · <?= htmlspecialchars($source['cadence']) ?> · <?= htmlspecialchars($source['region_name'] ?? 'National') ?></span>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+    <?php if ($manualResearchTasks): ?>
+      <article>
+        <h3>Manual Research</h3>
+        <p>Human source checks created when automated fetching is unavailable or not trusted.</p>
+        <?php foreach ($manualResearchTasks as $task): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($task['query'] ?: $task['source']) ?></strong>
+            <span><?= htmlspecialchars($task['purpose']) ?> · <?= htmlspecialchars($task['region_name'] ?? 'National') ?> · due <?= htmlspecialchars(substr((string)($task['due_date'] ?? ''), 0, 10)) ?></span>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+    <?php if ($growthTargets): ?>
+      <article>
+        <h3>Verified Growth</h3>
+        <p>Progress counts verified operating records, not raw volume.</p>
+        <?php foreach ($growthTargets as $target): ?>
+          <div class="queue-row">
+            <strong><?= htmlspecialchars($target['target_name']) ?></strong>
+            <span><?= (int)$target['verified_count'] ?> verified / <?= (int)$target['target_count'] ?> target · <?= (int)$target['progress_percentage'] ?>%</span>
+          </div>
+        <?php endforeach; ?>
+      </article>
+    <?php endif; ?>
+  </div>
+  <?php if (!$dueEnrichmentSources && !$manualResearchTasks && !$growthTargets): ?>
+    <div class="empty-state"><strong>No enrichment work waiting</strong><span>Run scheduled enrichment after production seed to create review-gated source tasks.</span></div>
+  <?php endif; ?>
 </section>
 
 <section class="panel command-priorities">

@@ -28,6 +28,7 @@ use App\Services\ProductionReadinessService;
 use App\Services\StrategicWorkforceCompetitiveService;
 use App\Services\SubcontractorAcquisitionService;
 use App\Services\RelationshipIntelligenceService;
+use App\Services\ScheduledEnrichmentService;
 
 $db = Database::connection();
 $db->exec('PRAGMA foreign_keys = OFF');
@@ -48,7 +49,7 @@ if (in_array($seedMode, ['production', 'minimal'], true)) {
     $db->commit();
     $db->exec('PRAGMA foreign_keys = ON');
     seedProductionBaseline($db);
-    echo "Seeded minimal production baseline without deleting operating data: regions, users, capacity targets, operator modes, platform health definitions, connector registry, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
+    echo "Seeded minimal production baseline without deleting operating data: regions, users, capacity targets, operator modes, platform health definitions, connector registry, scheduled enrichment configuration, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
     exit;
 }
 
@@ -93,6 +94,7 @@ function seedProductionBaseline(PDO $db): void
     }
 
     (new OwnerModelService())->ensureBaseline($db);
+    (new ScheduledEnrichmentService())->ensureBaseline($db);
 
     $targets = [
         'Southeast' => ['Aerial' => 10, 'Underground' => 6, 'Fiber Splicing' => 5, 'Emergency Restoration' => 3, 'Traffic Control' => 3],
@@ -204,6 +206,7 @@ foreach ($targets as $regionName => $services) {
 
 if (in_array($seedMode, ['production', 'minimal'], true)) {
     (new PlatformReviewService())->rebuild();
+    (new ScheduledEnrichmentService())->ensureBaseline($db);
 
     $connectorStmt = $db->prepare('INSERT INTO connectors (connector_name, source_type, run_mode, source_url, status, notes) VALUES (?, ?, ?, ?, ?, ?)');
     $connectorStmt->execute(['Official Broadband Source Connector', 'Industry News', 'Manual', 'https://broadbandusa.ntia.gov/', 'Ready', 'Production connector registry entry. Imported raw items remain review-gated and must pass Signal Quality.']);
@@ -232,7 +235,7 @@ if (in_array($seedMode, ['production', 'minimal'], true)) {
     $db->commit();
     $marker = __DIR__ . '/../../storage/production_data_mode';
     file_put_contents($marker, 'production-seed=' . date('c') . PHP_EOL);
-    echo "Seeded minimal production baseline: regions, users, capacity targets, operator modes, platform health definitions, connector registry, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
+    echo "Seeded minimal production baseline: regions, users, capacity targets, operator modes, platform health definitions, connector registry, scheduled enrichment configuration, recommendation governance, and ERP contract validation only. No demo acquisition data was inserted.\n";
     exit;
 }
 

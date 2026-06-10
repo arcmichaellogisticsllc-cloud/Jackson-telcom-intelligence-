@@ -22,6 +22,7 @@ use App\Services\OwnershipService;
 use App\Services\PlatformReviewService;
 use App\Services\ProjectPackageAssemblyService;
 use App\Services\RelationshipIntelligenceService;
+use App\Services\ScheduledEnrichmentService;
 use App\Services\StrategicWorkforceCompetitiveService;
 
 class DashboardController extends Controller
@@ -59,6 +60,7 @@ class DashboardController extends Controller
         $ownershipWidgets = (new OwnershipService())->dashboardData();
         $visualWidgets = (new DecisionVisualService())->visualData($allowedRegionIds);
         $workflowQueues = (new OperatingWorkflowService())->commandCenterQueues($allowedRegionIds);
+        $enrichmentWidgets = (new ScheduledEnrichmentService())->dashboardData($allowedRegionIds);
         $decisionWidgets = $this->filterDecisionWidgets($decisionWidgets, $allowedRegionIds);
         $commandData = $this->filterCommandData($commandData, $allowedRegionIds);
         $maturityWidgets = $this->filterMaturityData($maturityWidgets, $allowedRegionIds);
@@ -98,6 +100,7 @@ class DashboardController extends Controller
             'ownershipWidgets' => $ownershipWidgets,
             'visualWidgets' => $visualWidgets,
             'workflowQueues' => $workflowQueues,
+            'enrichmentWidgets' => $enrichmentWidgets,
             'recentConversations' => $recentConversations,
             'topSignals' => $topSignals,
             'topCapacityNeeds' => $topCapacityNeeds,

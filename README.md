@@ -2157,6 +2157,37 @@ Rules:
 
 First-pass results and shortfalls are documented in `docs/first-pass-real-hunt-report.md`.
 
+## Scheduled Enrichment Engine
+
+Scheduled enrichment is the recurring intelligence collection layer. It keeps source review moving toward Jackson's long-term growth targets without creating untrusted noise.
+
+It tracks:
+
+- Enrichment Sources
+- Scheduled Enrichment Runs
+- Search Query Registry
+- Manual Research Tasks
+- Source Confidence Rules
+- Intelligence Growth Targets
+
+Run dry checks before mutating data:
+
+```bash
+php scripts/run_scheduled_enrichment.php --dry-run --due
+php scripts/run_scheduled_enrichment.php --cadence=daily --dry-run
+php scripts/run_scheduled_enrichment.php --cadence=weekly --dry-run
+```
+
+Run due enrichment:
+
+```bash
+php scripts/run_scheduled_enrichment.php --due
+```
+
+Local runs do not scrape or fetch unsafe web data. If a live adapter is unavailable, the scheduler creates review-gated manual research tasks and source review items. Production connectors can be added later, but imported records must still flow through Data Quality Review and Signal Quality before becoming trusted operating records.
+
+Full operating rules are in `docs/scheduled-enrichment-plan.md`.
+
 ## Subcontractor Intake Links
 
 Onboarding supports subcontractor self-service intake without automated sending.
